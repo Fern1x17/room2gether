@@ -1,0 +1,47 @@
+# Flutter / Dart
+.dart_tool/
+.packages
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+**/doc/api/
+*.iml
+
+# IDE — excluir solo archivos personales, compartir configuración del proyecto
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/.gitignore
+.idea/caches/
+.vscode/*.log
+*.swp
+
+# Secretos — NUNCA subir
+.env
+.env.*
+*.keystore
+*.jks
+key.properties
+google-services.json
+GoogleService-Info.plist
+**/firebase_options.dart
+
+# Supabase
+.mcp.json   # contiene tu access token; mantenlo local o usa variables de entorno
+
+# macOS / Windows
+.DS_Store
+Thumbs.db
+
+# Android
+android/.gradle/
+android/app/debug
+android/app/profile
+android/app/release
+
+# iOS
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec

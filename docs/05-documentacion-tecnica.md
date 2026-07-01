@@ -80,10 +80,78 @@ el `Profile` cargado (flag `_initialized` en `EditProfileScreen`), para no pisar
 lo que el usuario esté escribiendo si el provider se reconstruye.
 
 **Cómo probarlo a mano:**
-1. Iniciar sesión → llega a `/onboarding` (pantalla de perfil).
+1. Desde `/feed`, pulsar el icono de perfil → llega a `/onboarding` (pantalla
+   de perfil). Justo después de registrarse también se llega aquí directo.
 2. Cambiar nombre, ciudad, presupuesto, preferencias y foto → "Guardar cambios"
    → confirma con un SnackBar.
 3. Volver a entrar más tarde → los datos guardados aparecen precargados.
 4. Pulsar el icono de cerrar sesión → confirmar en el diálogo → vuelve a
    `/login` y la sesión queda cerrada (comprobable reiniciando la app: pide
    login de nuevo).
+
+---
+
+## Feed (CU-09 Explorar y filtrar el feed)
+
+**Carpeta:** `lib/features/feed/`
+
+- `domain/models/listing.dart` — modelo `Listing` (mapea con la tabla `listings`).
+- `domain/models/listing_filter.dart` — criterios de búsqueda: `city`,
+  `neighborhood`, `maxPrice`, `type`. Son exactamente los tres que fija RF-06
+  ("zona, precio, tipo"); ver nota sobre "estado" más abajo.
+- `data/feed_repository.dart` — `FeedRepository`: `fetchListings(filter)` (solo
+  `status = 'active'`, con los filtros aplicados como condiciones adicionales)
+  y `fetchListingById(id)` para el detalle.
+- `data/recent_searches_repository.dart` — búsquedas recientes guardadas SOLO
+  en el dispositivo con `shared_preferences` (decisión ya acordada), como lista
+  de hasta 10 filtros, sin duplicados, más reciente primero.
+- `presentation/controllers/feed_controller.dart` — `AsyncNotifier<List<Listing>>`;
+  `build()` carga publicaciones de la ciudad del propio perfil (comentario de
+  CU-09: "en la pantalla principal aparecerán publicaciones de la ciudad que
+  haya seleccionado"); `search(filter)` aplica un filtro nuevo y lo guarda en
+  recientes.
+- `presentation/controllers/listing_detail_controller.dart` — `FutureProvider.family`
+  para cargar una publicación por id.
+- `presentation/screens/feed_screen.dart` — pantalla principal: lista de
+  publicaciones, icono de buscar (abre `FiltersSheet`) e icono para ir al
+  perfil.
+- `presentation/screens/listing_detail_screen.dart` — vista mínima de detalle
+  (tipo, título, ubicación, precio, descripción). Se añade ahora, aunque CU-09
+  no la pide explícitamente, porque CU-10 (Contactar por chat) exige poder
+  "seleccionar una publicación de la feed" para llegar a ella — es la plomería
+  mínima que ese caso de uso necesitará; **no** incluye ningún botón de
+  contactar/enviar mensaje todavía, eso es trabajo de CU-10.
+- `presentation/widgets/{listing_card,filters_sheet}.dart`.
+
+**Nota sobre "estado" en CU-09:** el texto del caso de uso dice "ciudad, barrio,
+precio, estado..." pero RF-06 (la fuente más específica) dice "zona, precio,
+tipo". Se ha interpretado "estado" como el tipo de publicación (busco/ofrezco),
+no como `listings.status` (activa/cerrada) — filtrar por publicaciones cerradas
+no tendría sentido en un feed público, y RLS ya solo expone las activas a
+usuarios no propietarios.
+
+**Decisión pendiente resuelta — acceso sin sesión:** la precondición de CU-09 es
+"N/A" (a diferencia del resto de casos de uso), lo que sugiere que se podría
+explorar sin cuenta. Sin embargo hoy las políticas RLS de `listings` solo
+permiten `SELECT` al rol `authenticated`. Se decidió **no** tocar RLS por ahora
+y exigir sesión igual que el resto de la app; si más adelante se quiere permitir
+exploración sin cuenta, hace falta una política RLS nueva para el rol `anon`
+(cambio de base de datos que requiere decisión aparte).
+
+**Navegación:** tras iniciar sesión (CU-02) ahora se llega a `/feed` en vez de
+a `/onboarding` — el feed es "la pantalla principal" según los propios
+comentarios de CU-09. El registro (CU-01) sigue llevando a `/onboarding`
+(completar perfil) tal como pide su postcondición. Cada pantalla tiene un
+icono para ir a la otra.
+
+**Cómo probarlo a mano:**
+1. Insertar un par de filas de prueba en `listings` (no hay UI para crear
+   publicaciones todavía — eso es CU-06) y comprobar que aparecen en `/feed`.
+2. Pulsar el icono de buscar, aplicar un filtro de ciudad/precio/tipo → la
+   lista se actualiza y la búsqueda queda guardada como "reciente".
+3. Reabrir el panel de filtros → la búsqueda anterior aparece como chip en
+   "Búsquedas recientes"; tocarla la vuelve a aplicar.
+4. Tocar una publicación → se abre el detalle con sus datos.
+5. Con el feed vacío (sin filas de prueba) se muestra el mensaje "No hay
+   publicaciones que coincidan con tu búsqueda." en vez de una lista vacía sin
+   explicación.

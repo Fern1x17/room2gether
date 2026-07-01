@@ -39,7 +39,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       return;
     }
 
-    context.go('/onboarding');
+    context.go('/feed');
   }
 
   @override

@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/auth/presentation/screens/register_screen.dart';
 import '../../features/auth/presentation/screens/welcome_screen.dart';
+import '../../features/feed/presentation/screens/feed_screen.dart';
+import '../../features/feed/presentation/screens/listing_detail_screen.dart';
 import '../../features/profile/presentation/screens/edit_profile_screen.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
@@ -22,6 +24,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/onboarding',
         builder: (context, state) => const EditProfileScreen(),
+      ),
+      GoRoute(path: '/feed', builder: (context, state) => const FeedScreen()),
+      GoRoute(
+        path: '/listings/:id',
+        builder: (context, state) => ListingDetailScreen(
+          listingId: state.pathParameters['id']!,
+        ),
       ),
     ],
   );

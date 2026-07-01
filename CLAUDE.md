@@ -142,7 +142,7 @@ Funcionalidad mínima imprescindible. Construir en este orden:
 - [ ] Supabase configurado (proyecto + tablas + RLS)
 - [x] Auth
 - [x] Perfil
-- [ ] Feed
+- [x] Feed
 - [ ] Publicación
 - [ ] Chat
 - [ ] Reporte/bloqueo

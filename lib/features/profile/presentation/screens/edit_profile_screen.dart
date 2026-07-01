@@ -163,6 +163,11 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         title: const Text('Tu perfil'),
         actions: [
           IconButton(
+            onPressed: () => context.go('/feed'),
+            icon: const Icon(Icons.home_outlined),
+            tooltip: 'Ver publicaciones',
+          ),
+          IconButton(
             onPressed: _confirmSignOut,
             icon: const Icon(Icons.logout),
             tooltip: 'Cerrar sesión',

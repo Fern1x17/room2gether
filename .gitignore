@@ -14,6 +14,9 @@ build/
 .idea/tasks.xml
 .idea/.gitignore
 .idea/caches/
+.idea/deviceManager.xml
+.idea/libraries/Dart_Packages.xml
+.idea/libraries/Flutter_Plugins.xml
 .vscode/*.log
 *.swp
 
@@ -27,8 +30,8 @@ google-services.json
 GoogleService-Info.plist
 **/firebase_options.dart
 
-# Supabase
-.mcp.json   # contiene tu access token; mantenlo local o usa variables de entorno
+# Supabase — contiene tu access token; mantenlo local o usa variables de entorno
+.mcp.json
 
 # macOS / Windows
 .DS_Store

@@ -32,6 +32,7 @@ GoogleService-Info.plist
 
 # Supabase — contiene tu access token; mantenlo local o usa variables de entorno
 .mcp.json
+supabase/.temp/
 
 # macOS / Windows
 .DS_Store

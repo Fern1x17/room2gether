@@ -25,7 +25,6 @@ erDiagram
         int budget_max
         bool is_smoker
         bool has_pets
-        int cleanliness_level
         bool is_verified
         timestamptz created_at
     }

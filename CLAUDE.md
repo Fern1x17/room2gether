@@ -140,8 +140,8 @@ Funcionalidad mínima imprescindible. Construir en este orden:
 - [ ] Fase 0 — Validación
 - [ ] Estructura base del proyecto Flutter creada
 - [ ] Supabase configurado (proyecto + tablas + RLS)
-- [ ] Auth
-- [ ] Perfil
+- [x] Auth
+- [x] Perfil
 - [ ] Feed
 - [ ] Publicación
 - [ ] Chat

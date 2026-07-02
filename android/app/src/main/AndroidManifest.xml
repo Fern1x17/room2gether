@@ -1,4 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Necesario para conectar con Supabase (Auth, Postgres, Storage) desde el dispositivo. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <application
         android:label="roomie"
         android:name="${applicationName}"

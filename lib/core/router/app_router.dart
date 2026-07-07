@@ -7,10 +7,16 @@ import '../../features/auth/presentation/screens/welcome_screen.dart';
 import '../../features/feed/presentation/screens/feed_screen.dart';
 import '../../features/feed/presentation/screens/listing_detail_screen.dart';
 import '../../features/profile/presentation/screens/edit_profile_screen.dart';
+import '../supabase/supabase_client.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
+  // RF-13: supabase_flutter guarda la sesión en el dispositivo y la restaura
+  // en Supabase.initialize(); si existe, se entra directo al feed sin pasar
+  // por la pantalla de bienvenida. La sesión solo se destruye con signOut().
+  final hasSession = supabase.auth.currentSession != null;
+
   return GoRouter(
-    initialLocation: '/',
+    initialLocation: hasSession ? '/feed' : '/',
     routes: [
       GoRoute(path: '/', builder: (context, state) => const WelcomeScreen()),
       GoRoute(

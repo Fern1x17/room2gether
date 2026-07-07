@@ -45,9 +45,18 @@ moderadores se promocionan desde el servidor con `service_role`. De momento el
 rol solo existe como dato: no hay todavía ninguna política RLS ni pantalla que
 dé privilegios especiales a los moderadores (pendiente de especificar).
 
+**Sesión persistente (RF-13):** `supabase_flutter` guarda la sesión en el
+dispositivo y la restaura durante `Supabase.initialize()` en el arranque. El
+router lo aprovecha: si al crear el `GoRouter` existe `currentSession`, la app
+arranca directamente en `/feed` en vez de en la pantalla de bienvenida. La
+sesión solo se destruye al pulsar "Cerrar sesión" (CU-05); matar la app no la
+cierra.
+
 **Cómo probarlo a mano:** `/` → "Crear cuenta" → rellenar formulario → si el
 proyecto no exige confirmación de email, navega directo a `/onboarding`; si la
-exige, muestra aviso y vuelve a `/login`.
+exige, muestra aviso y vuelve a `/login`. Para RF-13: iniciar sesión, matar la
+app por completo, reabrirla → debe aparecer el feed directamente sin pedir
+credenciales; tras "Cerrar sesión" y reabrir, debe aparecer la bienvenida.
 
 ---
 
@@ -88,8 +97,9 @@ creado en `supabase/migrations/20260701000008_avatars_storage_bucket.sql`. Cada
 usuario solo puede subir/actualizar/borrar objetos dentro de su propia carpeta
 `{user_id}/...` (política RLS basada en `storage.foldername(name)`). El cliente
 usa `image_picker` (nueva dependencia) para elegir la foto de la galería; se
-sube en cuanto se selecciona (no espera a "Guardar cambios") y la URL pública
-resultante se guarda en `avatar_url` al guardar el formulario.
+sube en cuanto se selecciona (no espera a "Guardar cambios") y en ese mismo
+momento se escribe la URL pública en `profiles.avatar_url` — así la foto
+persiste entre sesiones aunque el usuario salga de la app sin pulsar guardar.
 
 **Decisión técnica:** los datos del formulario se inicializan una sola vez desde
 el `Profile` cargado (flag `_initialized` en `EditProfileScreen`), para no pisar

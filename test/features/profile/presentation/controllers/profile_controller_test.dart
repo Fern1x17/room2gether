@@ -74,5 +74,46 @@ void main() {
 
       expect(url, 'https://example.com/foto.jpg');
     });
+
+    test('uploadAvatar() persiste la URL en el perfil sin esperar a guardar', () async {
+      final fakeRepo = FakeProfileRepository(
+        uploadAvatarUrl: 'https://example.com/foto.jpg',
+      );
+      final container = ProviderContainer(
+        overrides: [profileRepositoryProvider.overrideWithValue(fakeRepo)],
+      );
+      addTearDown(container.dispose);
+
+      await container.read(profileControllerProvider.future);
+      await container
+          .read(profileControllerProvider.notifier)
+          .uploadAvatar(bytes: Uint8List(0), fileExtension: 'jpg');
+
+      // La URL queda escrita en la BD (updateProfile) y en el estado, de modo
+      // que sobrevive a cerrar sesión o salir de la app sin pulsar guardar.
+      expect(fakeRepo.lastSavedProfile?.avatarUrl, 'https://example.com/foto.jpg');
+      expect(
+        container.read(profileControllerProvider).value?.avatarUrl,
+        'https://example.com/foto.jpg',
+      );
+    });
+
+    test('uploadAvatar() devuelve null si falla la persistencia', () async {
+      final fakeRepo = FakeProfileRepository(
+        uploadAvatarUrl: 'https://example.com/foto.jpg',
+        updateError: Exception('fallo'),
+      );
+      final container = ProviderContainer(
+        overrides: [profileRepositoryProvider.overrideWithValue(fakeRepo)],
+      );
+      addTearDown(container.dispose);
+
+      await container.read(profileControllerProvider.future);
+      final url = await container
+          .read(profileControllerProvider.notifier)
+          .uploadAvatar(bytes: Uint8List(0), fileExtension: 'jpg');
+
+      expect(url, isNull);
+    });
   });
 }

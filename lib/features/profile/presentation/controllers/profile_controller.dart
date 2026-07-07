@@ -26,7 +26,10 @@ class ProfileController extends AsyncNotifier<Profile> {
     }
   }
 
-  /// Sube la foto y devuelve la URL pública, o `null` si falla.
+  /// Sube la foto, guarda su URL en profiles.avatar_url en el momento (no
+  /// espera a "Guardar cambios", para que la foto persista aunque el usuario
+  /// salga sin guardar el formulario) y devuelve la URL pública, o `null` si
+  /// algo falla.
   Future<String?> uploadAvatar({
     required Uint8List bytes,
     required String fileExtension,
@@ -37,11 +40,15 @@ class ProfileController extends AsyncNotifier<Profile> {
     }
     try {
       final repository = ref.read(profileRepositoryProvider);
-      return await repository.uploadAvatar(
+      final url = await repository.uploadAvatar(
         userId: current.id,
         bytes: bytes,
         fileExtension: fileExtension,
       );
+      final updated = current.copyWith(avatarUrl: url);
+      await repository.updateProfile(updated);
+      state = AsyncData(updated);
+      return url;
     } catch (_) {
       return null;
     }

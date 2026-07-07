@@ -216,6 +216,16 @@
   5. Se puede escribir una pequeña descripción y posteriormente se publica.
 - **Postcondición:** Publicación creada, cualquiera puede verla y contactar.
 
+### CU-18: Buscar usuario
+- **Actor:** Usuario
+- **Precondición:** Tener la sesión abierta
+- **Flujo principal:**
+  1. Abrir la app y seleccionar la opción de buscar
+  2. Aplicar el filtro de usuario
+  3. Escribir el nombre de usuario
+  4. Aparecerá una lista de usuarios con ese nombre o similar y seleccionar uno de ellos
+- **Postcondición:** Quedará guardado en el historial de búsqueda
+
 ### CU-xx: (Fase 3) Inmobiliaria publica anuncio
 
 /_ No implementar por ahora _/

@@ -27,7 +27,11 @@ class SupabaseFeedRepository implements FeedRepository {
       query = query.eq('neighborhood', filter.neighborhood!);
     }
     if (filter.maxPrice != null) {
-      query = query.lte('price', filter.maxPrice!);
+      // El filtro de precio aplica a ambos tipos: precio mensual (offering)
+      // o presupuesto máximo (seeking).
+      query = query.or(
+        'price.lte.${filter.maxPrice},budget_max.lte.${filter.maxPrice}',
+      );
     }
     if (filter.type != null) {
       query = query.eq('type', filter.type!);

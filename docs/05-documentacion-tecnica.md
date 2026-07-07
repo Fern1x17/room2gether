@@ -181,3 +181,53 @@ icono para ir a la otra.
 5. Con el feed vacío (sin filas de prueba) se muestra el mensaje "No hay
    publicaciones que coincidan con tu búsqueda." en vez de una lista vacía sin
    explicación.
+
+---
+
+## Publicación (CU-06 Crear publicación)
+
+**Carpeta:** `lib/features/listing/`
+
+- `domain/listing_policy.dart` — la precondición "no tiene ninguna publicación
+  activa" vive aquí como regla centralizada (`maxActiveListingsPerUser = 1` +
+  `canCreateListing()`). Decisión acordada: se comprueba **solo en la app**,
+  sin constraint en BD, y en un único sitio para poder cambiarla fácilmente.
+- `domain/models/listing_draft.dart` — datos del formulario según el tipo.
+- `domain/validators/listing_validators.dart` — título, ciudad, barrio
+  (obligatorio solo en 'offering'), precio ('offering'), rango de presupuesto
+  ('seeking', min ≤ max) y fotos (≥1 solo en 'offering'), tal como exige el
+  flujo de CU-06.
+- `data/listing_repository.dart` — cuenta publicaciones activas propias, sube
+  fotos al bucket `listing-photos` (carpeta `{user_id}/`) e inserta la fila.
+- `presentation/controllers/create_listing_controller.dart` — comprueba la
+  precondición, sube fotos y crea; estados de carga/error.
+- `presentation/screens/create_listing_screen.dart` — selector "Tengo piso y
+  busco compañero" / "Busco piso y compañero"; según el tipo pide fotos+precio
+  o rango de presupuesto; ciudad, barrio (vacío = "cualquiera" al buscar),
+  título y descripción opcional. Entrada: botón flotante "Crear publicación"
+  en el feed (ruta `/listings/new`, declarada antes de `/listings/:id`).
+
+**Cambios de esquema (aprobados):** migraciones `20260707000010` (bucket
+`listing-photos`, mismo patrón RLS que `avatars`) y `20260707000011`
+(`budget_min`/`budget_max` en `listings`, `price` pasa a nullable y un check
+por tipo: 'offering' exige price, 'seeking' exige rango válido; las filas
+'seeking' existentes movieron su price al rango).
+
+**Decisiones de alcance:**
+- El campo "Título" se añadió al formulario por decisión del usuario (el flujo
+  de CU-06 no lo mencionaba pero la tabla lo exige).
+- El filtro de precio del feed aplica ahora a `price` (offering) **o**
+  `budget_max` (seeking), para que las publicaciones de quien busca piso no
+  desaparezcan al filtrar por precio.
+- El detalle de publicación muestra la galería de fotos (postcondición:
+  "cualquiera puede verla").
+
+**Cómo probarlo a mano:**
+1. Feed → "Crear publicación" → elegir "Tengo piso...": exige ≥1 foto, precio
+   y barrio. Elegir "Busco piso...": exige rango de presupuesto y el barrio
+   puede quedar vacío.
+2. Publicar → vuelve al feed y la publicación aparece (con "X–Y €/mes" si es
+   'busco').
+3. Intentar crear una segunda publicación → bloqueado con aviso "Ya tienes una
+   publicación activa."
+4. Abrir el detalle → se ven las fotos subidas.

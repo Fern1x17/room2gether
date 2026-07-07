@@ -44,7 +44,11 @@ class FakeFeedRepository implements FeedRepository {
       if (filter.neighborhood != null && listing.neighborhood != filter.neighborhood) {
         return false;
       }
-      if (filter.maxPrice != null && listing.price > filter.maxPrice!) return false;
+      final effectivePrice = listing.price ?? listing.budgetMax;
+      if (filter.maxPrice != null &&
+          (effectivePrice == null || effectivePrice > filter.maxPrice!)) {
+        return false;
+      }
       if (filter.type != null && listing.type != filter.type) return false;
       return true;
     }).toList();

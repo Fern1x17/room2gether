@@ -32,7 +32,7 @@ class ListingCard extends StatelessWidget {
                   ),
                   const Spacer(),
                   Text(
-                    '${listing.price} €/mes',
+                    listing.priceLabel,
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),

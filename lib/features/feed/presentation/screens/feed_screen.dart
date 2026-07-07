@@ -26,6 +26,11 @@ class FeedScreen extends ConsumerWidget {
     final listingsAsync = ref.watch(feedControllerProvider);
 
     return Scaffold(
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => context.push('/listings/new'),
+        icon: const Icon(Icons.add),
+        label: const Text('Crear publicación'),
+      ),
       appBar: AppBar(
         title: const Text('Roomie'),
         actions: [

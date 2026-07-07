@@ -7,7 +7,9 @@ class Listing {
     this.description,
     required this.city,
     this.neighborhood,
-    required this.price,
+    this.price,
+    this.budgetMin,
+    this.budgetMax,
     required this.photos,
     required this.isFeatured,
     required this.isBusiness,
@@ -21,13 +23,21 @@ class Listing {
   final String? description;
   final String city;
   final String? neighborhood;
-  final int price;
+  final int? price; // solo 'offering'
+  final int? budgetMin; // solo 'seeking'
+  final int? budgetMax;
   final List<String> photos;
   final bool isFeatured;
   final bool isBusiness;
   final String status; // 'active' | 'closed'
 
   bool get isOffering => type == 'offering';
+
+  /// Texto de precio para mostrar: precio mensual (offering) o rango de
+  /// presupuesto (seeking).
+  String get priceLabel => isOffering
+      ? '${price ?? '-'} €/mes'
+      : '${budgetMin ?? '-'}–${budgetMax ?? '-'} €/mes';
 
   factory Listing.fromMap(Map<String, dynamic> map) {
     return Listing(
@@ -38,7 +48,9 @@ class Listing {
       description: map['description'] as String?,
       city: map['city'] as String,
       neighborhood: map['neighborhood'] as String?,
-      price: map['price'] as int,
+      price: map['price'] as int?,
+      budgetMin: map['budget_min'] as int?,
+      budgetMax: map['budget_max'] as int?,
       photos: (map['photos'] as List<dynamic>? ?? const []).cast<String>(),
       isFeatured: map['is_featured'] as bool,
       isBusiness: map['is_business'] as bool,

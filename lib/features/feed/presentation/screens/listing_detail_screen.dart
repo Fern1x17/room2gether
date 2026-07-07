@@ -37,6 +37,25 @@ class ListingDetailScreen extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                if (listing.photos.isNotEmpty) ...[
+                  SizedBox(
+                    height: 200,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: listing.photos.length,
+                      separatorBuilder: (_, _) => const SizedBox(width: 8),
+                      itemBuilder: (context, index) => ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.network(
+                          listing.photos[index],
+                          height: 200,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
                 Chip(label: Text(listing.isOffering ? 'Ofrezco' : 'Busco')),
                 const SizedBox(height: 16),
                 Text(listing.title, style: theme.textTheme.headlineSmall),
@@ -45,7 +64,7 @@ class ListingDetailScreen extends ConsumerWidget {
                   Text(location, style: theme.textTheme.bodyLarge),
                 const SizedBox(height: 8),
                 Text(
-                  '${listing.price} €/mes',
+                  listing.priceLabel,
                   style: theme.textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: theme.colorScheme.primary,

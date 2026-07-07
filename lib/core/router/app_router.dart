@@ -6,6 +6,7 @@ import '../../features/auth/presentation/screens/register_screen.dart';
 import '../../features/auth/presentation/screens/welcome_screen.dart';
 import '../../features/feed/presentation/screens/feed_screen.dart';
 import '../../features/feed/presentation/screens/listing_detail_screen.dart';
+import '../../features/listing/presentation/screens/create_listing_screen.dart';
 import '../../features/profile/presentation/screens/edit_profile_screen.dart';
 import '../supabase/supabase_client.dart';
 
@@ -32,6 +33,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const EditProfileScreen(),
       ),
       GoRoute(path: '/feed', builder: (context, state) => const FeedScreen()),
+      // Debe ir antes de '/listings/:id' para que 'new' no se capture como id.
+      GoRoute(
+        path: '/listings/new',
+        builder: (context, state) => const CreateListingScreen(),
+      ),
       GoRoute(
         path: '/listings/:id',
         builder: (context, state) => ListingDetailScreen(

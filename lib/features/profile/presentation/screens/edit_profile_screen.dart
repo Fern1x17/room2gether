@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../auth/presentation/controllers/sign_out_controller.dart';
+import '../../../listing/presentation/widgets/my_listings_section.dart';
 import '../../domain/models/profile.dart';
 import '../../domain/validators/profile_validators.dart';
 import '../controllers/profile_controller.dart';
@@ -351,6 +352,15 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                             : const Text('Guardar cambios'),
                       ),
                     ),
+                    const SizedBox(height: 32),
+                    const Divider(),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Tus publicaciones',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 8),
+                    const MyListingsSection(),
                   ],
                 ),
               ),

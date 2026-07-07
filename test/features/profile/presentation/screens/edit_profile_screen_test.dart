@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:roomie/features/auth/data/auth_repository.dart';
+import 'package:roomie/features/listing/data/listing_repository.dart';
 import 'package:roomie/features/profile/data/profile_repository.dart';
 import 'package:roomie/features/profile/presentation/screens/edit_profile_screen.dart';
 
 import '../../../auth/fakes/fake_auth_repository.dart';
+import '../../../listing/fakes/fake_listing_repository.dart';
 import '../../fakes/fake_profile_repository.dart';
 
 Widget _wrap({FakeProfileRepository? profileRepository}) {
@@ -15,6 +17,7 @@ Widget _wrap({FakeProfileRepository? profileRepository}) {
         profileRepository ?? FakeProfileRepository(profile: fakeProfile(displayName: 'Ana')),
       ),
       authRepositoryProvider.overrideWithValue(FakeAuthRepository()),
+      listingRepositoryProvider.overrideWithValue(FakeListingRepository()),
     ],
     child: const MaterialApp(home: EditProfileScreen()),
   );

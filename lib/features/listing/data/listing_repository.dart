@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/supabase/supabase_client.dart';
+import '../../feed/domain/models/listing.dart';
 import '../domain/models/listing_draft.dart';
 
 /// Una foto pendiente de subir: bytes + extensión del fichero original.
@@ -15,6 +16,10 @@ abstract class ListingRepository {
   Future<List<String>> uploadPhotos(List<PendingPhoto> photos);
 
   Future<void> createListing(ListingDraft draft, {required List<String> photoUrls});
+
+  Future<List<Listing>> fetchMyListings();
+
+  Future<void> deleteListing(String id);
 }
 
 class SupabaseListingRepository implements ListingRepository {
@@ -47,6 +52,24 @@ class SupabaseListingRepository implements ListingRepository {
   }
 
   @override
+  Future<List<Listing>> fetchMyListings() async {
+    final userId = _client.auth.currentUser!.id;
+    final rows = await _client
+        .from('listings')
+        .select()
+        .eq('owner_id', userId)
+        .order('created_at', ascending: false);
+    return rows.map(Listing.fromMap).toList();
+  }
+
+  @override
+  Future<void> deleteListing(String id) async {
+    // Borrado real (postcondición CU-07: "eliminada de la base de datos").
+    // RLS solo permite borrar publicaciones propias.
+    await _client.from('listings').delete().eq('id', id);
+  }
+
+  @override
   Future<void> createListing(
     ListingDraft draft, {
     required List<String> photoUrls,
@@ -69,4 +92,10 @@ class SupabaseListingRepository implements ListingRepository {
 
 final listingRepositoryProvider = Provider<ListingRepository>((ref) {
   return SupabaseListingRepository(supabase);
+});
+
+/// Id del usuario autenticado, para que los widgets no llamen a Supabase
+/// directamente (p. ej. para saber si una publicación es propia).
+final currentUserIdProvider = Provider<String?>((ref) {
+  return supabase.auth.currentUser?.id;
 });

@@ -1,14 +1,23 @@
+import 'package:roomie/features/feed/domain/models/listing.dart';
 import 'package:roomie/features/listing/data/listing_repository.dart';
 import 'package:roomie/features/listing/domain/models/listing_draft.dart';
 
 class FakeListingRepository implements ListingRepository {
-  FakeListingRepository({this.activeListings = 0, this.createError});
+  FakeListingRepository({
+    this.activeListings = 0,
+    this.createError,
+    this.deleteError,
+    List<Listing>? myListings,
+  }) : myListings = myListings ?? [];
 
   int activeListings;
   final Object? createError;
+  final Object? deleteError;
+  final List<Listing> myListings;
   ListingDraft? lastCreatedDraft;
   List<String>? lastPhotoUrls;
   int uploadedPhotoCount = 0;
+  final List<String> deletedIds = [];
 
   @override
   Future<int> countMyActiveListings() async => activeListings;
@@ -29,5 +38,15 @@ class FakeListingRepository implements ListingRepository {
     if (createError != null) throw createError!;
     lastCreatedDraft = draft;
     lastPhotoUrls = photoUrls;
+  }
+
+  @override
+  Future<List<Listing>> fetchMyListings() async => myListings;
+
+  @override
+  Future<void> deleteListing(String id) async {
+    if (deleteError != null) throw deleteError!;
+    deletedIds.add(id);
+    myListings.removeWhere((listing) => listing.id == id);
   }
 }

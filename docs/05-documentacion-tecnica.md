@@ -231,3 +231,37 @@ por tipo: 'offering' exige price, 'seeking' exige rango válido; las filas
 3. Intentar crear una segunda publicación → bloqueado con aviso "Ya tienes una
    publicación activa."
 4. Abrir el detalle → se ven las fotos subidas.
+
+---
+
+## Publicación (CU-07 Eliminar publicación)
+
+**Ficheros nuevos/tocados:**
+
+- `lib/features/listing/presentation/controllers/my_listings_controller.dart` —
+  `myListingsProvider` (publicaciones propias) y `DeleteListingController`.
+- `lib/features/listing/presentation/widgets/my_listings_section.dart` —
+  sección "Tus publicaciones" mostrada dentro de la pantalla de perfil (el
+  flujo de CU-07/CU-08 dice "entra en el perfil y selecciona una publicación");
+  cada elemento navega al detalle.
+- `lib/features/listing/data/listing_repository.dart` — `fetchMyListings()` y
+  `deleteListing()` (borrado real de la fila, según la postcondición
+  "eliminada de la base de datos"; RLS solo permite borrar las propias).
+- `lib/features/feed/presentation/screens/listing_detail_screen.dart` — botón
+  "Eliminar publicación" con diálogo de confirmación, visible solo si la
+  publicación es del usuario autenticado (`currentUserIdProvider`, un provider
+  para que los widgets no llamen a Supabase directamente).
+
+**Decisiones:**
+- El borrado es un DELETE real, no un cambio a status 'closed' — es lo que
+  dice la postcondición. Las fotos del bucket no se borran (no lo pide el CU;
+  quedan huérfanas en Storage — anotado por si se quiere limpiar más adelante).
+- Tras eliminar se invalidan el feed y "Tus publicaciones", cumpliendo
+  "eliminada... del perfil".
+
+**Cómo probarlo a mano:**
+1. Perfil → sección "Tus publicaciones" → tocar una → detalle con botón rojo
+   "Eliminar publicación" (no aparece en publicaciones ajenas del feed).
+2. Eliminar → confirmar → vuelve atrás; ya no está ni en el feed ni en el
+   perfil, y se puede volver a crear una publicación nueva (la regla de "una
+   activa" queda liberada).

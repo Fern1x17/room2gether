@@ -14,7 +14,9 @@
 - `data/auth_repository.dart` — `AuthRepository` (abstracta) + `SupabaseAuthRepository`.
   Encapsula `signUp`, `signIn` y `signOut` de Supabase Auth.
 - `domain/validators/auth_validators.dart` — validación de email, contraseña (mín. 8
-  caracteres) y edad (18–120), funciones puras.
+  caracteres) y fecha de nacimiento (mayor de 18 años, menor de 120), funciones
+  puras. `ageInYears()` calcula la edad exacta teniendo en cuenta si el
+  cumpleaños de este año ya pasó.
 - `presentation/controllers/{register,login}_controller.dart` — `AsyncNotifier<void>`,
   gestionan carga/error de cada flujo por separado (para que un error en una
   pantalla no contamine el estado de la otra).
@@ -27,7 +29,21 @@ trigger de Postgres (`supabase/migrations/20260701000007_profiles_auto_create_on
 no con un insert desde el cliente. Motivo: si el proyecto tuviera confirmación de
 email activada, `signUp()` no devolvería sesión activa y un insert desde Flutter
 fallaría por RLS (`auth.uid()` sería null en ese momento). El trigger usa
-`security definer` y lee la edad de los metadatos pasados en `signUp(data: {...})`.
+`security definer` y lee la fecha de nacimiento de los metadatos pasados en
+`signUp(data: {...})`.
+
+**Fecha de nacimiento en vez de edad (migración `20260702000009`):** el registro
+pide la fecha de nacimiento con un selector de fecha (no la edad como número).
+En la BD, `profiles.age` (int) se sustituyó por `profiles.birthdate` (date, NOT
+NULL) con el check `profiles_adult_check` (mayoría de edad, RF-02). Las filas
+existentes se rellenaron aproximando la fecha desde la edad (quedan con el
+aniversario en la fecha de la migración; el día/mes real no era recuperable).
+La misma migración añade `profiles.role` (text: 'user' / 'moderator', default
+'user') — el campo "tipo" del modelo de datos, renombrado a `role` en inglés
+por la convención del proyecto. El rol no es editable desde el cliente; los
+moderadores se promocionan desde el servidor con `service_role`. De momento el
+rol solo existe como dato: no hay todavía ninguna política RLS ni pantalla que
+dé privilegios especiales a los moderadores (pendiente de especificar).
 
 **Cómo probarlo a mano:** `/` → "Crear cuenta" → rellenar formulario → si el
 proyecto no exige confirmación de email, navega directo a `/onboarding`; si la
@@ -54,9 +70,9 @@ exige, muestra aviso y vuelve a `/login`.
 
 **Campos incluidos:** los que CLAUDE.md especifica para "Perfil" en el plan de
 Fase 1 (horarios, limpieza, fumador, mascotas, presupuesto, zona) más
-`display_name`, `bio` y `avatar_url`. **No** incluye `age` (no forma parte de la
-descripción de esta feature en CLAUDE.md — se fija en el registro) ni
-`is_verified` (flag de sistema, no editable por el usuario).
+`display_name`, `bio` y `avatar_url`. **No** incluye `birthdate` (no forma parte
+de la descripción de esta feature en CLAUDE.md — se fija en el registro) ni
+`is_verified`/`role` (flags de sistema, no editables por el usuario).
 
 **Reutilización de pantalla:** esta misma pantalla (`EditProfileScreen`) es el
 destino de la ruta `/onboarding`, que CU-01 prometía como "onboarding de

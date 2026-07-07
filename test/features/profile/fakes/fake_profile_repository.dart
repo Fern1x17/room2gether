@@ -6,15 +6,17 @@ import 'package:roomie/features/profile/domain/models/profile.dart';
 Profile fakeProfile({
   String id = 'user-1',
   String displayName = 'Fernando',
-  int age = 25,
+  DateTime? birthdate,
+  String role = 'user',
 }) {
   return Profile(
     id: id,
     displayName: displayName,
-    age: age,
+    birthdate: birthdate ?? DateTime(2000, 1, 1),
     isSmoker: false,
     hasPets: false,
     isVerified: false,
+    role: role,
   );
 }
 

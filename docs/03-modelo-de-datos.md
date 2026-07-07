@@ -17,7 +17,7 @@ erDiagram
     PROFILES {
         uuid id PK
         text display_name
-        int age
+        date birthdate
         text bio
         text avatar_url
         text city
@@ -26,6 +26,7 @@ erDiagram
         bool is_smoker
         bool has_pets
         bool is_verified
+        text role "user (usuario) o moderator (moderador)"
         timestamptz created_at
     }
 

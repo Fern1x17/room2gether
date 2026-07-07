@@ -34,29 +34,42 @@ void main() {
     });
   });
 
-  group('validateAge', () {
-    test('rechaza edad vacía', () {
-      expect(validateAge(''), isNotNull);
-    });
+  group('validateBirthdate', () {
+    // Fecha de referencia fija para que los tests no dependan del día real.
+    final now = DateTime(2026, 7, 2);
 
-    test('rechaza texto no numérico', () {
-      expect(validateAge('abc'), isNotNull);
+    test('rechaza fecha no seleccionada', () {
+      expect(validateBirthdate(null, now: now), isNotNull);
     });
 
     test('rechaza menor de edad', () {
-      expect(validateAge('17'), isNotNull);
+      expect(validateBirthdate(DateTime(2010, 1, 1), now: now), isNotNull);
     });
 
-    test('acepta exactamente 18 años', () {
-      expect(validateAge('18'), isNull);
+    test('acepta cumplir 18 exactamente hoy', () {
+      expect(validateBirthdate(DateTime(2008, 7, 2), now: now), isNull);
     });
 
-    test('rechaza una edad fuera de rango razonable', () {
-      expect(validateAge('150'), isNotNull);
+    test('rechaza a quien cumple 18 mañana', () {
+      expect(validateBirthdate(DateTime(2008, 7, 3), now: now), isNotNull);
     });
 
-    test('acepta una edad adulta normal', () {
-      expect(validateAge('25'), isNull);
+    test('rechaza una fecha fuera de rango razonable', () {
+      expect(validateBirthdate(DateTime(1900, 1, 1), now: now), isNotNull);
+    });
+
+    test('acepta una fecha adulta normal', () {
+      expect(validateBirthdate(DateTime(2000, 5, 10), now: now), isNull);
+    });
+  });
+
+  group('ageInYears', () {
+    test('resta un año si el cumpleaños de este año no ha llegado', () {
+      expect(ageInYears(DateTime(2000, 12, 31), DateTime(2026, 7, 2)), 25);
+    });
+
+    test('cuenta el año completo si el cumpleaños ya pasó', () {
+      expect(ageInYears(DateTime(2000, 7, 2), DateTime(2026, 7, 2)), 26);
     });
   });
 }

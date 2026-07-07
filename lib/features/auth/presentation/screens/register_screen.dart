@@ -17,7 +17,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _ageController = TextEditingController();
+  final _birthdateController = TextEditingController();
+  DateTime? _birthdate;
   bool _acceptsPrivacyPolicy = false;
   bool _privacyPolicyError = false;
 
@@ -25,8 +26,25 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
-    _ageController.dispose();
+    _birthdateController.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickBirthdate() async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _birthdate ?? DateTime(now.year - minAge, now.month, now.day),
+      firstDate: DateTime(now.year - maxAge),
+      lastDate: now,
+      helpText: 'Fecha de nacimiento',
+    );
+    if (picked == null) return;
+    setState(() {
+      _birthdate = picked;
+      _birthdateController.text =
+          '${picked.day.toString().padLeft(2, '0')}/${picked.month.toString().padLeft(2, '0')}/${picked.year}';
+    });
   }
 
   Future<void> _submit() async {
@@ -39,7 +57,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     final response = await ref.read(registerControllerProvider.notifier).register(
           email: _emailController.text.trim(),
           password: _passwordController.text,
-          age: int.parse(_ageController.text.trim()),
+          birthdate: _birthdate!,
         );
 
     if (!mounted || response == null) {
@@ -97,11 +115,16 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   validator: validatePassword,
                 ),
                 const SizedBox(height: 16),
-                AuthTextField(
-                  controller: _ageController,
-                  label: 'Edad',
-                  keyboardType: TextInputType.number,
-                  validator: validateAge,
+                TextFormField(
+                  controller: _birthdateController,
+                  readOnly: true,
+                  onTap: _pickBirthdate,
+                  validator: (_) => validateBirthdate(_birthdate),
+                  decoration: const InputDecoration(
+                    labelText: 'Fecha de nacimiento',
+                    border: OutlineInputBorder(),
+                    suffixIcon: Icon(Icons.calendar_today_outlined),
+                  ),
                 ),
                 const SizedBox(height: 16),
                 CheckboxListTile(

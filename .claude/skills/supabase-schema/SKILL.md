@@ -19,10 +19,15 @@ description: Esquema de base de datos del proyecto en Supabase. Úsala SIEMPRE q
 ## Tablas previstas (MVP)
 
 ### profiles
-Extiende el `auth.users` de Supabase. Un perfil por usuario.
+Extiende el `auth.users` de Supabase. Un perfil por usuario. Se crea
+automáticamente al registrarse (trigger `handle_new_user` sobre `auth.users`,
+que lee `birthdate` de los metadatos de `signUp()`).
 - `id` (uuid, PK, = auth.users.id)
 - `display_name` (text)
-- `age` (int) — validar mayor de edad
+- `birthdate` (date, NOT NULL) — fecha de nacimiento; check de mayoría de edad
+  (`birthdate <= current_date - 18 años`, constraint `profiles_adult_check`)
+- `role` (text: 'user' / 'moderator', default 'user') — el "tipo" del modelo de
+  datos; no editable desde el cliente, se promociona con service_role
 - `bio` (text)
 - `avatar_url` (text)
 - `city` (text) — ciudad objetivo

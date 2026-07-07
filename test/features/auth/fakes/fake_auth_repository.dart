@@ -44,7 +44,7 @@ class FakeAuthRepository implements AuthRepository {
   Future<AuthResponse> signUp({
     required String email,
     required String password,
-    required int age,
+    required DateTime birthdate,
   }) async {
     if (signUpError != null) throw signUpError!;
     if (signUpWithoutSession) {

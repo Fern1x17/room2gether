@@ -26,20 +26,29 @@ String? validatePassword(String? value) {
   return null;
 }
 
-String? validateAge(String? value) {
-  final raw = value?.trim() ?? '';
-  if (raw.isEmpty) {
-    return 'Introduce tu edad.';
+/// Edad en años cumplidos a fecha de [reference], teniendo en cuenta si el
+/// cumpleaños de este año ya ha pasado.
+int ageInYears(DateTime birthdate, DateTime reference) {
+  var age = reference.year - birthdate.year;
+  final hasHadBirthdayThisYear = reference.month > birthdate.month ||
+      (reference.month == birthdate.month && reference.day >= birthdate.day);
+  if (!hasHadBirthdayThisYear) {
+    age--;
   }
-  final age = int.tryParse(raw);
-  if (age == null) {
-    return 'Introduce una edad válida.';
+  return age;
+}
+
+/// [now] solo se usa en tests para fijar la fecha de referencia.
+String? validateBirthdate(DateTime? value, {DateTime? now}) {
+  if (value == null) {
+    return 'Introduce tu fecha de nacimiento.';
   }
+  final age = ageInYears(value, now ?? DateTime.now());
   if (age < minAge) {
     return 'Debes ser mayor de edad (18 años) para registrarte.';
   }
   if (age > maxAge) {
-    return 'Introduce una edad válida.';
+    return 'Introduce una fecha de nacimiento válida.';
   }
   return null;
 }

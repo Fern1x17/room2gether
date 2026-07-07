@@ -2,7 +2,7 @@ class Profile {
   const Profile({
     required this.id,
     required this.displayName,
-    required this.age,
+    required this.birthdate,
     this.bio,
     this.avatarUrl,
     this.city,
@@ -13,11 +13,12 @@ class Profile {
     this.cleanlinessLevel,
     this.schedule,
     required this.isVerified,
+    required this.role,
   });
 
   final String id;
   final String displayName;
-  final int age;
+  final DateTime birthdate;
   final String? bio;
   final String? avatarUrl;
   final String? city;
@@ -28,12 +29,15 @@ class Profile {
   final int? cleanlinessLevel;
   final String? schedule;
   final bool isVerified;
+  final String role; // 'user' | 'moderator'
+
+  bool get isModerator => role == 'moderator';
 
   factory Profile.fromMap(Map<String, dynamic> map) {
     return Profile(
       id: map['id'] as String,
       displayName: map['display_name'] as String,
-      age: map['age'] as int,
+      birthdate: DateTime.parse(map['birthdate'] as String),
       bio: map['bio'] as String?,
       avatarUrl: map['avatar_url'] as String?,
       city: map['city'] as String?,
@@ -44,9 +48,12 @@ class Profile {
       cleanlinessLevel: map['cleanliness_level'] as int?,
       schedule: map['schedule'] as String?,
       isVerified: map['is_verified'] as bool,
+      role: map['role'] as String,
     );
   }
 
+  // birthdate, isVerified y role no son editables por el usuario: la fecha de
+  // nacimiento se fija en el registro y el rol lo gestiona el servidor.
   Profile copyWith({
     String? displayName,
     String? bio,
@@ -62,7 +69,7 @@ class Profile {
     return Profile(
       id: id,
       displayName: displayName ?? this.displayName,
-      age: age,
+      birthdate: birthdate,
       bio: bio ?? this.bio,
       avatarUrl: avatarUrl ?? this.avatarUrl,
       city: city ?? this.city,
@@ -73,6 +80,7 @@ class Profile {
       cleanlinessLevel: cleanlinessLevel ?? this.cleanlinessLevel,
       schedule: schedule ?? this.schedule,
       isVerified: isVerified,
+      role: role,
     );
   }
 }

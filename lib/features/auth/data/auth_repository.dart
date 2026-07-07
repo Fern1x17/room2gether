@@ -7,7 +7,7 @@ abstract class AuthRepository {
   Future<AuthResponse> signUp({
     required String email,
     required String password,
-    required int age,
+    required DateTime birthdate,
   });
 
   Future<AuthResponse> signIn({
@@ -27,12 +27,13 @@ class SupabaseAuthRepository implements AuthRepository {
   Future<AuthResponse> signUp({
     required String email,
     required String password,
-    required int age,
+    required DateTime birthdate,
   }) {
+    // El trigger handle_new_user lee 'birthdate' (yyyy-MM-dd) de los metadatos.
     return _client.auth.signUp(
       email: email,
       password: password,
-      data: {'age': age},
+      data: {'birthdate': birthdate.toIso8601String().substring(0, 10)},
     );
   }
 

@@ -18,7 +18,7 @@ void main() {
 
       final response = await container
           .read(registerControllerProvider.notifier)
-          .register(email: 'test@example.com', password: 'password123', age: 25);
+          .register(email: 'test@example.com', password: 'password123', birthdate: DateTime(2000, 1, 1));
 
       expect(response, isNotNull);
       expect(response!.session, isNotNull);
@@ -39,7 +39,7 @@ void main() {
 
       final response = await container
           .read(registerControllerProvider.notifier)
-          .register(email: 'test@example.com', password: 'password123', age: 25);
+          .register(email: 'test@example.com', password: 'password123', birthdate: DateTime(2000, 1, 1));
 
       expect(response, isNull);
       final state = container.read(registerControllerProvider);
@@ -59,7 +59,7 @@ void main() {
 
       final response = await container
           .read(registerControllerProvider.notifier)
-          .register(email: 'test@example.com', password: 'password123', age: 25);
+          .register(email: 'test@example.com', password: 'password123', birthdate: DateTime(2000, 1, 1));
 
       expect(response, isNotNull);
       expect(response!.session, isNull);

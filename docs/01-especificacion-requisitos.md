@@ -7,8 +7,12 @@ Monetización vía anuncios B2B de inmobiliarias y destacados de pago.
 ## 2. Usuarios objetivo
 - Estudiantes y jóvenes profesionales que buscan habitación/compañero.
 - Inmobiliarias y residencias (clientes B2B, Fase 3).
+- Particulares con pisos que quieran alquilarlos
 
-## 3. Requisitos funcionales (MVP)
+## 3. Usuarios de mantenimiento
+- Moderadores dentro de la empresa
+
+## 4. Requisitos funcionales (MVP)
 
 | ID | Requisito | Prioridad |
 |----|-----------|-----------|
@@ -24,16 +28,18 @@ Monetización vía anuncios B2B de inmobiliarias y destacados de pago.
 | RF-10 | Destacar publicación (pago ~5€) | Media (Fase 2) |
 | RF-11 | Panel para inmobiliarias | Baja (Fase 3) |
 | RF-12 | Eliminar cuenta (derecho al olvido, RGPD) | Alta |
+| RF-13 | Al cerrar la app la sesión debe quedar abierta al volver a entrar si el usuario no la cerró
+| RF-14 | Moderación (eliminar cuentas/publicaciones, modificarlas, etc.)
 
-## 4. Requisitos no funcionales
+## 5. Requisitos no funcionales
 - RGPD y protección de datos personales.
 - Rendimiento fluido en gama media de Android.
 - Escalable (preparado para crecer de 1 ciudad a varias).
 - Disponibilidad y seguridad (RLS en toda la BD).
 - Cifrado de mensajes en los chats
 - Diseño profesional y cuidado.
+- Versión web
 
-## 5. Fuera de alcance (por ahora)
+## 6. Fuera de alcance (por ahora)
 - Pagos de reservas/depósitos entre usuarios.
-- Versión web.
 - Multi-idioma.

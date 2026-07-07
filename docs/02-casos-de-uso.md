@@ -3,6 +3,7 @@
 > Plantilla. Añade y detalla los casos de uso. Formato sugerido abajo.
 
 ## Actores
+
 - **Usuario:** persona que busca u ofrece compañero/habitación.
 - **Inmobiliaria:** cliente B2B que publica anuncios (Fase 3).
 - **Sistema:** la app/backend.
@@ -10,6 +11,7 @@
 ## Plantilla de caso de uso
 
 ### CU-XX: [Nombre]
+
 - **Actor principal:**
 - **Precondición:**
 - **Flujo principal:**
@@ -24,6 +26,7 @@
 ## Casos de uso principales (esbozo, a detallar)
 
 ### CU-01: Registrarse
+
 - **Actor:** Usuario
 - **Precondición:** No tiene cuenta.
 - **Flujo principal:**
@@ -35,6 +38,7 @@
 - **Postcondición:** Cuenta creada, perfil pendiente de completar.
 
 ### CU-02: Iniciar sesión
+
 - **Actor:** Usuario
 - **Precondición:** Tiene una cuenta y la sesión cerrada.
 - **Flujo principal:**
@@ -46,6 +50,7 @@
 - **Postcondición:** La sesión queda iniciada.
 
 ### CU-03: Eliminar cuenta
+
 - **Actor:** Usuario
 - **Precondición:** Tener una cuenta y la sesión abierta.
 - **Flujo principal:**
@@ -55,6 +60,7 @@
 - **Postcondición:** El perfil se elimina de la base de datos¡.
 
 ### CU-04: Modificar perfil
+
 - **Actor:** Usuario
 - **Precondición:** Tener una cuenta y la sesión abierta.
 - **Flujo principal:**
@@ -65,6 +71,7 @@
 - **Postcondición:** El perfil queda actualizado con los nuevos datos.
 
 ### CU-05: Cerrar sesión
+
 - **Actor:** Usuario
 - **Precondición:** Tener la sesión abierta.
 - **Flujo principal:**
@@ -74,19 +81,21 @@
 - **Postcondición:** La sesión queda cerrada.
 
 ### CU-06: Crear publicación
+
 - **Actor:** Usuario
 - **Precondición:** No tiene ninguna publicación activa. Tener la sesión iniciada.
 - **Flujo principal:**
   1. Abre la app y elige crear publicación.
   2. Selecciona si ya tiene piso y busca compañero o si busca piso y compañero.
-    2.1. Si ya tiene piso se deben adjuntar imágenes y seleccionar el precio por mes.
-    2.2. Si no tiene piso selecciona un rango de mínimo y máximo presupuesto que esté dispuesto a pagar.
+     2.1. Si ya tiene piso se deben adjuntar imágenes y seleccionar el precio por mes.
+     2.2. Si no tiene piso selecciona un rango de mínimo y máximo presupuesto que esté dispuesto a pagar.
   3. Se introduce la ciudad y el barrio en el que está ubicado el piso o se desea buscar
-    (si se está buscando piso, el barrio se puede dejar como "cualquiera").
+     (si se está buscando piso, el barrio se puede dejar como "cualquiera").
   4. Se puede escribir una pequeña descripción y posteriormente se publica.
 - **Postcondición:** Publicación creada, cualquiera puede verla y contactar.
 
 ### CU-07: Eliminar publicación
+
 - **Actor:** Usuario
 - **Precondición:** Tiene una publicación activa. Tener la sesión iniciada.
 - **Flujo principal:**
@@ -96,6 +105,7 @@
 - **Postcondición:** La publicación queda eliminada de la base de datos y del perfil.
 
 ### CU-08: Modificar publicación
+
 - **Actor:** Usuario
 - **Precondición:** Tiene una publicación activa. Tener la sesión iniciada.
 - **Flujo principal:**
@@ -106,17 +116,19 @@
 - **Postcondición:** La publicación queda guardada con los nuevos datos.
 
 ### CU-09: Explorar y filtrar el feed
+
 - **Actor:** Usuario
-- **Precondición:** N/A
+- **Precondición:** Tener la sesión abierta
 - **Flujo principal:**
   1. Abre la app y elige buscar.
   2. Se seleccionan los filtros de búsqueda (ciudad, barrio, precio, estado...).
   3. Aparece una ventana con todas las publicaciones que cumplan los requisitos.
 - **Comentarios:** Si el usuario tiene la sesión abierta, aparte del botón de buscar, en la pantalla
- principal aparecerán publicaciones de la ciudad que haya seleccionado y un botón para seleccionar filtros.
+  principal aparecerán publicaciones de la ciudad que haya seleccionado y un botón para seleccionar filtros.
 - **Postcondición:** Queda guardado un registro de las búsquedas recientes.
 
 ### CU-10: Contactar por chat
+
 - **Actor:** Usuario
 - **Precondición:** Tener la sesión abierta. Que exista una publicación.
 - **Flujo principal:**
@@ -126,6 +138,7 @@
 - **Postcondición:** Se crea un chat entre los 2 usuarios y se guarda cifrado.
 
 ### CU-11: Reportar / bloquear
+
 - **Actor:** Usuario
 - **Precondición:** Tener la sesión abierta. Que el usuario reportado sea una cuenta existente y tenga una publicación creada o un chat abierto.
 - **Flujo principal:**
@@ -135,6 +148,7 @@
 - **Postcondición:** El usuario reportado debe aparecer como bloqueado para el usuario que hace el reporte.
 
 ### CU-12: Destacar publicación (pago)
+
 - **Actor:** Usuario
 - **Precondición:** Tener la sesión abierta y una publicación creada.
 - **Flujo principal:**
@@ -143,7 +157,69 @@
   3. Se procesa el pago.
 - **Postcondición:** La publicación debe aparecer como destacada durante 7 días. Es decir, aparecer entre las primeras publicaciones al buscar en esa ciudad.
 
-### CU-13: (Fase 3) Inmobiliaria publica anuncio
+===== REQUISITOS DE MODERACIÓN =====
+
+## CU-13: Registrar moderador
+
+- **Actor:** Moderador
+- **Precondición:** Tener un correo válido para moderador (correo de la empresa)
+- **Flujo principal:**
+  1. Abre la app y entra en crear cuenta
+  2. Introduce su correo de la empresa (@roomie.com por ejemplo) y la contraseña
+  3. Introduce edad
+  4. Confirmar email
+- **Postcondición:** La cuenta debe quedar registrada en la base de datos
+
+## CU-14: Eliminar usuario
+
+- **Actor:** Moderador
+- **Precondición:** Tener abierta sesión en una cuenta de moderador
+- **Flujo principal:**
+  1. Abre la app y selecciona un usuario. (desde una publicación o buscándolo)
+  2. Selecciona la opción de eliminar cuenta
+  3. Confirmar
+- **Postcondición:** La cuenta debe haber sido eliminada de la base de datos
+
+## CU-15: Eliminar publicación mod
+
+- **Actor:** Moderador
+- **Pecondición:** Tener abierta sesión en una cuenta de moderador
+- **Flujo principal:**
+  1. Abre la app y selecciona una publicación
+  2. Selecciona la opción de eliminar
+  3. Confirmar
+- **Postcondición:** La publicación debe haber sido borrada de la base de datos
+
+### CU-16: Modificar publicación mod
+
+- **Actor:** Moderador
+- **Precondición:** Tener la sesión abierta en una cuenta de moderador
+- **Flujo principal:**
+  1. Abre la app y selecciona una publicación.
+  2. Se selecciona modificar publicación.
+  3. Se modifican los parámetros deseados.
+  4. Se confirma.
+- **Postcondición:** La publicación queda guardada con los nuevos datos.
+
+### CU-17: Crear publicación
+
+- **Actor:** Moderador
+- **Precondición:** Tener la sesión abierta en una cuenta de moderador
+- **Flujo principal:**
+  1. Abre la app y elige crear publicación.
+  2. Selecciona si ya tiene piso y busca compañero o si busca piso y compañero.
+     2.1. Si ya tiene piso se deben adjuntar imágenes y seleccionar el precio por mes.
+     2.2. Si no tiene piso selecciona un rango de mínimo y máximo presupuesto que esté dispuesto a pagar.
+  3. Se introduce la ciudad y el barrio en el que está ubicado el piso o se desea buscar
+     (si se está buscando piso, el barrio se puede dejar como "cualquiera").
+  4. Elegir un usuario estándar al cual estará vinculada la publicación. Si es nulo será el propio moderador
+  5. Se puede escribir una pequeña descripción y posteriormente se publica.
+- **Postcondición:** Publicación creada, cualquiera puede verla y contactar.
+
+### CU-xx: (Fase 3) Inmobiliaria publica anuncio
+
+/_ No implementar por ahora _/
+
 - **Actor:** Inmobiliaria
 - **Precondición:** Cuenta de inmobiliaria dada de alta (cliente B2B) y sesión iniciada.
 - **Flujo principal:**

@@ -7,6 +7,7 @@ import '../../features/auth/presentation/screens/welcome_screen.dart';
 import '../../features/feed/presentation/screens/feed_screen.dart';
 import '../../features/feed/presentation/screens/listing_detail_screen.dart';
 import '../../features/listing/presentation/screens/create_listing_screen.dart';
+import '../../features/listing/presentation/screens/edit_listing_screen.dart';
 import '../../features/profile/presentation/screens/edit_profile_screen.dart';
 import '../supabase/supabase_client.dart';
 
@@ -41,6 +42,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/listings/:id',
         builder: (context, state) => ListingDetailScreen(
+          listingId: state.pathParameters['id']!,
+        ),
+      ),
+      GoRoute(
+        path: '/listings/:id/edit',
+        builder: (context, state) => EditListingScreen(
           listingId: state.pathParameters['id']!,
         ),
       ),

@@ -5,14 +5,22 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../../feed/domain/models/listing.dart';
 import '../../../feed/presentation/controllers/feed_controller.dart';
+import '../../../feed/presentation/controllers/listing_detail_controller.dart';
 import '../../data/listing_repository.dart';
 import '../../domain/models/listing_draft.dart';
 import '../../domain/validators/listing_validators.dart';
 import '../controllers/create_listing_controller.dart';
+import '../controllers/my_listings_controller.dart';
+import '../controllers/update_listing_controller.dart';
 
+/// Formulario de publicación. Sin [initial] crea una nueva (CU-06); con
+/// [initial] modifica la existente precargando sus datos (CU-08).
 class CreateListingScreen extends ConsumerStatefulWidget {
-  const CreateListingScreen({super.key});
+  const CreateListingScreen({super.key, this.initial});
+
+  final Listing? initial;
 
   @override
   ConsumerState<CreateListingScreen> createState() => _CreateListingScreenState();
@@ -30,8 +38,28 @@ class _CreateListingScreenState extends ConsumerState<CreateListingScreen> {
 
   bool _isOffering = true;
   final List<PendingPhoto> _photos = [];
+  final List<String> _existingPhotoUrls = [];
   String? _photosError;
   String? _budgetError;
+
+  bool get _isEditing => widget.initial != null;
+
+  @override
+  void initState() {
+    super.initState();
+    final initial = widget.initial;
+    if (initial != null) {
+      _isOffering = initial.isOffering;
+      _titleController.text = initial.title;
+      _cityController.text = initial.city;
+      _neighborhoodController.text = initial.neighborhood ?? '';
+      _priceController.text = initial.price?.toString() ?? '';
+      _budgetMinController.text = initial.budgetMin?.toString() ?? '';
+      _budgetMaxController.text = initial.budgetMax?.toString() ?? '';
+      _descriptionController.text = initial.description ?? '';
+      _existingPhotoUrls.addAll(initial.photos);
+    }
+  }
 
   @override
   void dispose() {
@@ -63,8 +91,10 @@ class _CreateListingScreenState extends ConsumerState<CreateListingScreen> {
 
   Future<void> _submit() async {
     final formValid = _formKey.currentState?.validate() ?? false;
-    final photosError =
-        validateListingPhotos(_photos.length, isOffering: _isOffering);
+    final photosError = validateListingPhotos(
+      _existingPhotoUrls.length + _photos.length,
+      isOffering: _isOffering,
+    );
     final budgetError = _isOffering
         ? null
         : validateListingBudgetRange(
@@ -88,12 +118,34 @@ class _CreateListingScreenState extends ConsumerState<CreateListingScreen> {
       budgetMax: _isOffering ? null : int.parse(_budgetMaxController.text.trim()),
     );
 
+    if (_isEditing) {
+      final listingId = widget.initial!.id;
+      final updated = await ref
+          .read(updateListingControllerProvider.notifier)
+          .save(
+            listingId,
+            draft,
+            newPhotos: _isOffering ? _photos : const [],
+            keptPhotoUrls: _isOffering ? _existingPhotoUrls : const [],
+          );
+      if (!mounted || !updated) return;
+      ref.invalidate(feedControllerProvider);
+      ref.invalidate(myListingsProvider);
+      ref.invalidate(listingDetailProvider(listingId));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Publicación actualizada.')),
+      );
+      context.pop();
+      return;
+    }
+
     final created = await ref
         .read(createListingControllerProvider.notifier)
         .create(draft, photos: _isOffering ? _photos : const []);
 
     if (!mounted || !created) return;
     ref.invalidate(feedControllerProvider);
+    ref.invalidate(myListingsProvider);
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Publicación creada.')),
     );
@@ -110,12 +162,24 @@ class _CreateListingScreenState extends ConsumerState<CreateListingScreen> {
         );
       }
     });
+    ref.listen(updateListingControllerProvider, (previous, next) {
+      final error = next.error;
+      if (error != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(error.toString())),
+        );
+      }
+    });
 
-    final isLoading = ref.watch(createListingControllerProvider).isLoading;
+    final isLoading = _isEditing
+        ? ref.watch(updateListingControllerProvider).isLoading
+        : ref.watch(createListingControllerProvider).isLoading;
     final errorColor = Theme.of(context).colorScheme.error;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Crear publicación')),
+      appBar: AppBar(
+        title: Text(_isEditing ? 'Modificar publicación' : 'Crear publicación'),
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
@@ -145,11 +209,48 @@ class _CreateListingScreenState extends ConsumerState<CreateListingScreen> {
                     onPressed: _pickPhotos,
                     icon: const Icon(Icons.add_photo_alternate_outlined),
                     label: Text(
-                      _photos.isEmpty
+                      _existingPhotoUrls.isEmpty && _photos.isEmpty
                           ? 'Adjuntar fotos del piso'
-                          : 'Fotos adjuntadas: ${_photos.length} (añadir más)',
+                          : 'Fotos: ${_existingPhotoUrls.length + _photos.length} (añadir más)',
                     ),
                   ),
+                  if (_existingPhotoUrls.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: SizedBox(
+                        height: 72,
+                        child: ListView.separated(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: _existingPhotoUrls.length,
+                          separatorBuilder: (_, _) => const SizedBox(width: 8),
+                          itemBuilder: (context, index) => Stack(
+                            children: [
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: Image.network(
+                                  _existingPhotoUrls[index],
+                                  width: 72,
+                                  height: 72,
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                              Positioned(
+                                top: 0,
+                                right: 0,
+                                child: GestureDetector(
+                                  onTap: () => setState(
+                                      () => _existingPhotoUrls.removeAt(index)),
+                                  child: const CircleAvatar(
+                                    radius: 10,
+                                    child: Icon(Icons.close, size: 14),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
                   if (_photos.isNotEmpty)
                     Padding(
                       padding: const EdgeInsets.only(top: 8),
@@ -290,7 +391,7 @@ class _CreateListingScreenState extends ConsumerState<CreateListingScreen> {
                             height: 20,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                        : const Text('Publicar'),
+                        : Text(_isEditing ? 'Guardar cambios' : 'Publicar'),
                   ),
                 ),
               ],

@@ -20,6 +20,12 @@ abstract class ListingRepository {
   Future<List<Listing>> fetchMyListings();
 
   Future<void> deleteListing(String id);
+
+  Future<void> updateListing(
+    String id,
+    ListingDraft draft, {
+    required List<String> photoUrls,
+  });
 }
 
 class SupabaseListingRepository implements ListingRepository {
@@ -67,6 +73,28 @@ class SupabaseListingRepository implements ListingRepository {
     // Borrado real (postcondición CU-07: "eliminada de la base de datos").
     // RLS solo permite borrar publicaciones propias.
     await _client.from('listings').delete().eq('id', id);
+  }
+
+  @override
+  Future<void> updateListing(
+    String id,
+    ListingDraft draft, {
+    required List<String> photoUrls,
+  }) async {
+    // Se escriben todos los parámetros (CU-08): si se cambia el tipo, los
+    // campos que no aplican quedan a null y el check de coherencia de la
+    // tabla valida el resultado. RLS solo permite editar las propias.
+    await _client.from('listings').update({
+      'type': draft.type,
+      'title': draft.title,
+      'description': draft.description,
+      'city': draft.city,
+      'neighborhood': draft.neighborhood,
+      'price': draft.price,
+      'budget_min': draft.budgetMin,
+      'budget_max': draft.budgetMax,
+      'photos': photoUrls,
+    }).eq('id', id);
   }
 
   @override

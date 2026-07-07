@@ -7,17 +7,21 @@ class FakeListingRepository implements ListingRepository {
     this.activeListings = 0,
     this.createError,
     this.deleteError,
+    this.updateError,
     List<Listing>? myListings,
   }) : myListings = myListings ?? [];
 
   int activeListings;
   final Object? createError;
   final Object? deleteError;
+  final Object? updateError;
   final List<Listing> myListings;
   ListingDraft? lastCreatedDraft;
   List<String>? lastPhotoUrls;
   int uploadedPhotoCount = 0;
   final List<String> deletedIds = [];
+  String? lastUpdatedId;
+  ListingDraft? lastUpdatedDraft;
 
   @override
   Future<int> countMyActiveListings() async => activeListings;
@@ -48,5 +52,17 @@ class FakeListingRepository implements ListingRepository {
     if (deleteError != null) throw deleteError!;
     deletedIds.add(id);
     myListings.removeWhere((listing) => listing.id == id);
+  }
+
+  @override
+  Future<void> updateListing(
+    String id,
+    ListingDraft draft, {
+    required List<String> photoUrls,
+  }) async {
+    if (updateError != null) throw updateError!;
+    lastUpdatedId = id;
+    lastUpdatedDraft = draft;
+    lastPhotoUrls = photoUrls;
   }
 }

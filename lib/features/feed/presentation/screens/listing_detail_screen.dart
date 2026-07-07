@@ -131,6 +131,15 @@ class ListingDetailScreen extends ConsumerWidget {
                   const SizedBox(height: 32),
                   SizedBox(
                     height: 48,
+                    child: FilledButton.icon(
+                      onPressed: () => context.push('/listings/$listingId/edit'),
+                      icon: const Icon(Icons.edit_outlined),
+                      label: const Text('Modificar publicación'),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    height: 48,
                     child: OutlinedButton.icon(
                       onPressed:
                           isDeleting ? null : () => _confirmDelete(context, ref),

@@ -265,3 +265,32 @@ por tipo: 'offering' exige price, 'seeking' exige rango válido; las filas
 2. Eliminar → confirmar → vuelve atrás; ya no está ni en el feed ni en el
    perfil, y se puede volver a crear una publicación nueva (la regla de "una
    activa" queda liberada).
+
+---
+
+## Publicación (CU-08 Modificar publicación)
+
+**Ficheros nuevos/tocados:**
+
+- `lib/features/listing/presentation/screens/create_listing_screen.dart` — el
+  mismo formulario de CU-06 acepta ahora un `initial` (la publicación a
+  editar): precarga todos los campos, muestra las fotos ya subidas (se pueden
+  quitar y añadir nuevas) y el botón pasa a "Guardar cambios". Se puede
+  cambiar el tipo (busco ↔ ofrezco); el formulario y el check de coherencia de
+  la tabla se encargan de que los campos resultantes sean válidos.
+- `lib/features/listing/presentation/screens/edit_listing_screen.dart` —
+  wrapper de la ruta `/listings/:id/edit`: carga la publicación y abre el
+  formulario en modo edición.
+- `lib/features/listing/presentation/controllers/update_listing_controller.dart`
+  — sube las fotos nuevas, conserva las que no se quitaron y actualiza la fila
+  (el método se llama `save` porque `AsyncNotifier` ya define `update`).
+- `lib/features/listing/data/listing_repository.dart` — `updateListing()`
+  escribe todos los parámetros; RLS solo permite editar las propias.
+- Detalle de publicación: botón "Modificar publicación" (solo propietario),
+  encima del de eliminar.
+
+**Cómo probarlo a mano:**
+1. Perfil → "Tus publicaciones" → tocar una → "Modificar publicación".
+2. El formulario aparece precargado (incluidas las fotos ya subidas).
+3. Cambiar precio/título/quitar una foto → "Guardar cambios" → vuelve al
+   detalle con los datos nuevos; el feed y el perfil también se actualizan.

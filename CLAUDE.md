@@ -143,7 +143,7 @@ Funcionalidad mínima imprescindible. Construir en este orden:
 - [x] Auth
 - [x] Perfil
 - [x] Feed
-- [x] Publicación (crear CU-06 y eliminar CU-07; editar CU-08 pendiente)
+- [x] Publicación (crear CU-06, eliminar CU-07, modificar CU-08)
 - [ ] Chat
 - [ ] Reporte/bloqueo
 - [ ] Lanzamiento Google Play

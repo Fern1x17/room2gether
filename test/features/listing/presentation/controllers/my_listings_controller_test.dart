@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:roomie/core/supabase/current_user_provider.dart';
 import 'package:roomie/features/listing/data/listing_repository.dart';
 import 'package:roomie/features/listing/presentation/controllers/my_listings_controller.dart';
 
@@ -11,6 +12,7 @@ void main() {
     test('devuelve las publicaciones propias', () async {
       final container = ProviderContainer(
         overrides: [
+          currentUserIdProvider.overrideWithValue('user-1'),
           listingRepositoryProvider.overrideWithValue(
             FakeListingRepository(
               myListings: [fakeListing(title: 'Mi anuncio')],
@@ -33,7 +35,10 @@ void main() {
         myListings: [fakeListing(id: 'l1')],
       );
       final container = ProviderContainer(
-        overrides: [listingRepositoryProvider.overrideWithValue(fakeRepo)],
+        overrides: [
+          currentUserIdProvider.overrideWithValue('user-1'),
+          listingRepositoryProvider.overrideWithValue(fakeRepo),
+        ],
       );
       addTearDown(container.dispose);
 
@@ -49,7 +54,10 @@ void main() {
     test('deja estado de error y devuelve false si falla', () async {
       final fakeRepo = FakeListingRepository(deleteError: Exception('fallo'));
       final container = ProviderContainer(
-        overrides: [listingRepositoryProvider.overrideWithValue(fakeRepo)],
+        overrides: [
+          currentUserIdProvider.overrideWithValue('user-1'),
+          listingRepositoryProvider.overrideWithValue(fakeRepo),
+        ],
       );
       addTearDown(container.dispose);
 

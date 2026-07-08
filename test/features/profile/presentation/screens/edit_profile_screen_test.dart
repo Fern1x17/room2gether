@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:roomie/core/supabase/current_user_provider.dart';
 import 'package:roomie/features/auth/data/auth_repository.dart';
 import 'package:roomie/features/listing/data/listing_repository.dart';
 import 'package:roomie/features/profile/data/profile_repository.dart';
@@ -13,6 +14,7 @@ import '../../fakes/fake_profile_repository.dart';
 Widget _wrap({FakeProfileRepository? profileRepository}) {
   return ProviderScope(
     overrides: [
+      currentUserIdProvider.overrideWithValue('user-1'),
       profileRepositoryProvider.overrideWithValue(
         profileRepository ??
             FakeProfileRepository(profile: fakeProfile(displayName: 'Ana')),

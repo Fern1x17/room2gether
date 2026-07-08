@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/supabase/current_user_provider.dart';
 import '../../../moderation/data/moderation_repository.dart';
 import '../../data/chat_repository.dart';
 import '../../domain/models/conversation.dart';
@@ -9,6 +10,7 @@ import '../../domain/models/message.dart';
 
 /// Conversaciones del usuario autenticado (pantalla "Chats").
 final conversationsProvider = FutureProvider<List<Conversation>>((ref) {
+  ref.watch(currentUserIdProvider); // caché por usuario: se tira al cambiar
   return ref.read(chatRepositoryProvider).fetchMyConversations();
 });
 

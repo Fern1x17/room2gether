@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:roomie/core/supabase/current_user_provider.dart';
 import 'package:roomie/features/feed/data/feed_repository.dart';
 import 'package:roomie/features/feed/data/recent_searches_repository.dart';
 import 'package:roomie/features/feed/domain/models/listing_filter.dart';
@@ -24,6 +25,7 @@ void main() {
       );
       final container = ProviderContainer(
         overrides: [
+          currentUserIdProvider.overrideWithValue('user-1'),
           feedRepositoryProvider.overrideWithValue(feedRepo),
           profileRepositoryProvider.overrideWithValue(FakeProfileRepository()),
           recentSearchesRepositoryProvider.overrideWithValue(
@@ -54,6 +56,7 @@ void main() {
         final recentRepo = FakeRecentSearchesRepository();
         final container = ProviderContainer(
           overrides: [
+            currentUserIdProvider.overrideWithValue('user-1'),
             feedRepositoryProvider.overrideWithValue(feedRepo),
             profileRepositoryProvider.overrideWithValue(
               FakeProfileRepository(),
@@ -80,6 +83,7 @@ void main() {
     test('search() deja error si el repositorio falla', () async {
       final container = ProviderContainer(
         overrides: [
+          currentUserIdProvider.overrideWithValue('user-1'),
           feedRepositoryProvider.overrideWithValue(
             FakeFeedRepository(fetchError: Exception('fallo')),
           ),
@@ -112,6 +116,7 @@ void main() {
       );
       final container = ProviderContainer(
         overrides: [
+          currentUserIdProvider.overrideWithValue('user-1'),
           feedRepositoryProvider.overrideWithValue(feedRepo),
           profileRepositoryProvider.overrideWithValue(FakeProfileRepository()),
           recentSearchesRepositoryProvider.overrideWithValue(
@@ -136,6 +141,7 @@ void main() {
       final recentRepo = FakeRecentSearchesRepository();
       final container = ProviderContainer(
         overrides: [
+          currentUserIdProvider.overrideWithValue('user-1'),
           recentSearchesRepositoryProvider.overrideWithValue(recentRepo),
         ],
       );

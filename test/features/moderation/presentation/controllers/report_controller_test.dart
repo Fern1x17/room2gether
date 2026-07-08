@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:roomie/core/supabase/current_user_provider.dart';
 import 'package:roomie/features/moderation/data/moderation_repository.dart';
 import 'package:roomie/features/moderation/presentation/controllers/report_controller.dart';
 
@@ -10,7 +11,10 @@ void main() {
     test('reporta y bloquea en una sola acción (CU-11)', () async {
       final fakeRepo = FakeModerationRepository();
       final container = ProviderContainer(
-        overrides: [moderationRepositoryProvider.overrideWithValue(fakeRepo)],
+        overrides: [
+          currentUserIdProvider.overrideWithValue('user-1'),
+          moderationRepositoryProvider.overrideWithValue(fakeRepo),
+        ],
       );
       addTearDown(container.dispose);
 
@@ -39,7 +43,10 @@ void main() {
         reportError: Exception('fallo'),
       );
       final container = ProviderContainer(
-        overrides: [moderationRepositoryProvider.overrideWithValue(fakeRepo)],
+        overrides: [
+          currentUserIdProvider.overrideWithValue('user-1'),
+          moderationRepositoryProvider.overrideWithValue(fakeRepo),
+        ],
       );
       addTearDown(container.dispose);
 

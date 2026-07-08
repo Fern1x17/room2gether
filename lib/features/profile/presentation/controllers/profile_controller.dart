@@ -3,12 +3,14 @@ import 'dart:typed_data';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/supabase/current_user_provider.dart';
 import '../../data/profile_repository.dart';
 import '../../domain/models/profile.dart';
 
 class ProfileController extends AsyncNotifier<Profile> {
   @override
   Future<Profile> build() {
+    ref.watch(currentUserIdProvider); // caché por usuario: se tira al cambiar
     final repository = ref.read(profileRepositoryProvider);
     return repository.fetchMyProfile();
   }

@@ -2,11 +2,13 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/supabase/current_user_provider.dart';
 import '../../data/moderation_repository.dart';
 
 /// Usuarios bloqueados por el usuario actual. El feed y el chat lo usan para
 /// aplicar los efectos del bloqueo (no ver publicaciones, no chatear).
 final blockedUserIdsProvider = FutureProvider<Set<String>>((ref) {
+  ref.watch(currentUserIdProvider); // caché por usuario: se tira al cambiar
   return ref.read(moderationRepositoryProvider).fetchMyBlockedIds();
 });
 

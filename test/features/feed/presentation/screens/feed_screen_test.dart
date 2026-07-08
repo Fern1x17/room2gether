@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:roomie/core/supabase/current_user_provider.dart';
 import 'package:roomie/features/feed/data/feed_repository.dart';
 import 'package:roomie/features/feed/data/recent_searches_repository.dart';
 import 'package:roomie/features/feed/presentation/screens/feed_screen.dart';
@@ -15,6 +16,7 @@ import '../../fakes/fake_recent_searches_repository.dart';
 Widget _wrap({FakeFeedRepository? feedRepository}) {
   return ProviderScope(
     overrides: [
+      currentUserIdProvider.overrideWithValue('user-1'),
       feedRepositoryProvider.overrideWithValue(
         feedRepository ?? FakeFeedRepository(listings: const []),
       ),

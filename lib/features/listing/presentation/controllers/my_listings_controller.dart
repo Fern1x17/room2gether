@@ -2,12 +2,14 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/supabase/current_user_provider.dart';
 import '../../../feed/domain/models/listing.dart';
 import '../../data/listing_repository.dart';
 
 /// Publicaciones del usuario autenticado ("entra en el perfil y selecciona
 /// una publicación", CU-07/CU-08).
 final myListingsProvider = FutureProvider<List<Listing>>((ref) {
+  ref.watch(currentUserIdProvider); // caché por usuario: se tira al cambiar
   return ref.read(listingRepositoryProvider).fetchMyListings();
 });
 

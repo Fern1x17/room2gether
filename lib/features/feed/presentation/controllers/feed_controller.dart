@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/supabase/current_user_provider.dart';
 import '../../../moderation/data/moderation_repository.dart';
 import '../../../profile/data/profile_repository.dart';
 import '../../data/feed_repository.dart';
@@ -14,6 +15,9 @@ class FeedController extends AsyncNotifier<List<Listing>> {
 
   @override
   Future<List<Listing>> build() async {
+    // El feed depende del usuario (su ciudad, sus bloqueados): al cambiar de
+    // cuenta este watch invalida la caché.
+    ref.watch(currentUserIdProvider);
     // Pantalla principal: publicaciones de la ciudad del propio perfil, si la
     // tiene rellenada (CU-09, comentarios).
     String? city;

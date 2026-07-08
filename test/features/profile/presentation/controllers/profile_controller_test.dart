@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:roomie/core/supabase/current_user_provider.dart';
 import 'package:roomie/features/profile/data/profile_repository.dart';
 import 'package:roomie/features/profile/presentation/controllers/profile_controller.dart';
 
@@ -12,6 +13,7 @@ void main() {
     test('build() carga el perfil desde el repositorio', () async {
       final container = ProviderContainer(
         overrides: [
+          currentUserIdProvider.overrideWithValue('user-1'),
           profileRepositoryProvider.overrideWithValue(
             FakeProfileRepository(profile: fakeProfile(displayName: 'Ana')),
           ),
@@ -27,7 +29,10 @@ void main() {
     test('save() actualiza el estado y devuelve true si va bien', () async {
       final fakeRepo = FakeProfileRepository();
       final container = ProviderContainer(
-        overrides: [profileRepositoryProvider.overrideWithValue(fakeRepo)],
+        overrides: [
+          currentUserIdProvider.overrideWithValue('user-1'),
+          profileRepositoryProvider.overrideWithValue(fakeRepo),
+        ],
       );
       addTearDown(container.dispose);
 
@@ -51,7 +56,10 @@ void main() {
       () async {
         final fakeRepo = FakeProfileRepository(updateError: Exception('fallo'));
         final container = ProviderContainer(
-          overrides: [profileRepositoryProvider.overrideWithValue(fakeRepo)],
+          overrides: [
+            currentUserIdProvider.overrideWithValue('user-1'),
+            profileRepositoryProvider.overrideWithValue(fakeRepo),
+          ],
         );
         addTearDown(container.dispose);
 
@@ -68,6 +76,7 @@ void main() {
     test('uploadAvatar() devuelve la URL pública', () async {
       final container = ProviderContainer(
         overrides: [
+          currentUserIdProvider.overrideWithValue('user-1'),
           profileRepositoryProvider.overrideWithValue(
             FakeProfileRepository(
               uploadAvatarUrl: 'https://example.com/foto.jpg',
@@ -92,7 +101,10 @@ void main() {
           uploadAvatarUrl: 'https://example.com/foto.jpg',
         );
         final container = ProviderContainer(
-          overrides: [profileRepositoryProvider.overrideWithValue(fakeRepo)],
+          overrides: [
+            currentUserIdProvider.overrideWithValue('user-1'),
+            profileRepositoryProvider.overrideWithValue(fakeRepo),
+          ],
         );
         addTearDown(container.dispose);
 
@@ -120,7 +132,10 @@ void main() {
         updateError: Exception('fallo'),
       );
       final container = ProviderContainer(
-        overrides: [profileRepositoryProvider.overrideWithValue(fakeRepo)],
+        overrides: [
+          currentUserIdProvider.overrideWithValue('user-1'),
+          profileRepositoryProvider.overrideWithValue(fakeRepo),
+        ],
       );
       addTearDown(container.dispose);
 

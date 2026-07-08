@@ -21,8 +21,9 @@ class UpdateListingController extends AsyncNotifier<void> {
     state = const AsyncLoading();
     try {
       final repository = ref.read(listingRepositoryProvider);
-      final uploaded =
-          newPhotos.isEmpty ? <String>[] : await repository.uploadPhotos(newPhotos);
+      final uploaded = newPhotos.isEmpty
+          ? <String>[]
+          : await repository.uploadPhotos(newPhotos);
       await repository.updateListing(
         id,
         draft,
@@ -41,4 +42,6 @@ class UpdateListingController extends AsyncNotifier<void> {
 }
 
 final updateListingControllerProvider =
-    AsyncNotifierProvider<UpdateListingController, void>(UpdateListingController.new);
+    AsyncNotifierProvider<UpdateListingController, void>(
+      UpdateListingController.new,
+    );

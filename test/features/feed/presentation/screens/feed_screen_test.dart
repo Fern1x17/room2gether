@@ -4,8 +4,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:roomie/features/feed/data/feed_repository.dart';
 import 'package:roomie/features/feed/data/recent_searches_repository.dart';
 import 'package:roomie/features/feed/presentation/screens/feed_screen.dart';
+import 'package:roomie/features/moderation/data/moderation_repository.dart';
 import 'package:roomie/features/profile/data/profile_repository.dart';
 
+import '../../../moderation/fakes/fake_moderation_repository.dart';
 import '../../../profile/fakes/fake_profile_repository.dart';
 import '../../fakes/fake_feed_repository.dart';
 import '../../fakes/fake_recent_searches_repository.dart';
@@ -17,7 +19,12 @@ Widget _wrap({FakeFeedRepository? feedRepository}) {
         feedRepository ?? FakeFeedRepository(listings: const []),
       ),
       profileRepositoryProvider.overrideWithValue(FakeProfileRepository()),
-      recentSearchesRepositoryProvider.overrideWithValue(FakeRecentSearchesRepository()),
+      recentSearchesRepositoryProvider.overrideWithValue(
+        FakeRecentSearchesRepository(),
+      ),
+      moderationRepositoryProvider.overrideWithValue(
+        FakeModerationRepository(),
+      ),
     ],
     child: const MaterialApp(home: FeedScreen()),
   );
@@ -25,7 +32,9 @@ Widget _wrap({FakeFeedRepository? feedRepository}) {
 
 void main() {
   group('FeedScreen', () {
-    testWidgets('muestra el mensaje de vacío si no hay publicaciones', (tester) async {
+    testWidgets('muestra el mensaje de vacío si no hay publicaciones', (
+      tester,
+    ) async {
       await tester.pumpWidget(_wrap());
       await tester.pumpAndSettle();
 

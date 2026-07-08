@@ -26,24 +26,31 @@ class SupabaseProfileRepository implements ProfileRepository {
   @override
   Future<Profile> fetchMyProfile() async {
     final userId = _client.auth.currentUser!.id;
-    final row = await _client.from('profiles').select().eq('id', userId).single();
+    final row = await _client
+        .from('profiles')
+        .select()
+        .eq('id', userId)
+        .single();
     return Profile.fromMap(row);
   }
 
   @override
   Future<void> updateProfile(Profile profile) async {
-    await _client.from('profiles').update({
-      'display_name': profile.displayName,
-      'bio': profile.bio,
-      'avatar_url': profile.avatarUrl,
-      'city': profile.city,
-      'budget_min': profile.budgetMin,
-      'budget_max': profile.budgetMax,
-      'is_smoker': profile.isSmoker,
-      'has_pets': profile.hasPets,
-      'cleanliness_level': profile.cleanlinessLevel,
-      'schedule': profile.schedule,
-    }).eq('id', profile.id);
+    await _client
+        .from('profiles')
+        .update({
+          'display_name': profile.displayName,
+          'bio': profile.bio,
+          'avatar_url': profile.avatarUrl,
+          'city': profile.city,
+          'budget_min': profile.budgetMin,
+          'budget_max': profile.budgetMax,
+          'is_smoker': profile.isSmoker,
+          'has_pets': profile.hasPets,
+          'cleanliness_level': profile.cleanlinessLevel,
+          'schedule': profile.schedule,
+        })
+        .eq('id', profile.id);
   }
 
   @override
@@ -55,7 +62,11 @@ class SupabaseProfileRepository implements ProfileRepository {
     final path = '$userId/avatar.$fileExtension';
     await _client.storage
         .from('avatars')
-        .uploadBinary(path, bytes, fileOptions: const FileOptions(upsert: true));
+        .uploadBinary(
+          path,
+          bytes,
+          fileOptions: const FileOptions(upsert: true),
+        );
     return _client.storage.from('avatars').getPublicUrl(path);
   }
 }

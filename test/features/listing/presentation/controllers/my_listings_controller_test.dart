@@ -12,7 +12,9 @@ void main() {
       final container = ProviderContainer(
         overrides: [
           listingRepositoryProvider.overrideWithValue(
-            FakeListingRepository(myListings: [fakeListing(title: 'Mi anuncio')]),
+            FakeListingRepository(
+              myListings: [fakeListing(title: 'Mi anuncio')],
+            ),
           ),
         ],
       );
@@ -27,7 +29,9 @@ void main() {
 
   group('DeleteListingController', () {
     test('elimina la publicación y devuelve true', () async {
-      final fakeRepo = FakeListingRepository(myListings: [fakeListing(id: 'l1')]);
+      final fakeRepo = FakeListingRepository(
+        myListings: [fakeListing(id: 'l1')],
+      );
       final container = ProviderContainer(
         overrides: [listingRepositoryProvider.overrideWithValue(fakeRepo)],
       );

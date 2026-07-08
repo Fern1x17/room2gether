@@ -8,43 +8,49 @@ import '../../fakes/fake_auth_repository.dart';
 
 void main() {
   group('LoginController', () {
-    test('estado pasa a data y devuelve AuthResponse en un login correcto', () async {
-      final container = ProviderContainer(
-        overrides: [
-          authRepositoryProvider.overrideWithValue(FakeAuthRepository()),
-        ],
-      );
-      addTearDown(container.dispose);
+    test(
+      'estado pasa a data y devuelve AuthResponse en un login correcto',
+      () async {
+        final container = ProviderContainer(
+          overrides: [
+            authRepositoryProvider.overrideWithValue(FakeAuthRepository()),
+          ],
+        );
+        addTearDown(container.dispose);
 
-      final response = await container
-          .read(loginControllerProvider.notifier)
-          .login(email: 'test@example.com', password: 'password123');
+        final response = await container
+            .read(loginControllerProvider.notifier)
+            .login(email: 'test@example.com', password: 'password123');
 
-      expect(response, isNotNull);
-      expect(response!.session, isNotNull);
-      expect(container.read(loginControllerProvider).hasValue, isTrue);
-    });
+        expect(response, isNotNull);
+        expect(response!.session, isNotNull);
+        expect(container.read(loginControllerProvider).hasValue, isTrue);
+      },
+    );
 
-    test('estado pasa a error y devuelve null con credenciales incorrectas', () async {
-      final container = ProviderContainer(
-        overrides: [
-          authRepositoryProvider.overrideWithValue(
-            FakeAuthRepository(
-              signInError: const AuthException('Invalid login credentials'),
+    test(
+      'estado pasa a error y devuelve null con credenciales incorrectas',
+      () async {
+        final container = ProviderContainer(
+          overrides: [
+            authRepositoryProvider.overrideWithValue(
+              FakeAuthRepository(
+                signInError: const AuthException('Invalid login credentials'),
+              ),
             ),
-          ),
-        ],
-      );
-      addTearDown(container.dispose);
+          ],
+        );
+        addTearDown(container.dispose);
 
-      final response = await container
-          .read(loginControllerProvider.notifier)
-          .login(email: 'test@example.com', password: 'wrong-password');
+        final response = await container
+            .read(loginControllerProvider.notifier)
+            .login(email: 'test@example.com', password: 'wrong-password');
 
-      expect(response, isNull);
-      final state = container.read(loginControllerProvider);
-      expect(state.hasError, isTrue);
-      expect(state.error, 'Email o contraseña incorrectos.');
-    });
+        expect(response, isNull);
+        final state = container.read(loginControllerProvider);
+        expect(state.hasError, isTrue);
+        expect(state.error, 'Email o contraseña incorrectos.');
+      },
+    );
   });
 }

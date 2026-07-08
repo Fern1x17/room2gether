@@ -50,7 +50,9 @@ class FakeAuthRepository implements AuthRepository {
     if (signUpWithoutSession) {
       return AuthResponse(user: fakeUser(email: email));
     }
-    return AuthResponse(session: fakeSession(user: fakeUser(email: email)));
+    return AuthResponse(
+      session: fakeSession(user: fakeUser(email: email)),
+    );
   }
 
   @override
@@ -59,7 +61,9 @@ class FakeAuthRepository implements AuthRepository {
     required String password,
   }) async {
     if (signInError != null) throw signInError!;
-    return AuthResponse(session: fakeSession(user: fakeUser(email: email)));
+    return AuthResponse(
+      session: fakeSession(user: fakeUser(email: email)),
+    );
   }
 
   @override

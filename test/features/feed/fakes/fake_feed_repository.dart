@@ -29,7 +29,7 @@ Listing fakeListing({
 
 class FakeFeedRepository implements FeedRepository {
   FakeFeedRepository({List<Listing>? listings, this.fetchError})
-      : listings = listings ?? [fakeListing()];
+    : listings = listings ?? [fakeListing()];
 
   final List<Listing> listings;
   final Object? fetchError;
@@ -41,7 +41,8 @@ class FakeFeedRepository implements FeedRepository {
     lastFilter = filter;
     return listings.where((listing) {
       if (filter.city != null && listing.city != filter.city) return false;
-      if (filter.neighborhood != null && listing.neighborhood != filter.neighborhood) {
+      if (filter.neighborhood != null &&
+          listing.neighborhood != filter.neighborhood) {
         return false;
       }
       final effectivePrice = listing.price ?? listing.budgetMax;

@@ -13,7 +13,8 @@ abstract class RecentSearchesRepository {
   Future<void> save(ListingFilter filter);
 }
 
-class SharedPreferencesRecentSearchesRepository implements RecentSearchesRepository {
+class SharedPreferencesRecentSearchesRepository
+    implements RecentSearchesRepository {
   static const _key = 'recent_searches';
   static const _maxEntries = 10;
 
@@ -22,7 +23,10 @@ class SharedPreferencesRecentSearchesRepository implements RecentSearchesReposit
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getStringList(_key) ?? const [];
     return raw
-        .map((entry) => ListingFilter.fromJson(jsonDecode(entry) as Map<String, dynamic>))
+        .map(
+          (entry) =>
+              ListingFilter.fromJson(jsonDecode(entry) as Map<String, dynamic>),
+        )
         .toList();
   }
 
@@ -41,6 +45,8 @@ class SharedPreferencesRecentSearchesRepository implements RecentSearchesReposit
   }
 }
 
-final recentSearchesRepositoryProvider = Provider<RecentSearchesRepository>((ref) {
+final recentSearchesRepositoryProvider = Provider<RecentSearchesRepository>((
+  ref,
+) {
   return SharedPreferencesRecentSearchesRepository();
 });

@@ -15,7 +15,10 @@ abstract class ListingRepository {
 
   Future<List<String>> uploadPhotos(List<PendingPhoto> photos);
 
-  Future<void> createListing(ListingDraft draft, {required List<String> photoUrls});
+  Future<void> createListing(
+    ListingDraft draft, {
+    required List<String> photoUrls,
+  });
 
   Future<List<Listing>> fetchMyListings();
 
@@ -51,7 +54,9 @@ class SupabaseListingRepository implements ListingRepository {
     for (final photo in photos) {
       final path =
           '$userId/${DateTime.now().microsecondsSinceEpoch}.${photo.extension}';
-      await _client.storage.from('listing-photos').uploadBinary(path, photo.bytes);
+      await _client.storage
+          .from('listing-photos')
+          .uploadBinary(path, photo.bytes);
       urls.add(_client.storage.from('listing-photos').getPublicUrl(path));
     }
     return urls;
@@ -84,17 +89,20 @@ class SupabaseListingRepository implements ListingRepository {
     // Se escriben todos los parámetros (CU-08): si se cambia el tipo, los
     // campos que no aplican quedan a null y el check de coherencia de la
     // tabla valida el resultado. RLS solo permite editar las propias.
-    await _client.from('listings').update({
-      'type': draft.type,
-      'title': draft.title,
-      'description': draft.description,
-      'city': draft.city,
-      'neighborhood': draft.neighborhood,
-      'price': draft.price,
-      'budget_min': draft.budgetMin,
-      'budget_max': draft.budgetMax,
-      'photos': photoUrls,
-    }).eq('id', id);
+    await _client
+        .from('listings')
+        .update({
+          'type': draft.type,
+          'title': draft.title,
+          'description': draft.description,
+          'city': draft.city,
+          'neighborhood': draft.neighborhood,
+          'price': draft.price,
+          'budget_min': draft.budgetMin,
+          'budget_max': draft.budgetMax,
+          'photos': photoUrls,
+        })
+        .eq('id', id);
   }
 
   @override
@@ -120,10 +128,4 @@ class SupabaseListingRepository implements ListingRepository {
 
 final listingRepositoryProvider = Provider<ListingRepository>((ref) {
   return SupabaseListingRepository(supabase);
-});
-
-/// Id del usuario autenticado, para que los widgets no llamen a Supabase
-/// directamente (p. ej. para saber si una publicación es propia).
-final currentUserIdProvider = Provider<String?>((ref) {
-  return supabase.auth.currentUser?.id;
 });

@@ -21,7 +21,10 @@ class ProfileController extends AsyncNotifier<Profile> {
       state = AsyncData(updated);
       return true;
     } catch (error, stackTrace) {
-      state = AsyncError('No se pudo guardar el perfil. Inténtalo de nuevo.', stackTrace);
+      state = AsyncError(
+        'No se pudo guardar el perfil. Inténtalo de nuevo.',
+        stackTrace,
+      );
       return false;
     }
   }
@@ -55,6 +58,5 @@ class ProfileController extends AsyncNotifier<Profile> {
   }
 }
 
-final profileControllerProvider = AsyncNotifierProvider<ProfileController, Profile>(
-  ProfileController.new,
-);
+final profileControllerProvider =
+    AsyncNotifierProvider<ProfileController, Profile>(ProfileController.new);

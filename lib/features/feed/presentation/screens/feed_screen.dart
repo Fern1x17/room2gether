@@ -40,6 +40,11 @@ class FeedScreen extends ConsumerWidget {
             tooltip: 'Buscar',
           ),
           IconButton(
+            onPressed: () => context.push('/chats'),
+            icon: const Icon(Icons.chat_bubble_outline),
+            tooltip: 'Chats',
+          ),
+          IconButton(
             onPressed: () => context.push('/onboarding'),
             icon: const Icon(Icons.person_outline),
             tooltip: 'Tu perfil',

@@ -30,7 +30,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       return;
     }
 
-    final response = await ref.read(loginControllerProvider.notifier).login(
+    final response = await ref
+        .read(loginControllerProvider.notifier)
+        .login(
           email: _emailController.text.trim(),
           password: _passwordController.text,
         );
@@ -47,9 +49,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     ref.listen(loginControllerProvider, (previous, next) {
       final error = next.error;
       if (error != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(error.toString())),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(error.toString())));
       }
     });
 

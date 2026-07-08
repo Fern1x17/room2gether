@@ -2,8 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../listing/data/listing_repository.dart';
+import '../../../../core/supabase/current_user_provider.dart';
+import '../../../chat/presentation/controllers/chat_controllers.dart';
 import '../../../listing/presentation/controllers/my_listings_controller.dart';
+import '../../../moderation/presentation/controllers/report_controller.dart';
+import '../../../moderation/presentation/widgets/report_dialog.dart';
+import '../../domain/models/listing.dart';
 import '../controllers/feed_controller.dart';
 import '../controllers/listing_detail_controller.dart';
 
@@ -11,6 +15,32 @@ class ListingDetailScreen extends ConsumerWidget {
   const ListingDetailScreen({super.key, required this.listingId});
 
   final String listingId;
+
+  /// CU-11 desde una publicación: reportar al dueño y bloquearlo.
+  Future<void> _reportOwner(
+    BuildContext context,
+    WidgetRef ref,
+    Listing listing,
+  ) async {
+    final reasons = await showReportDialog(context);
+    if (reasons == null || !context.mounted) return;
+
+    final done = await ref
+        .read(reportUserControllerProvider.notifier)
+        .reportAndBlock(
+          reportedUserId: listing.ownerId,
+          reportedListingId: listing.id,
+          reasons: reasons,
+        );
+    if (!done || !context.mounted) return;
+    // Sus publicaciones dejan de verse y sus chats quedan marcados.
+    ref.invalidate(feedControllerProvider);
+    ref.invalidate(conversationsProvider);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Usuario reportado y bloqueado.')),
+    );
+    context.pop();
+  }
 
   Future<void> _confirmDelete(BuildContext context, WidgetRef ref) async {
     final confirmed = await showDialog<bool>(
@@ -32,16 +62,17 @@ class ListingDetailScreen extends ConsumerWidget {
     );
     if (confirmed != true || !context.mounted) return;
 
-    final deleted =
-        await ref.read(deleteListingControllerProvider.notifier).delete(listingId);
+    final deleted = await ref
+        .read(deleteListingControllerProvider.notifier)
+        .delete(listingId);
     if (!context.mounted) return;
     if (deleted) {
       // La publicación desaparece del feed y del perfil (postcondición CU-07).
       ref.invalidate(feedControllerProvider);
       ref.invalidate(myListingsProvider);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Publicación eliminada.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Publicación eliminada.')));
       context.pop();
     }
   }
@@ -54,16 +85,54 @@ class ListingDetailScreen extends ConsumerWidget {
     ref.listen(deleteListingControllerProvider, (previous, next) {
       final error = next.error;
       if (error != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(error.toString())),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(error.toString())));
+      }
+    });
+    ref.listen(openConversationControllerProvider, (previous, next) {
+      final error = next.error;
+      if (error != null) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(error.toString())));
+      }
+    });
+    ref.listen(reportUserControllerProvider, (previous, next) {
+      final error = next.error;
+      if (error != null) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(error.toString())));
       }
     });
 
     final isDeleting = ref.watch(deleteListingControllerProvider).isLoading;
+    final isOpeningChat = ref
+        .watch(openConversationControllerProvider)
+        .isLoading;
+
+    final loadedListing = listingAsync.value;
+    final canReport =
+        loadedListing != null &&
+        currentUserId != null &&
+        loadedListing.ownerId != currentUserId;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Publicación')),
+      appBar: AppBar(
+        title: const Text('Publicación'),
+        actions: [
+          // CU-11, paso 1-2: botón de opciones en una publicación ajena.
+          if (canReport)
+            PopupMenuButton<String>(
+              tooltip: 'Opciones',
+              onSelected: (_) => _reportOwner(context, ref, loadedListing),
+              itemBuilder: (context) => const [
+                PopupMenuItem(value: 'report', child: Text('Reportar')),
+              ],
+            ),
+        ],
+      ),
       body: listingAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stackTrace) => Center(
@@ -77,7 +146,8 @@ class ListingDetailScreen extends ConsumerWidget {
         ),
         data: (listing) {
           final theme = Theme.of(context);
-          final isOwner = currentUserId != null && listing.ownerId == currentUserId;
+          final isOwner =
+              currentUserId != null && listing.ownerId == currentUserId;
           final location = [
             listing.neighborhood,
             listing.city,
@@ -121,18 +191,51 @@ class ListingDetailScreen extends ConsumerWidget {
                     color: theme.colorScheme.primary,
                   ),
                 ),
-                if (listing.description != null && listing.description!.isNotEmpty) ...[
+                if (listing.description != null &&
+                    listing.description!.isNotEmpty) ...[
                   const SizedBox(height: 24),
                   Text('Descripción', style: theme.textTheme.titleMedium),
                   const SizedBox(height: 8),
                   Text(listing.description!),
+                ],
+                if (!isOwner) ...[
+                  const SizedBox(height: 32),
+                  SizedBox(
+                    height: 48,
+                    child: FilledButton.icon(
+                      onPressed: isOpeningChat
+                          ? null
+                          : () async {
+                              final conversation = await ref
+                                  .read(
+                                    openConversationControllerProvider.notifier,
+                                  )
+                                  .open(
+                                    otherUserId: listing.ownerId,
+                                    listingId: listing.id,
+                                  );
+                              if (conversation != null && context.mounted) {
+                                context.push('/chats/${conversation.id}');
+                              }
+                            },
+                      icon: isOpeningChat
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.chat_bubble_outline),
+                      label: const Text('Enviar mensaje'),
+                    ),
+                  ),
                 ],
                 if (isOwner) ...[
                   const SizedBox(height: 32),
                   SizedBox(
                     height: 48,
                     child: FilledButton.icon(
-                      onPressed: () => context.push('/listings/$listingId/edit'),
+                      onPressed: () =>
+                          context.push('/listings/$listingId/edit'),
                       icon: const Icon(Icons.edit_outlined),
                       label: const Text('Modificar publicación'),
                     ),
@@ -141,8 +244,9 @@ class ListingDetailScreen extends ConsumerWidget {
                   SizedBox(
                     height: 48,
                     child: OutlinedButton.icon(
-                      onPressed:
-                          isDeleting ? null : () => _confirmDelete(context, ref),
+                      onPressed: isDeleting
+                          ? null
+                          : () => _confirmDelete(context, ref),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: theme.colorScheme.error,
                       ),

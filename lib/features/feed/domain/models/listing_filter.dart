@@ -26,11 +26,11 @@ class ListingFilter {
   }
 
   Map<String, dynamic> toJson() => {
-        'city': city,
-        'neighborhood': neighborhood,
-        'maxPrice': maxPrice,
-        'type': type,
-      };
+    'city': city,
+    'neighborhood': neighborhood,
+    'maxPrice': maxPrice,
+    'type': type,
+  };
 
   factory ListingFilter.fromJson(Map<String, dynamic> json) {
     return ListingFilter(

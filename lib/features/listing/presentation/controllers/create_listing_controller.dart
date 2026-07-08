@@ -13,7 +13,10 @@ class CreateListingController extends AsyncNotifier<void> {
   /// Crea la publicación. Devuelve `true` si se creó; si falla o se incumple
   /// la precondición de CU-06 (ya hay una publicación activa), deja el estado
   /// en error con un mensaje en español y devuelve `false`.
-  Future<bool> create(ListingDraft draft, {required List<PendingPhoto> photos}) async {
+  Future<bool> create(
+    ListingDraft draft, {
+    required List<PendingPhoto> photos,
+  }) async {
     state = const AsyncLoading();
     try {
       final repository = ref.read(listingRepositoryProvider);
@@ -44,4 +47,6 @@ class CreateListingController extends AsyncNotifier<void> {
 }
 
 final createListingControllerProvider =
-    AsyncNotifierProvider<CreateListingController, void>(CreateListingController.new);
+    AsyncNotifierProvider<CreateListingController, void>(
+      CreateListingController.new,
+    );

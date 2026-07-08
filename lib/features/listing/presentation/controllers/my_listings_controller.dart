@@ -33,4 +33,6 @@ class DeleteListingController extends AsyncNotifier<void> {
 }
 
 final deleteListingControllerProvider =
-    AsyncNotifierProvider<DeleteListingController, void>(DeleteListingController.new);
+    AsyncNotifierProvider<DeleteListingController, void>(
+      DeleteListingController.new,
+    );

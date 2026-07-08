@@ -8,9 +8,7 @@ import '../../fakes/fake_auth_repository.dart';
 
 Widget _wrap() {
   return ProviderScope(
-    overrides: [
-      authRepositoryProvider.overrideWithValue(FakeAuthRepository()),
-    ],
+    overrides: [authRepositoryProvider.overrideWithValue(FakeAuthRepository())],
     child: const MaterialApp(home: RegisterScreen()),
   );
 }
@@ -39,7 +37,9 @@ void main() {
     ) async {
       await tester.pumpWidget(_wrap());
 
-      await tester.tap(find.widgetWithText(TextFormField, 'Fecha de nacimiento'));
+      await tester.tap(
+        find.widgetWithText(TextFormField, 'Fecha de nacimiento'),
+      );
       await tester.pumpAndSettle();
 
       // El diálogo del selector usa el helpText que le pasamos.
@@ -52,7 +52,10 @@ void main() {
     ) async {
       await tester.pumpWidget(_wrap());
 
-      await tester.enterText(find.widgetWithText(TextFormField, 'Email'), 'test@example.com');
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Email'),
+        'test@example.com',
+      );
       await tester.enterText(
         find.widgetWithText(TextFormField, 'Contraseña'),
         'password123',

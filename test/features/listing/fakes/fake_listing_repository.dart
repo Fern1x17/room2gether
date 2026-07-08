@@ -30,7 +30,8 @@ class FakeListingRepository implements ListingRepository {
   Future<List<String>> uploadPhotos(List<PendingPhoto> photos) async {
     uploadedPhotoCount = photos.length;
     return [
-      for (var i = 0; i < photos.length; i++) 'https://example.com/photo_$i.jpg',
+      for (var i = 0; i < photos.length; i++)
+        'https://example.com/photo_$i.jpg',
     ];
   }
 

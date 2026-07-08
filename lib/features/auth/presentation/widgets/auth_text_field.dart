@@ -40,7 +40,9 @@ class _AuthTextFieldState extends State<AuthTextField> {
         suffixIcon: widget.isPassword
             ? IconButton(
                 icon: Icon(
-                  _obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                  _obscure
+                      ? Icons.visibility_outlined
+                      : Icons.visibility_off_outlined,
                 ),
                 tooltip: _obscure ? 'Mostrar contraseña' : 'Ocultar contraseña',
                 onPressed: () => setState(() => _obscure = !_obscure),

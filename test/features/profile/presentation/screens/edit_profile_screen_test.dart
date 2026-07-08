@@ -14,7 +14,8 @@ Widget _wrap({FakeProfileRepository? profileRepository}) {
   return ProviderScope(
     overrides: [
       profileRepositoryProvider.overrideWithValue(
-        profileRepository ?? FakeProfileRepository(profile: fakeProfile(displayName: 'Ana')),
+        profileRepository ??
+            FakeProfileRepository(profile: fakeProfile(displayName: 'Ana')),
       ),
       authRepositoryProvider.overrideWithValue(FakeAuthRepository()),
       listingRepositoryProvider.overrideWithValue(FakeListingRepository()),
@@ -38,35 +39,40 @@ void main() {
       await tester.pumpAndSettle();
 
       await tester.enterText(find.widgetWithText(TextFormField, 'Nombre'), '');
-      await tester.ensureVisible(find.widgetWithText(FilledButton, 'Guardar cambios'));
+      await tester.ensureVisible(
+        find.widgetWithText(FilledButton, 'Guardar cambios'),
+      );
       await tester.tap(find.widgetWithText(FilledButton, 'Guardar cambios'));
       await tester.pumpAndSettle();
 
       expect(find.text('Introduce un nombre.'), findsOneWidget);
     });
 
-    testWidgets('muestra error si el presupuesto mínimo es mayor que el máximo', (
-      tester,
-    ) async {
-      await tester.pumpWidget(_wrap());
-      await tester.pumpAndSettle();
+    testWidgets(
+      'muestra error si el presupuesto mínimo es mayor que el máximo',
+      (tester) async {
+        await tester.pumpWidget(_wrap());
+        await tester.pumpAndSettle();
 
-      await tester.enterText(
-        find.widgetWithText(TextFormField, 'Presupuesto mín. (€)'),
-        '800',
-      );
-      await tester.enterText(
-        find.widgetWithText(TextFormField, 'Presupuesto máx. (€)'),
-        '500',
-      );
-      await tester.ensureVisible(find.widgetWithText(FilledButton, 'Guardar cambios'));
-      await tester.tap(find.widgetWithText(FilledButton, 'Guardar cambios'));
-      await tester.pumpAndSettle();
+        await tester.enterText(
+          find.widgetWithText(TextFormField, 'Presupuesto mín. (€)'),
+          '800',
+        );
+        await tester.enterText(
+          find.widgetWithText(TextFormField, 'Presupuesto máx. (€)'),
+          '500',
+        );
+        await tester.ensureVisible(
+          find.widgetWithText(FilledButton, 'Guardar cambios'),
+        );
+        await tester.tap(find.widgetWithText(FilledButton, 'Guardar cambios'));
+        await tester.pumpAndSettle();
 
-      expect(
-        find.text('El presupuesto mínimo no puede ser mayor que el máximo.'),
-        findsOneWidget,
-      );
-    });
+        expect(
+          find.text('El presupuesto mínimo no puede ser mayor que el máximo.'),
+          findsOneWidget,
+        );
+      },
+    );
   });
 }

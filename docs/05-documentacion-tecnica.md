@@ -294,3 +294,91 @@ por tipo: 'offering' exige price, 'seeking' exige rango válido; las filas
 2. El formulario aparece precargado (incluidas las fotos ya subidas).
 3. Cambiar precio/título/quitar una foto → "Guardar cambios" → vuelve al
    detalle con los datos nuevos; el feed y el perfil también se actualizan.
+
+---
+
+## Chat (CU-10 Contactar por chat)
+
+**Carpeta:** `lib/features/chat/`
+
+- `domain/models/{conversation,message}.dart` — la conversación resuelve "el
+  otro participante" (nombre/avatar) a partir de los dos perfiles embebidos.
+- `data/chat_repository.dart` — `openConversation` reutiliza la conversación
+  existente entre los 2 usuarios o la crea (postcondición CU-10);
+  `fetchMyConversations` (join con `profiles` por las dos FKs),
+  `sendMessage`, y `watchMessages` como stream de Supabase Realtime.
+- `presentation/controllers/chat_controllers.dart` — providers de
+  conversaciones/mensajes en vivo + controllers de abrir conversación y
+  enviar (con carga/error; no se envían mensajes vacíos).
+- `presentation/screens/chat_screen.dart` — burbujas alineadas por emisor,
+  entrada de texto y envío; los mensajes del otro llegan en vivo.
+- `presentation/screens/conversations_screen.dart` — pantalla "Chats"
+  (aprobada como plomería necesaria para "entrar en un chat existente" de
+  CU-11), accesible desde un icono en el feed.
+- Entrada del flujo: botón "Enviar mensaje" en el detalle de una publicación
+  ajena (paso 2 de CU-10). Rutas `/chats` y `/chats/:id`.
+
+**Decisiones técnicas:**
+- Migración `20260707000012` (aprobada): añade `messages` a la publicación
+  `supabase_realtime`. RLS sigue aplicando: solo llegan mensajes de
+  conversaciones en las que participas.
+- **Cifrado ("se guarda cifrado"):** se usa el cifrado de plataforma de
+  Supabase — TLS en tránsito y cifrado en reposo en Postgres — sin cifrado
+  adicional a nivel de aplicación (decisión acordada para el MVP).
+- `currentUserIdProvider` se movió a `lib/core/supabase/` porque ahora lo
+  comparten feed y chat.
+- Una conversación por pareja de usuarios: contactar de nuevo (aunque sea por
+  otra publicación) reabre el mismo chat; `listing_id` guarda la publicación
+  que lo originó.
+
+**Cómo probarlo a mano** (hacen falta 2 cuentas):
+1. Con la cuenta B, crear una publicación. Con la cuenta A, abrirla desde el
+   feed → "Enviar mensaje" → escribir → aparece la burbuja.
+2. Con la cuenta B, icono de chats en el feed → aparece el chat con A → abrir
+   y responder. Con ambas apps abiertas, los mensajes llegan sin refrescar.
+3. Volver a "Enviar mensaje" desde otra publicación del mismo usuario → se
+   reabre el mismo chat (no se duplica).
+
+---
+
+## Moderación (CU-11 Reportar / bloquear)
+
+**Carpeta:** `lib/features/moderation/`
+
+- `domain/report_reasons.dart` — motivos seleccionables (lista acordada:
+  Spam, Contenido inapropiado, Acoso, Estafa, Perfil falso, Otro).
+- `data/moderation_repository.dart` — `reportAndBlock()` inserta el reporte
+  (motivos concatenados en `reports.reason`) y bloquea en la misma acción
+  (paso 3 del CU: reportar implica bloquear); el bloqueo usa upsert para que
+  re-reportar no falle por la PK compuesta de `blocks`. `fetchMyBlockedIds()`
+  se apoya en RLS (cada uno solo ve sus bloqueos). **Sin cambios de BD.**
+- `presentation/controllers/report_controller.dart` — `ReportUserController`
+  y `blockedUserIdsProvider`, que feed y chat usan para aplicar los efectos.
+- `presentation/widgets/report_dialog.dart` — diálogo con checkboxes de
+  motivos (exige al menos uno) y botón "Reportar y bloquear".
+
+**Puntos de entrada (paso 1 del CU):** botón de opciones (⋮) en el detalle de
+una publicación ajena y en la pantalla de chat.
+
+**Efectos del bloqueo (decisión acordada: ambos):**
+- No ves sus publicaciones: el feed las excluye (filtrado en la app, en
+  `FeedController._fetchVisible`).
+- No puedes chatear con él: la entrada de texto del chat se sustituye por el
+  aviso "Has bloqueado a este usuario", y abrir un chat nuevo desde una
+  publicación suya se rechaza con ese mismo mensaje.
+- Postcondición "aparece como bloqueado": chip "Bloqueado" en la lista de
+  chats.
+
+**Nota:** el bloqueo se aplica en la app (no hay políticas RLS que filtren
+por `blocks` en el servidor); los reportes quedan con `status = 'pending'`
+para el futuro panel de moderación (RF-14, CU-13 a CU-17, no implementado).
+
+**Cómo probarlo a mano** (2 cuentas):
+1. Con A, abrir una publicación de B → ⋮ → Reportar → elegir motivos →
+   "Reportar y bloquear" → snackbar y la publicación de B desaparece del feed.
+2. En Chats, la conversación con B aparece con el chip "Bloqueado"; al
+   entrar, no se pueden enviar mensajes.
+3. Intentar "Enviar mensaje" en otra publicación de B → "Has bloqueado a
+   este usuario."
+4. En Supabase, la tabla reports tiene la fila con los motivos y status
+   'pending'; blocks tiene la pareja (A, B).

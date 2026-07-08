@@ -15,9 +15,8 @@ class EditListingScreen extends ConsumerWidget {
     final listingAsync = ref.watch(listingDetailProvider(listingId));
 
     return listingAsync.when(
-      loading: () => const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      ),
+      loading: () =>
+          const Scaffold(body: Center(child: CircularProgressIndicator())),
       error: (error, stackTrace) => Scaffold(
         appBar: AppBar(title: const Text('Modificar publicación')),
         body: const Center(

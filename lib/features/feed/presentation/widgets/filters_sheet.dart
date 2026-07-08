@@ -5,7 +5,11 @@ import '../../domain/models/listing_filter.dart';
 import '../controllers/recent_searches_controller.dart';
 
 class FiltersSheet extends ConsumerStatefulWidget {
-  const FiltersSheet({super.key, required this.initialFilter, required this.onApply});
+  const FiltersSheet({
+    super.key,
+    required this.initialFilter,
+    required this.onApply,
+  });
 
   final ListingFilter initialFilter;
   final ValueChanged<ListingFilter> onApply;
@@ -23,11 +27,15 @@ class _FiltersSheetState extends ConsumerState<FiltersSheet> {
   @override
   void initState() {
     super.initState();
-    _cityController = TextEditingController(text: widget.initialFilter.city ?? '');
-    _neighborhoodController =
-        TextEditingController(text: widget.initialFilter.neighborhood ?? '');
-    _maxPriceController =
-        TextEditingController(text: widget.initialFilter.maxPrice?.toString() ?? '');
+    _cityController = TextEditingController(
+      text: widget.initialFilter.city ?? '',
+    );
+    _neighborhoodController = TextEditingController(
+      text: widget.initialFilter.neighborhood ?? '',
+    );
+    _maxPriceController = TextEditingController(
+      text: widget.initialFilter.maxPrice?.toString() ?? '',
+    );
     _type = widget.initialFilter.type;
   }
 
@@ -41,7 +49,9 @@ class _FiltersSheetState extends ConsumerState<FiltersSheet> {
 
   void _apply() {
     final filter = ListingFilter(
-      city: _cityController.text.trim().isEmpty ? null : _cityController.text.trim(),
+      city: _cityController.text.trim().isEmpty
+          ? null
+          : _cityController.text.trim(),
       neighborhood: _neighborhoodController.text.trim().isEmpty
           ? null
           : _neighborhoodController.text.trim(),
@@ -79,7 +89,10 @@ class _FiltersSheetState extends ConsumerState<FiltersSheet> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('Filtrar publicaciones', style: Theme.of(context).textTheme.titleLarge),
+            Text(
+              'Filtrar publicaciones',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
             const SizedBox(height: 16),
             TextField(
               controller: _cityController,
@@ -129,7 +142,10 @@ class _FiltersSheetState extends ConsumerState<FiltersSheet> {
             const SizedBox(height: 24),
             SizedBox(
               height: 48,
-              child: FilledButton(onPressed: _apply, child: const Text('Aplicar filtros')),
+              child: FilledButton(
+                onPressed: _apply,
+                child: const Text('Aplicar filtros'),
+              ),
             ),
             recentSearches.when(
               loading: () => const SizedBox.shrink(),

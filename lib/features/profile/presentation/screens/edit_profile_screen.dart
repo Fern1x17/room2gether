@@ -74,7 +74,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
     setState(() => _uploadingAvatar = true);
     final bytes = await picked.readAsBytes();
-    final extension = picked.path.contains('.') ? picked.path.split('.').last : 'jpg';
+    final extension = picked.path.contains('.')
+        ? picked.path.split('.').last
+        : 'jpg';
     final url = await ref
         .read(profileControllerProvider.notifier)
         .uploadAvatar(bytes: bytes, fileExtension: extension);
@@ -87,7 +89,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
     if (url == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No se pudo subir la foto. Inténtalo de nuevo.')),
+        const SnackBar(
+          content: Text('No se pudo subir la foto. Inténtalo de nuevo.'),
+        ),
       );
     }
   }
@@ -103,9 +107,13 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
     final updated = current.copyWith(
       displayName: _displayNameController.text.trim(),
-      bio: _bioController.text.trim().isEmpty ? null : _bioController.text.trim(),
+      bio: _bioController.text.trim().isEmpty
+          ? null
+          : _bioController.text.trim(),
       avatarUrl: _avatarUrl,
-      city: _cityController.text.trim().isEmpty ? null : _cityController.text.trim(),
+      city: _cityController.text.trim().isEmpty
+          ? null
+          : _cityController.text.trim(),
       budgetMin: int.tryParse(_budgetMinController.text.trim()),
       budgetMax: int.tryParse(_budgetMaxController.text.trim()),
       isSmoker: _isSmoker,
@@ -117,9 +125,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     final ok = await ref.read(profileControllerProvider.notifier).save(updated);
     if (!mounted) return;
     if (ok) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Perfil actualizado.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Perfil actualizado.')));
     }
   }
 
@@ -143,13 +151,17 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     );
     if (confirmed != true || !mounted) return;
 
-    final signedOut = await ref.read(signOutControllerProvider.notifier).signOut();
+    final signedOut = await ref
+        .read(signOutControllerProvider.notifier)
+        .signOut();
     if (!mounted) return;
     if (signedOut) {
       context.go('/login');
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No se pudo cerrar sesión. Inténtalo de nuevo.')),
+        const SnackBar(
+          content: Text('No se pudo cerrar sesión. Inténtalo de nuevo.'),
+        ),
       );
     }
   }
@@ -208,8 +220,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                         children: [
                           CircleAvatar(
                             radius: 48,
-                            backgroundImage:
-                                _avatarUrl != null ? NetworkImage(_avatarUrl!) : null,
+                            backgroundImage: _avatarUrl != null
+                                ? NetworkImage(_avatarUrl!)
+                                : null,
                             child: _avatarUrl == null
                                 ? const Icon(Icons.person, size: 48)
                                 : null,
@@ -223,7 +236,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                                   ? const SizedBox(
                                       width: 16,
                                       height: 16,
-                                      child: CircularProgressIndicator(strokeWidth: 2),
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
                                     )
                                   : const Icon(Icons.camera_alt, size: 20),
                               tooltip: 'Cambiar foto',
@@ -309,7 +324,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                       title: const Text('Tiene mascotas'),
                     ),
                     const SizedBox(height: 8),
-                    Text('Nivel de limpieza', style: Theme.of(context).textTheme.bodyLarge),
+                    Text(
+                      'Nivel de limpieza',
+                      style: Theme.of(context).textTheme.bodyLarge,
+                    ),
                     Slider(
                       value: (_cleanlinessLevel ?? 3).toDouble(),
                       min: minCleanlinessLevel.toDouble(),
@@ -320,7 +338,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                           setState(() => _cleanlinessLevel = value.round()),
                     ),
                     const SizedBox(height: 8),
-                    Text('Horario', style: Theme.of(context).textTheme.bodyLarge),
+                    Text(
+                      'Horario',
+                      style: Theme.of(context).textTheme.bodyLarge,
+                    ),
                     const SizedBox(height: 8),
                     Wrap(
                       spacing: 8,
@@ -334,7 +355,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                           ChoiceChip(
                             label: Text(entry.value),
                             selected: _schedule == entry.key,
-                            onSelected: (_) => setState(() => _schedule = entry.key),
+                            onSelected: (_) =>
+                                setState(() => _schedule = entry.key),
                           ),
                       ],
                     ),
@@ -347,7 +369,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                             ? const SizedBox(
                                 width: 20,
                                 height: 20,
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
                               )
                             : const Text('Guardar cambios'),
                       ),

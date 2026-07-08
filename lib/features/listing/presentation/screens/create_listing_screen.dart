@@ -23,7 +23,8 @@ class CreateListingScreen extends ConsumerStatefulWidget {
   final Listing? initial;
 
   @override
-  ConsumerState<CreateListingScreen> createState() => _CreateListingScreenState();
+  ConsumerState<CreateListingScreen> createState() =>
+      _CreateListingScreenState();
 }
 
 class _CreateListingScreenState extends ConsumerState<CreateListingScreen> {
@@ -74,12 +75,17 @@ class _CreateListingScreenState extends ConsumerState<CreateListingScreen> {
   }
 
   Future<void> _pickPhotos() async {
-    final picked = await ImagePicker().pickMultiImage(maxWidth: 1600, imageQuality: 85);
+    final picked = await ImagePicker().pickMultiImage(
+      maxWidth: 1600,
+      imageQuality: 85,
+    );
     if (picked.isEmpty || !mounted) return;
     final newPhotos = <PendingPhoto>[];
     for (final file in picked) {
       final bytes = await file.readAsBytes();
-      final extension = file.path.contains('.') ? file.path.split('.').last : 'jpg';
+      final extension = file.path.contains('.')
+          ? file.path.split('.').last
+          : 'jpg';
       newPhotos.add((bytes: Uint8List.fromList(bytes), extension: extension));
     }
     if (!mounted) return;
@@ -98,7 +104,9 @@ class _CreateListingScreenState extends ConsumerState<CreateListingScreen> {
     final budgetError = _isOffering
         ? null
         : validateListingBudgetRange(
-            _budgetMinController.text, _budgetMaxController.text);
+            _budgetMinController.text,
+            _budgetMaxController.text,
+          );
     setState(() {
       _photosError = photosError;
       _budgetError = budgetError;
@@ -114,8 +122,12 @@ class _CreateListingScreenState extends ConsumerState<CreateListingScreen> {
       city: _cityController.text.trim(),
       neighborhood: neighborhood.isEmpty ? null : neighborhood,
       price: _isOffering ? int.parse(_priceController.text.trim()) : null,
-      budgetMin: _isOffering ? null : int.parse(_budgetMinController.text.trim()),
-      budgetMax: _isOffering ? null : int.parse(_budgetMaxController.text.trim()),
+      budgetMin: _isOffering
+          ? null
+          : int.parse(_budgetMinController.text.trim()),
+      budgetMax: _isOffering
+          ? null
+          : int.parse(_budgetMaxController.text.trim()),
     );
 
     if (_isEditing) {
@@ -132,9 +144,9 @@ class _CreateListingScreenState extends ConsumerState<CreateListingScreen> {
       ref.invalidate(feedControllerProvider);
       ref.invalidate(myListingsProvider);
       ref.invalidate(listingDetailProvider(listingId));
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Publicación actualizada.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Publicación actualizada.')));
       context.pop();
       return;
     }
@@ -146,9 +158,9 @@ class _CreateListingScreenState extends ConsumerState<CreateListingScreen> {
     if (!mounted || !created) return;
     ref.invalidate(feedControllerProvider);
     ref.invalidate(myListingsProvider);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Publicación creada.')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Publicación creada.')));
     context.go('/feed');
   }
 
@@ -157,17 +169,17 @@ class _CreateListingScreenState extends ConsumerState<CreateListingScreen> {
     ref.listen(createListingControllerProvider, (previous, next) {
       final error = next.error;
       if (error != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(error.toString())),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(error.toString())));
       }
     });
     ref.listen(updateListingControllerProvider, (previous, next) {
       final error = next.error;
       if (error != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(error.toString())),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(error.toString())));
       }
     });
 
@@ -239,7 +251,8 @@ class _CreateListingScreenState extends ConsumerState<CreateListingScreen> {
                                 right: 0,
                                 child: GestureDetector(
                                   onTap: () => setState(
-                                      () => _existingPhotoUrls.removeAt(index)),
+                                    () => _existingPhotoUrls.removeAt(index),
+                                  ),
                                   child: const CircleAvatar(
                                     radius: 10,
                                     child: Icon(Icons.close, size: 14),
@@ -368,8 +381,10 @@ class _CreateListingScreenState extends ConsumerState<CreateListingScreen> {
                     hintText: _isOffering ? null : 'Vacío = cualquiera',
                     border: const OutlineInputBorder(),
                   ),
-                  validator: (value) =>
-                      validateListingNeighborhood(value, isOffering: _isOffering),
+                  validator: (value) => validateListingNeighborhood(
+                    value,
+                    isOffering: _isOffering,
+                  ),
                 ),
                 const SizedBox(height: 16),
                 TextFormField(

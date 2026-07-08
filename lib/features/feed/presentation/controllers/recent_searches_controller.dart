@@ -19,5 +19,5 @@ class RecentSearchesController extends AsyncNotifier<List<ListingFilter>> {
 
 final recentSearchesControllerProvider =
     AsyncNotifierProvider<RecentSearchesController, List<ListingFilter>>(
-  RecentSearchesController.new,
-);
+      RecentSearchesController.new,
+    );

@@ -14,24 +14,31 @@ void main() {
       );
       addTearDown(container.dispose);
 
-      final ok = await container.read(signOutControllerProvider.notifier).signOut();
+      final ok = await container
+          .read(signOutControllerProvider.notifier)
+          .signOut();
 
       expect(ok, isTrue);
       expect(fakeRepo.signedOut, isTrue);
       expect(container.read(signOutControllerProvider).hasValue, isTrue);
     });
 
-    test('signOut() devuelve false y deja error si el repositorio falla', () async {
-      final fakeRepo = FakeAuthRepository(signOutError: Exception('fallo'));
-      final container = ProviderContainer(
-        overrides: [authRepositoryProvider.overrideWithValue(fakeRepo)],
-      );
-      addTearDown(container.dispose);
+    test(
+      'signOut() devuelve false y deja error si el repositorio falla',
+      () async {
+        final fakeRepo = FakeAuthRepository(signOutError: Exception('fallo'));
+        final container = ProviderContainer(
+          overrides: [authRepositoryProvider.overrideWithValue(fakeRepo)],
+        );
+        addTearDown(container.dispose);
 
-      final ok = await container.read(signOutControllerProvider.notifier).signOut();
+        final ok = await container
+            .read(signOutControllerProvider.notifier)
+            .signOut();
 
-      expect(ok, isFalse);
-      expect(container.read(signOutControllerProvider).hasError, isTrue);
-    });
+        expect(ok, isFalse);
+        expect(container.read(signOutControllerProvider).hasError, isTrue);
+      },
+    );
   });
 }

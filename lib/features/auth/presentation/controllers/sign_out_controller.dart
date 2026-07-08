@@ -24,6 +24,5 @@ class SignOutController extends AsyncNotifier<void> {
   }
 }
 
-final signOutControllerProvider = AsyncNotifierProvider<SignOutController, void>(
-  SignOutController.new,
-);
+final signOutControllerProvider =
+    AsyncNotifierProvider<SignOutController, void>(SignOutController.new);

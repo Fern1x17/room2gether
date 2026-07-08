@@ -34,7 +34,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     final now = DateTime.now();
     final picked = await showDatePicker(
       context: context,
-      initialDate: _birthdate ?? DateTime(now.year - minAge, now.month, now.day),
+      initialDate:
+          _birthdate ?? DateTime(now.year - minAge, now.month, now.day),
       firstDate: DateTime(now.year - maxAge),
       lastDate: now,
       helpText: 'Fecha de nacimiento',
@@ -54,7 +55,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       return;
     }
 
-    final response = await ref.read(registerControllerProvider.notifier).register(
+    final response = await ref
+        .read(registerControllerProvider.notifier)
+        .register(
           email: _emailController.text.trim(),
           password: _passwordController.text,
           birthdate: _birthdate!,
@@ -81,9 +84,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     ref.listen(registerControllerProvider, (previous, next) {
       final error = next.error;
       if (error != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(error.toString())),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(error.toString())));
       }
     });
 
@@ -137,7 +140,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   },
                   controlAffinity: ListTileControlAffinity.leading,
                   contentPadding: EdgeInsets.zero,
-                  title: const Text('He leído y acepto la política de privacidad'),
+                  title: const Text(
+                    'He leído y acepto la política de privacidad',
+                  ),
                 ),
                 if (_privacyPolicyError)
                   Padding(

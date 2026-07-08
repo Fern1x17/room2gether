@@ -53,6 +53,7 @@ class FakeProfileRepository implements ProfileRepository {
     required Uint8List bytes,
     required String fileExtension,
   }) async {
-    return uploadAvatarUrl ?? 'https://example.com/$userId/avatar.$fileExtension';
+    return uploadAvatarUrl ??
+        'https://example.com/$userId/avatar.$fileExtension';
   }
 }

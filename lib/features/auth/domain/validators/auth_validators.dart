@@ -30,7 +30,8 @@ String? validatePassword(String? value) {
 /// cumpleaños de este año ya ha pasado.
 int ageInYears(DateTime birthdate, DateTime reference) {
   var age = reference.year - birthdate.year;
-  final hasHadBirthdayThisYear = reference.month > birthdate.month ||
+  final hasHadBirthdayThisYear =
+      reference.month > birthdate.month ||
       (reference.month == birthdate.month && reference.day >= birthdate.day);
   if (!hasHadBirthdayThisYear) {
     age--;

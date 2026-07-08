@@ -8,9 +8,7 @@ import '../../fakes/fake_auth_repository.dart';
 
 Widget _wrap() {
   return ProviderScope(
-    overrides: [
-      authRepositoryProvider.overrideWithValue(FakeAuthRepository()),
-    ],
+    overrides: [authRepositoryProvider.overrideWithValue(FakeAuthRepository())],
     child: const MaterialApp(home: LoginScreen()),
   );
 }

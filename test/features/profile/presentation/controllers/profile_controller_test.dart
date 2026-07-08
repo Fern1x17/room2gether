@@ -34,34 +34,44 @@ void main() {
       await container.read(profileControllerProvider.future);
       final updated = fakeProfile(displayName: 'Nuevo nombre');
 
-      final ok = await container.read(profileControllerProvider.notifier).save(updated);
+      final ok = await container
+          .read(profileControllerProvider.notifier)
+          .save(updated);
 
       expect(ok, isTrue);
       expect(fakeRepo.lastSavedProfile?.displayName, 'Nuevo nombre');
-      expect(container.read(profileControllerProvider).value?.displayName, 'Nuevo nombre');
-    });
-
-    test('save() devuelve false y deja error si el repositorio falla', () async {
-      final fakeRepo = FakeProfileRepository(updateError: Exception('fallo'));
-      final container = ProviderContainer(
-        overrides: [profileRepositoryProvider.overrideWithValue(fakeRepo)],
+      expect(
+        container.read(profileControllerProvider).value?.displayName,
+        'Nuevo nombre',
       );
-      addTearDown(container.dispose);
-
-      await container.read(profileControllerProvider.future);
-      final ok = await container
-          .read(profileControllerProvider.notifier)
-          .save(fakeProfile(displayName: 'X'));
-
-      expect(ok, isFalse);
-      expect(container.read(profileControllerProvider).hasError, isTrue);
     });
+
+    test(
+      'save() devuelve false y deja error si el repositorio falla',
+      () async {
+        final fakeRepo = FakeProfileRepository(updateError: Exception('fallo'));
+        final container = ProviderContainer(
+          overrides: [profileRepositoryProvider.overrideWithValue(fakeRepo)],
+        );
+        addTearDown(container.dispose);
+
+        await container.read(profileControllerProvider.future);
+        final ok = await container
+            .read(profileControllerProvider.notifier)
+            .save(fakeProfile(displayName: 'X'));
+
+        expect(ok, isFalse);
+        expect(container.read(profileControllerProvider).hasError, isTrue);
+      },
+    );
 
     test('uploadAvatar() devuelve la URL pública', () async {
       final container = ProviderContainer(
         overrides: [
           profileRepositoryProvider.overrideWithValue(
-            FakeProfileRepository(uploadAvatarUrl: 'https://example.com/foto.jpg'),
+            FakeProfileRepository(
+              uploadAvatarUrl: 'https://example.com/foto.jpg',
+            ),
           ),
         ],
       );
@@ -75,28 +85,34 @@ void main() {
       expect(url, 'https://example.com/foto.jpg');
     });
 
-    test('uploadAvatar() persiste la URL en el perfil sin esperar a guardar', () async {
-      final fakeRepo = FakeProfileRepository(
-        uploadAvatarUrl: 'https://example.com/foto.jpg',
-      );
-      final container = ProviderContainer(
-        overrides: [profileRepositoryProvider.overrideWithValue(fakeRepo)],
-      );
-      addTearDown(container.dispose);
+    test(
+      'uploadAvatar() persiste la URL en el perfil sin esperar a guardar',
+      () async {
+        final fakeRepo = FakeProfileRepository(
+          uploadAvatarUrl: 'https://example.com/foto.jpg',
+        );
+        final container = ProviderContainer(
+          overrides: [profileRepositoryProvider.overrideWithValue(fakeRepo)],
+        );
+        addTearDown(container.dispose);
 
-      await container.read(profileControllerProvider.future);
-      await container
-          .read(profileControllerProvider.notifier)
-          .uploadAvatar(bytes: Uint8List(0), fileExtension: 'jpg');
+        await container.read(profileControllerProvider.future);
+        await container
+            .read(profileControllerProvider.notifier)
+            .uploadAvatar(bytes: Uint8List(0), fileExtension: 'jpg');
 
-      // La URL queda escrita en la BD (updateProfile) y en el estado, de modo
-      // que sobrevive a cerrar sesión o salir de la app sin pulsar guardar.
-      expect(fakeRepo.lastSavedProfile?.avatarUrl, 'https://example.com/foto.jpg');
-      expect(
-        container.read(profileControllerProvider).value?.avatarUrl,
-        'https://example.com/foto.jpg',
-      );
-    });
+        // La URL queda escrita en la BD (updateProfile) y en el estado, de modo
+        // que sobrevive a cerrar sesión o salir de la app sin pulsar guardar.
+        expect(
+          fakeRepo.lastSavedProfile?.avatarUrl,
+          'https://example.com/foto.jpg',
+        );
+        expect(
+          container.read(profileControllerProvider).value?.avatarUrl,
+          'https://example.com/foto.jpg',
+        );
+      },
+    );
 
     test('uploadAvatar() devuelve null si falla la persistencia', () async {
       final fakeRepo = FakeProfileRepository(

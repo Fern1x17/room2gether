@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/widgets/city_selector.dart';
 import '../../domain/models/listing_filter.dart';
 import '../controllers/recent_searches_controller.dart';
 
@@ -19,7 +20,8 @@ class FiltersSheet extends ConsumerStatefulWidget {
 }
 
 class _FiltersSheetState extends ConsumerState<FiltersSheet> {
-  late final TextEditingController _cityController;
+  String? _cityId;
+  String? _cityName;
   late final TextEditingController _neighborhoodController;
   late final TextEditingController _maxPriceController;
   String? _type;
@@ -27,9 +29,8 @@ class _FiltersSheetState extends ConsumerState<FiltersSheet> {
   @override
   void initState() {
     super.initState();
-    _cityController = TextEditingController(
-      text: widget.initialFilter.city ?? '',
-    );
+    _cityId = widget.initialFilter.cityId;
+    _cityName = widget.initialFilter.cityName;
     _neighborhoodController = TextEditingController(
       text: widget.initialFilter.neighborhood ?? '',
     );
@@ -41,7 +42,6 @@ class _FiltersSheetState extends ConsumerState<FiltersSheet> {
 
   @override
   void dispose() {
-    _cityController.dispose();
     _neighborhoodController.dispose();
     _maxPriceController.dispose();
     super.dispose();
@@ -49,9 +49,8 @@ class _FiltersSheetState extends ConsumerState<FiltersSheet> {
 
   void _apply() {
     final filter = ListingFilter(
-      city: _cityController.text.trim().isEmpty
-          ? null
-          : _cityController.text.trim(),
+      cityId: _cityId,
+      cityName: _cityName,
       neighborhood: _neighborhoodController.text.trim().isEmpty
           ? null
           : _neighborhoodController.text.trim(),
@@ -63,12 +62,6 @@ class _FiltersSheetState extends ConsumerState<FiltersSheet> {
   }
 
   void _applyRecent(ListingFilter filter) {
-    setState(() {
-      _cityController.text = filter.city ?? '';
-      _neighborhoodController.text = filter.neighborhood ?? '';
-      _maxPriceController.text = filter.maxPrice?.toString() ?? '';
-      _type = filter.type;
-    });
     widget.onApply(filter);
     Navigator.of(context).pop();
   }
@@ -94,12 +87,12 @@ class _FiltersSheetState extends ConsumerState<FiltersSheet> {
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 16),
-            TextField(
-              controller: _cityController,
-              decoration: const InputDecoration(
-                labelText: 'Ciudad',
-                border: OutlineInputBorder(),
-              ),
+            CitySelector(
+              initialCityName: _cityName,
+              onCitySelected: (city) {
+                _cityId = city?.id;
+                _cityName = city?.name;
+              },
             ),
             const SizedBox(height: 16),
             TextField(
@@ -184,7 +177,7 @@ class _FiltersSheetState extends ConsumerState<FiltersSheet> {
 
   String _describe(ListingFilter filter) {
     final parts = <String>[
-      if (filter.city != null) filter.city!,
+      if (filter.cityName != null) filter.cityName!,
       if (filter.neighborhood != null) filter.neighborhood!,
       if (filter.maxPrice != null) 'hasta ${filter.maxPrice}€',
       if (filter.type == 'seeking') 'busco',

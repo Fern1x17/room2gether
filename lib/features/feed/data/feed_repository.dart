@@ -18,10 +18,13 @@ class SupabaseFeedRepository implements FeedRepository {
 
   @override
   Future<List<Listing>> fetchListings(ListingFilter filter) async {
-    var query = _client.from('listings').select().eq('status', 'active');
+    var query = _client
+        .from('listings')
+        .select('*, city:cities(name)')
+        .eq('status', 'active');
 
-    if (filter.city != null) {
-      query = query.eq('city', filter.city!);
+    if (filter.cityId != null) {
+      query = query.eq('city_id', filter.cityId!);
     }
     if (filter.neighborhood != null) {
       query = query.eq('neighborhood', filter.neighborhood!);
@@ -43,7 +46,11 @@ class SupabaseFeedRepository implements FeedRepository {
 
   @override
   Future<Listing> fetchListingById(String id) async {
-    final row = await _client.from('listings').select().eq('id', id).single();
+    final row = await _client
+        .from('listings')
+        .select('*, city:cities(name)')
+        .eq('id', id)
+        .single();
     return Listing.fromMap(row);
   }
 }

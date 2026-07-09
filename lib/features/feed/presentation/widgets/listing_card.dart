@@ -13,7 +13,7 @@ class ListingCard extends StatelessWidget {
     final theme = Theme.of(context);
     final location = [
       listing.neighborhood,
-      listing.city,
+      listing.cityName,
     ].where((part) => part != null && part.isNotEmpty).join(', ');
 
     return Card(

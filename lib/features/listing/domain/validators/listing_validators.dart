@@ -6,10 +6,10 @@ String? validateListingTitle(String? value) {
   return null;
 }
 
-String? validateListingCity(String? value) {
-  final city = value?.trim() ?? '';
-  if (city.isEmpty) {
-    return 'Introduce la ciudad.';
+/// La ciudad debe ser una selección del catálogo (RF-15), nunca texto libre.
+String? validateListingCityId(String? cityId) {
+  if (cityId == null) {
+    return 'Selecciona una ciudad de la lista.';
   }
   return null;
 }

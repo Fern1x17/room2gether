@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../../../core/widgets/city_selector.dart';
 import '../../../auth/presentation/controllers/sign_out_controller.dart';
 import '../../../listing/presentation/widgets/my_listings_section.dart';
 import '../../domain/models/profile.dart';
@@ -25,7 +26,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   final _formKey = GlobalKey<FormState>();
   final _displayNameController = TextEditingController();
   final _bioController = TextEditingController();
-  final _cityController = TextEditingController();
+  String? _cityId;
+  String? _cityName;
   final _budgetMinController = TextEditingController();
   final _budgetMaxController = TextEditingController();
 
@@ -42,7 +44,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   void dispose() {
     _displayNameController.dispose();
     _bioController.dispose();
-    _cityController.dispose();
     _budgetMinController.dispose();
     _budgetMaxController.dispose();
     super.dispose();
@@ -53,7 +54,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     _initialized = true;
     _displayNameController.text = profile.displayName;
     _bioController.text = profile.bio ?? '';
-    _cityController.text = profile.city ?? '';
+    _cityId = profile.cityId;
+    _cityName = profile.cityName;
     _budgetMinController.text = profile.budgetMin?.toString() ?? '';
     _budgetMaxController.text = profile.budgetMax?.toString() ?? '';
     _isSmoker = profile.isSmoker;
@@ -111,9 +113,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           ? null
           : _bioController.text.trim(),
       avatarUrl: _avatarUrl,
-      city: _cityController.text.trim().isEmpty
-          ? null
-          : _cityController.text.trim(),
+      cityId: _cityId,
+      cityName: _cityName,
       budgetMin: int.tryParse(_budgetMinController.text.trim()),
       budgetMax: int.tryParse(_budgetMaxController.text.trim()),
       isSmoker: _isSmoker,
@@ -266,12 +267,12 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                       maxLines: 3,
                     ),
                     const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _cityController,
-                      decoration: const InputDecoration(
-                        labelText: 'Ciudad',
-                        border: OutlineInputBorder(),
-                      ),
+                    CitySelector(
+                      initialCityName: _cityName,
+                      onCitySelected: (city) {
+                        _cityId = city?.id;
+                        _cityName = city?.name;
+                      },
                     ),
                     const SizedBox(height: 16),
                     Row(

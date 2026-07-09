@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../../../core/widgets/city_selector.dart';
 import '../../../feed/domain/models/listing.dart';
 import '../../../feed/presentation/controllers/feed_controller.dart';
 import '../../../feed/presentation/controllers/listing_detail_controller.dart';
@@ -30,7 +31,8 @@ class CreateListingScreen extends ConsumerStatefulWidget {
 class _CreateListingScreenState extends ConsumerState<CreateListingScreen> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
-  final _cityController = TextEditingController();
+  String? _cityId;
+  String? _cityName;
   final _neighborhoodController = TextEditingController();
   final _priceController = TextEditingController();
   final _budgetMinController = TextEditingController();
@@ -52,7 +54,8 @@ class _CreateListingScreenState extends ConsumerState<CreateListingScreen> {
     if (initial != null) {
       _isOffering = initial.isOffering;
       _titleController.text = initial.title;
-      _cityController.text = initial.city;
+      _cityId = initial.cityId;
+      _cityName = initial.cityName;
       _neighborhoodController.text = initial.neighborhood ?? '';
       _priceController.text = initial.price?.toString() ?? '';
       _budgetMinController.text = initial.budgetMin?.toString() ?? '';
@@ -65,7 +68,6 @@ class _CreateListingScreenState extends ConsumerState<CreateListingScreen> {
   @override
   void dispose() {
     _titleController.dispose();
-    _cityController.dispose();
     _neighborhoodController.dispose();
     _priceController.dispose();
     _budgetMinController.dispose();
@@ -119,7 +121,7 @@ class _CreateListingScreenState extends ConsumerState<CreateListingScreen> {
       type: _isOffering ? 'offering' : 'seeking',
       title: _titleController.text.trim(),
       description: description.isEmpty ? null : description,
-      city: _cityController.text.trim(),
+      cityId: _cityId!,
       neighborhood: neighborhood.isEmpty ? null : neighborhood,
       price: _isOffering ? int.parse(_priceController.text.trim()) : null,
       budgetMin: _isOffering
@@ -365,13 +367,13 @@ class _CreateListingScreenState extends ConsumerState<CreateListingScreen> {
                   validator: validateListingTitle,
                 ),
                 const SizedBox(height: 16),
-                TextFormField(
-                  controller: _cityController,
-                  decoration: const InputDecoration(
-                    labelText: 'Ciudad',
-                    border: OutlineInputBorder(),
-                  ),
-                  validator: validateListingCity,
+                CitySelector(
+                  initialCityName: _cityName,
+                  onCitySelected: (city) {
+                    _cityId = city?.id;
+                    _cityName = city?.name;
+                  },
+                  validator: (_) => validateListingCityId(_cityId),
                 ),
                 const SizedBox(height: 16),
                 TextFormField(

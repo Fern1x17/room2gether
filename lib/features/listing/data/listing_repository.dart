@@ -67,7 +67,7 @@ class SupabaseListingRepository implements ListingRepository {
     final userId = _client.auth.currentUser!.id;
     final rows = await _client
         .from('listings')
-        .select()
+        .select('*, city:cities(name)')
         .eq('owner_id', userId)
         .order('created_at', ascending: false);
     return rows.map(Listing.fromMap).toList();
@@ -95,7 +95,7 @@ class SupabaseListingRepository implements ListingRepository {
           'type': draft.type,
           'title': draft.title,
           'description': draft.description,
-          'city': draft.city,
+          'city_id': draft.cityId,
           'neighborhood': draft.neighborhood,
           'price': draft.price,
           'budget_min': draft.budgetMin,
@@ -116,7 +116,7 @@ class SupabaseListingRepository implements ListingRepository {
       'type': draft.type,
       'title': draft.title,
       'description': draft.description,
-      'city': draft.city,
+      'city_id': draft.cityId,
       'neighborhood': draft.neighborhood,
       'price': draft.price,
       'budget_min': draft.budgetMin,

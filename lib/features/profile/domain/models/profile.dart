@@ -5,7 +5,8 @@ class Profile {
     required this.birthdate,
     this.bio,
     this.avatarUrl,
-    this.city,
+    this.cityId,
+    this.cityName,
     this.budgetMin,
     this.budgetMax,
     required this.isSmoker,
@@ -21,7 +22,8 @@ class Profile {
   final DateTime birthdate;
   final String? bio;
   final String? avatarUrl;
-  final String? city;
+  final String? cityId;
+  final String? cityName; // solo lectura (join con cities), no se escribe
   final int? budgetMin;
   final int? budgetMax;
   final bool isSmoker;
@@ -40,7 +42,8 @@ class Profile {
       birthdate: DateTime.parse(map['birthdate'] as String),
       bio: map['bio'] as String?,
       avatarUrl: map['avatar_url'] as String?,
-      city: map['city'] as String?,
+      cityId: map['city_id'] as String?,
+      cityName: (map['city'] as Map<String, dynamic>?)?['name'] as String?,
       budgetMin: map['budget_min'] as int?,
       budgetMax: map['budget_max'] as int?,
       isSmoker: map['is_smoker'] as bool,
@@ -52,13 +55,17 @@ class Profile {
     );
   }
 
+  static const Object _unset = Object();
+
   // birthdate, isVerified y role no son editables por el usuario: la fecha de
   // nacimiento se fija en el registro y el rol lo gestiona el servidor.
+  // cityId/cityName usan centinela para poder LIMPIAR la ciudad (null real).
   Profile copyWith({
     String? displayName,
     String? bio,
     String? avatarUrl,
-    String? city,
+    Object? cityId = _unset,
+    Object? cityName = _unset,
     int? budgetMin,
     int? budgetMax,
     bool? isSmoker,
@@ -72,7 +79,10 @@ class Profile {
       birthdate: birthdate,
       bio: bio ?? this.bio,
       avatarUrl: avatarUrl ?? this.avatarUrl,
-      city: city ?? this.city,
+      cityId: identical(cityId, _unset) ? this.cityId : cityId as String?,
+      cityName: identical(cityName, _unset)
+          ? this.cityName
+          : cityName as String?,
       budgetMin: budgetMin ?? this.budgetMin,
       budgetMax: budgetMax ?? this.budgetMax,
       isSmoker: isSmoker ?? this.isSmoker,

@@ -13,6 +13,8 @@ erDiagram
     CONVERSATIONS ||--o{ MESSAGES : "contiene"
     PROFILES ||--o{ CONVERSATIONS : "participa"
     PROFILES ||--o{ BLOCKS : "bloquea"
+    CITIES ||--o{ PROFILES : "es ciudad de"
+    CITIES ||--o{ LISTINGS : "ubica"
 
     PROFILES {
         uuid id PK
@@ -20,7 +22,7 @@ erDiagram
         date birthdate
         text bio
         text avatar_url
-        text city
+        uuid city_id FK
         int budget_min
         int budget_max
         bool is_smoker
@@ -36,9 +38,11 @@ erDiagram
         text type
         text title
         text description
-        text city
+        uuid city_id FK
         text neighborhood
-        int price
+        int price "solo offering"
+        int budget_min "solo seeking"
+        int budget_max "solo seeking"
         bool is_featured
         timestamptz featured_until
         bool is_business
@@ -76,6 +80,16 @@ erDiagram
         uuid blocker_id FK
         uuid blocked_id FK
     }
+
+    CITIES {
+        uuid id PK
+        text name "nombre canonico, ej. A Coruna"
+        text normalized_name "minusculas y sin tildes, ej. a coruna"
+        text_array aliases "alternativos normalizados, ej. la coruna"
+        bool is_active "solo las activas salen en el selector"
+        timestamptz created_at
+        timestamptz updated_at
+    }
 ```
 
 ## Notas
@@ -83,3 +97,7 @@ erDiagram
 - `profiles.id` = `auth.users.id` de Supabase.
 - Las fotos de las publicaciones pueden ir en un `text[]` o en una tabla
   `listing_photos` aparte si necesitas orden/metadatos.
+- `cities` (RF-15): catálogo gestionado por migración/panel — el cliente solo
+  lee. `city_id` usa `on delete restrict`: una ciudad con perfiles o
+  publicaciones no puede borrarse; para retirarla se pone `is_active = false`
+  y deja de aparecer en el selector sin romper datos históricos.

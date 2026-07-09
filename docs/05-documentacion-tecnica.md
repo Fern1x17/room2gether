@@ -382,3 +382,55 @@ para el futuro panel de moderación (RF-14, CU-13 a CU-17, no implementado).
    este usuario."
 4. En Supabase, la tabla reports tiene la fila con los motivos y status
    'pending'; blocks tiene la pareja (A, B).
+
+---
+
+## Selector de ciudades con autocompletado (RF-15)
+
+**Modelo de datos (migraciones `20260708000013` y `...014` — las aplica el
+usuario, NO están aplicadas al escribir esto):**
+- Tabla `cities`: `name` canónico, `normalized_name` (minúsculas sin tildes,
+  único), `aliases` normalizados, `is_active` (solo las activas salen en el
+  selector). RLS: SELECT para `authenticated`; sin escritura desde el cliente.
+  Seed: Vigo (activa), Santiago de Compostela y A Coruña (inactivas, con
+  aliases).
+- `profiles.city` y `listings.city` (texto) sustituidas por `city_id` (uuid,
+  FK → cities, **on delete restrict**: una ciudad referenciada no puede
+  borrarse; se retira con `is_active = false`). `listings.city_id` NOT NULL
+  (paridad con el esquema anterior); `profiles.city_id` opcional.
+- **Backfill**: el texto existente se normaliza con `unaccent`, se busca en
+  `cities` por nombre o alias y, si no existe, se crea como ciudad inactiva —
+  ninguna fila pierde su ciudad (decisión acordada).
+
+**Cliente (`lib/core/`):**
+- `utils/normalize_text.dart` — normalización con el paquete `diacritic`
+  (elegido por el usuario frente a una función propia).
+- `cities/` — modelo `City`, `CitiesRepository` y `activeCitiesProvider`
+  (las activas se cargan UNA vez; filtrado en memoria por pulsación).
+- `cities/city_ranking.dart` — ranking puro por niveles (0 exacto, 1 empieza
+  por, 2 alguna palabra empieza por, 3 contiene, 4 alias contiene), máximo 8,
+  orden por nivel y alfabético dentro del nivel; consulta vacía → activas.
+- `widgets/city_selector.dart` — `Autocomplete` de Material con estados de
+  carga/error (reintento). Emite siempre la `City` seleccionada (su
+  `city_id` es lo que se guarda); al perder el foco, el texto libre se
+  descarta o se resuelve si coincide exactamente con una ciudad. El usuario
+  nunca puede dejar texto libre como ciudad.
+
+**Puntos sustituidos:** campo Ciudad del perfil (opcional, puede vaciarse),
+del formulario de publicación (obligatorio, `validateListingCityId`) y de los
+filtros del feed. Los modelos llevan `cityId` + `cityName` (el nombre viene
+del join `city:cities(name)` y es solo para mostrar); el feed filtra por
+`eq('city_id', ...)`. Las búsquedas recientes guardan `cityId`+`cityName` en
+el JSON local; las antiguas (con texto) se leen sin ciudad. El trigger de
+registro no escribe ciudad — auth intacta.
+
+**Cómo probarlo a mano** (tras aplicar las migraciones):
+1. Perfil → campo Ciudad → con el campo vacío aparece Vigo (única activa);
+   escribir "vig" o "Vigo" la sugiere; seleccionarla y guardar.
+2. Crear publicación → mismo selector, obligatorio: sin selección aparece
+   "Selecciona una ciudad de la lista." y escribir texto libre y salir del
+   campo lo descarta.
+3. Filtros del feed → seleccionar Vigo filtra; el chip de búsqueda reciente
+   muestra "Vigo".
+4. Escribir "coruna" o "la coruna" NO sugiere nada (A Coruña está inactiva);
+   activarla en BD y reabrir la app la haría aparecer.

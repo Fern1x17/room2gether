@@ -5,7 +5,8 @@ class Listing {
     required this.type,
     required this.title,
     this.description,
-    required this.city,
+    required this.cityId,
+    this.cityName,
     this.neighborhood,
     this.price,
     this.budgetMin,
@@ -21,7 +22,8 @@ class Listing {
   final String type; // 'seeking' | 'offering'
   final String title;
   final String? description;
-  final String city;
+  final String cityId;
+  final String? cityName; // solo lectura (join con cities)
   final String? neighborhood;
   final int? price; // solo 'offering'
   final int? budgetMin; // solo 'seeking'
@@ -46,7 +48,8 @@ class Listing {
       type: map['type'] as String,
       title: map['title'] as String,
       description: map['description'] as String?,
-      city: map['city'] as String,
+      cityId: map['city_id'] as String,
+      cityName: (map['city'] as Map<String, dynamic>?)?['name'] as String?,
       neighborhood: map['neighborhood'] as String?,
       price: map['price'] as int?,
       budgetMin: map['budget_min'] as int?,

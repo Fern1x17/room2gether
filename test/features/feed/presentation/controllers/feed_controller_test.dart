@@ -19,8 +19,8 @@ void main() {
     test('build() filtra por la ciudad del propio perfil', () async {
       final feedRepo = FakeFeedRepository(
         listings: [
-          fakeListing(city: 'Valencia'),
-          fakeListing(id: 'l2', city: 'Madrid'),
+          fakeListing(),
+          fakeListing(id: 'l2', cityId: 'city-coruna', cityName: 'A Coruña'),
         ],
       );
       final container = ProviderContainer(
@@ -40,7 +40,8 @@ void main() {
 
       final listings = await container.read(feedControllerProvider.future);
 
-      expect(feedRepo.lastFilter?.city, isNull); // fakeProfile() no trae ciudad
+      // fakeProfile() no trae ciudad
+      expect(feedRepo.lastFilter?.cityId, isNull);
       expect(listings, hasLength(2));
     });
 
@@ -49,8 +50,8 @@ void main() {
       () async {
         final feedRepo = FakeFeedRepository(
           listings: [
-            fakeListing(city: 'Valencia'),
-            fakeListing(id: 'l2', city: 'Madrid'),
+            fakeListing(),
+            fakeListing(id: 'l2', cityId: 'city-coruna', cityName: 'A Coruña'),
           ],
         );
         final recentRepo = FakeRecentSearchesRepository();
@@ -72,11 +73,11 @@ void main() {
         await container.read(feedControllerProvider.future);
         await container
             .read(feedControllerProvider.notifier)
-            .search(const ListingFilter(city: 'Valencia'));
+            .search(const ListingFilter(cityId: 'city-vigo', cityName: 'Vigo'));
 
         final state = container.read(feedControllerProvider);
         expect(state.value, hasLength(1));
-        expect((await recentRepo.load()).first.city, 'Valencia');
+        expect((await recentRepo.load()).first.cityId, 'city-vigo');
       },
     );
 
@@ -150,11 +151,13 @@ void main() {
       await container.read(recentSearchesControllerProvider.future);
       await container
           .read(recentSearchesControllerProvider.notifier)
-          .addSearch(const ListingFilter(city: 'Sevilla'));
+          .addSearch(
+            const ListingFilter(cityId: 'city-vigo', cityName: 'Vigo'),
+          );
 
       final state = container.read(recentSearchesControllerProvider).value;
       expect(state, isNotNull);
-      expect(state!.first.city, 'Sevilla');
+      expect(state!.first.cityId, 'city-vigo');
     });
   });
 }

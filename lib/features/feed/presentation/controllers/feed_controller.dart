@@ -20,16 +20,18 @@ class FeedController extends AsyncNotifier<List<Listing>> {
     ref.watch(currentUserIdProvider);
     // Pantalla principal: publicaciones de la ciudad del propio perfil, si la
     // tiene rellenada (CU-09, comentarios).
-    String? city;
+    String? cityId;
+    String? cityName;
     try {
       final profile = await ref
           .read(profileRepositoryProvider)
           .fetchMyProfile();
-      city = profile.city;
+      cityId = profile.cityId;
+      cityName = profile.cityName;
     } catch (_) {
-      city = null;
+      cityId = null;
     }
-    _filter = ListingFilter(city: city);
+    _filter = ListingFilter(cityId: cityId, cityName: cityName);
     return _fetchVisible(_filter);
   }
 

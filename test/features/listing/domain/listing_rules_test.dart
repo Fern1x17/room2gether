@@ -19,9 +19,9 @@ void main() {
       expect(validateListingTitle('Habitación centro'), isNull);
     });
 
-    test('ciudad obligatoria', () {
-      expect(validateListingCity(''), isNotNull);
-      expect(validateListingCity('Valencia'), isNull);
+    test('ciudad: debe ser una selección del catálogo (RF-15)', () {
+      expect(validateListingCityId(null), isNotNull);
+      expect(validateListingCityId('city-vigo'), isNull);
     });
 
     test('barrio obligatorio solo si ofrece piso', () {

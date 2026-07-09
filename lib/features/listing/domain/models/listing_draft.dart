@@ -8,7 +8,7 @@ class ListingDraft {
     required this.type,
     required this.title,
     this.description,
-    required this.city,
+    required this.cityId,
     this.neighborhood,
     this.price,
     this.budgetMin,
@@ -18,7 +18,7 @@ class ListingDraft {
   final String type; // 'offering' | 'seeking'
   final String title;
   final String? description;
-  final String city;
+  final String cityId; // siempre una ciudad del catálogo (RF-15)
   final String? neighborhood;
   final int? price;
   final int? budgetMin;

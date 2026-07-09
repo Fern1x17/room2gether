@@ -30,7 +30,7 @@ que lee `birthdate` de los metadatos de `signUp()`).
   datos; no editable desde el cliente, se promociona con service_role
 - `bio` (text)
 - `avatar_url` (text)
-- `city` (text) — ciudad objetivo
+- `city_id` (uuid, FK → cities.id, on delete restrict, nullable) — ciudad objetivo
 - `budget_min`, `budget_max` (int) — presupuesto mensual
 - Preferencias de convivencia: `is_smoker` (bool), `has_pets` (bool),
   `cleanliness_level` (int 1–5), `schedule` (text: madrugador/noctámbulo), etc.
@@ -42,8 +42,9 @@ que lee `birthdate` de los metadatos de `signUp()`).
 - `owner_id` (uuid, FK → profiles.id)
 - `type` (enum: 'seeking' busco / 'offering' ofrezco)
 - `title`, `description` (text)
-- `city`, `neighborhood` (text)
-- `price` (int)
+- `city_id` (uuid, FK → cities.id, on delete restrict, NOT NULL), `neighborhood` (text)
+- `price` (int, nullable — solo 'offering'), `budget_min`/`budget_max` (int,
+  nullable — solo 'seeking'; check de coherencia por tipo)
 - `photos` (text[] o tabla aparte listing_photos)
 - `is_featured` (bool) — para los destacados de pago
 - `featured_until` (timestamptz, nullable)
@@ -77,6 +78,18 @@ que lee `birthdate` de los metadatos de `signUp()`).
 ### blocks (bloqueo entre usuarios)
 - `blocker_id`, `blocked_id` (uuid, FK → profiles.id)
 - PK compuesta.
+
+### cities (catálogo de ciudades, RF-15)
+- `id` (uuid, PK)
+- `name` (text) — nombre canónico a mostrar, ej. "A Coruña"
+- `normalized_name` (text, único) — minúsculas y sin tildes, ej. "a coruna"
+- `aliases` (text[]) — nombres alternativos normalizados, ej. {"la coruna"}
+- `is_active` (bool, default false) — solo las activas salen en el selector;
+  para retirar una ciudad se desactiva, nunca se borra (las FKs usan
+  `on delete restrict`)
+- RLS: SELECT para authenticated (incluye inactivas, para poder mostrar
+  ciudades históricas); NINGUNA escritura desde el cliente — se gestiona por
+  migración o panel.
 
 ## Reglas al modificar la BD
 

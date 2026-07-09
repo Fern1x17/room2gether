@@ -7,7 +7,8 @@ Listing fakeListing({
   String ownerId = 'user-1',
   String type = 'offering',
   String title = 'Habitación luminosa',
-  String city = 'Valencia',
+  String cityId = 'city-vigo',
+  String? cityName = 'Vigo',
   String? neighborhood = 'Ruzafa',
   int price = 400,
   bool isFeatured = false,
@@ -17,7 +18,8 @@ Listing fakeListing({
     ownerId: ownerId,
     type: type,
     title: title,
-    city: city,
+    cityId: cityId,
+    cityName: cityName,
     neighborhood: neighborhood,
     price: price,
     photos: const [],
@@ -40,7 +42,9 @@ class FakeFeedRepository implements FeedRepository {
     if (fetchError != null) throw fetchError!;
     lastFilter = filter;
     return listings.where((listing) {
-      if (filter.city != null && listing.city != filter.city) return false;
+      if (filter.cityId != null && listing.cityId != filter.cityId) {
+        return false;
+      }
       if (filter.neighborhood != null &&
           listing.neighborhood != filter.neighborhood) {
         return false;

@@ -150,7 +150,7 @@ class ListingDetailScreen extends ConsumerWidget {
               currentUserId != null && listing.ownerId == currentUserId;
           final location = [
             listing.neighborhood,
-            listing.city,
+            listing.cityName,
           ].where((part) => part != null && part.isNotEmpty).join(', ');
 
           return SingleChildScrollView(

@@ -8,25 +8,42 @@ void main() {
     });
 
     test('isEmpty es false si hay algún criterio', () {
-      expect(const ListingFilter(city: 'Valencia').isEmpty, isFalse);
+      expect(const ListingFilter(cityId: 'city-vigo').isEmpty, isFalse);
     });
 
-    test('dos filtros con los mismos valores son iguales', () {
-      const a = ListingFilter(city: 'Valencia', maxPrice: 500);
-      const b = ListingFilter(city: 'Valencia', maxPrice: 500);
+    test('dos filtros con los mismos criterios son iguales', () {
+      const a = ListingFilter(cityId: 'city-vigo', maxPrice: 500);
+      const b = ListingFilter(cityId: 'city-vigo', maxPrice: 500);
       expect(a, equals(b));
       expect(a.hashCode, equals(b.hashCode));
     });
 
+    test('cityName no afecta a la igualdad (es solo presentación)', () {
+      const a = ListingFilter(cityId: 'city-vigo', cityName: 'Vigo');
+      const b = ListingFilter(cityId: 'city-vigo');
+      expect(a, equals(b));
+    });
+
     test('toJson/fromJson hacen un roundtrip fiel', () {
       const original = ListingFilter(
-        city: 'Madrid',
-        neighborhood: 'Chamberí',
+        cityId: 'city-coruna',
+        cityName: 'A Coruña',
+        neighborhood: 'Monte Alto',
         maxPrice: 600,
         type: 'seeking',
       );
       final roundTripped = ListingFilter.fromJson(original.toJson());
       expect(roundTripped, equals(original));
+      expect(roundTripped.cityName, 'A Coruña');
+    });
+
+    test('las búsquedas antiguas con city como texto se leen sin ciudad', () {
+      final legacy = ListingFilter.fromJson(const {
+        'city': 'Valencia',
+        'maxPrice': 500,
+      });
+      expect(legacy.cityId, isNull);
+      expect(legacy.maxPrice, 500);
     });
   });
 }

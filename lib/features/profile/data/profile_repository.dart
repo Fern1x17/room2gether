@@ -28,7 +28,7 @@ class SupabaseProfileRepository implements ProfileRepository {
     final userId = _client.auth.currentUser!.id;
     final row = await _client
         .from('profiles')
-        .select()
+        .select('*, city:cities(name)')
         .eq('id', userId)
         .single();
     return Profile.fromMap(row);
@@ -42,7 +42,7 @@ class SupabaseProfileRepository implements ProfileRepository {
           'display_name': profile.displayName,
           'bio': profile.bio,
           'avatar_url': profile.avatarUrl,
-          'city': profile.city,
+          'city_id': profile.cityId,
           'budget_min': profile.budgetMin,
           'budget_max': profile.budgetMax,
           'is_smoker': profile.isSmoker,

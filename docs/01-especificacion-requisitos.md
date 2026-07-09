@@ -19,7 +19,7 @@ Monetización vía anuncios B2B de inmobiliarias y destacados de pago.
 | RF-01 | Registro, login y cierre de sesión (email + Google) | Alta |
 | RF-02 | Verificación de edad (mayor de edad) | Alta |
 | RF-03 | Aceptación de política de privacidad (RGPD) | Alta |
-| RF-04 | Crear y editar perfil con preferencias de convivencia | Alta |
+| RF-04 | Crear y editar perfil con preferencias de convivencia o datos personales (foto de perfil, nombre de usuario)| Alta |
 | RF-05 | Crear, editar y eliminar publicación (busco / ofrezco) con fotos | Alta |
 | RF-06 | Feed de publicaciones con filtros (zona, precio, tipo) | Alta |
 | RF-07 | Chat in-app en tiempo real | Alta |
@@ -30,6 +30,9 @@ Monetización vía anuncios B2B de inmobiliarias y destacados de pago.
 | RF-12 | Eliminar cuenta (derecho al olvido, RGPD) | Alta |
 | RF-13 | Al cerrar la app la sesión debe quedar abierta al volver a entrar si el usuario no la cerró
 | RF-14 | Moderación (eliminar cuentas/publicaciones, modificarlas, etc.)
+| RF-15 | Buscador de ciudades inteligente. Al escribir el nombre de la ciudad aparecerán ciudades con nombre parecido para seleccionar una de ellas
+| RF-16 | Poder cambiar la contraseña del usuario
+| RF-17 | Notificaciones de mensajes
 
 ## 5. Requisitos no funcionales
 - RGPD y protección de datos personales.

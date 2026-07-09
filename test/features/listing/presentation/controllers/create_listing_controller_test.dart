@@ -11,7 +11,7 @@ import '../../fakes/fake_listing_repository.dart';
 const _draft = ListingDraft(
   type: 'offering',
   title: 'Habitación centro',
-  city: 'Valencia',
+  cityId: 'city-vigo',
   neighborhood: 'Ruzafa',
   price: 400,
 );

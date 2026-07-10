@@ -21,7 +21,8 @@ build/
 *.swp
 
 # Secretos — NUNCA subir
-.env
+# Excepción (2026-07-10): .env sí se committea — el build web de CI lo necesita
+# como asset. Solo puede contener claves públicas de cliente.
 .env.*
 *.keystore
 *.jks

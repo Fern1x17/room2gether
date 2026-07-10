@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:roomie/features/feed/data/recent_searches_repository.dart';
-import 'package:roomie/features/feed/domain/models/listing_filter.dart';
+import 'package:room2gether/features/feed/data/recent_searches_repository.dart';
+import 'package:room2gether/features/feed/domain/models/listing_filter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {

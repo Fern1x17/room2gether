@@ -1,4 +1,4 @@
-import 'package:roomie/features/auth/data/auth_repository.dart';
+import 'package:room2gether/features/auth/data/auth_repository.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 User fakeUser({String id = 'user-1', String email = 'test@example.com'}) {

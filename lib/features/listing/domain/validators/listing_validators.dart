@@ -14,12 +14,12 @@ String? validateListingCityId(String? cityId) {
   return null;
 }
 
-/// El barrio es obligatorio si ya se tiene piso; si se busca piso puede
-/// dejarse vacío ("cualquiera"), tal como indica CU-06.
-String? validateListingNeighborhood(String? value, {required bool isOffering}) {
-  final neighborhood = value?.trim() ?? '';
-  if (isOffering && neighborhood.isEmpty) {
-    return 'Introduce el barrio donde está el piso.';
+/// La ubicación (dirección o barrio) es obligatoria si ya se tiene piso; si
+/// se busca piso puede dejarse vacía ("cualquiera"), tal como indica CU-06.
+String? validateListingLocation(String? value, {required bool isOffering}) {
+  final location = value?.trim() ?? '';
+  if (isOffering && location.isEmpty) {
+    return 'Indica la dirección o el barrio del piso.';
   }
   return null;
 }

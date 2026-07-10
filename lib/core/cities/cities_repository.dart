@@ -2,10 +2,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../supabase/supabase_client.dart';
+import '../utils/normalize_text.dart';
 import 'city.dart';
 
 abstract class CitiesRepository {
-  Future<List<City>> fetchActiveCities();
+  /// Devuelve la fila de `cities` para la localidad de Google Places
+  /// [placeId], creándola si no existe (RPC `get_or_create_city`).
+  Future<City> getOrCreateCity({required String placeId, required String name});
 }
 
 class SupabaseCitiesRepository implements CitiesRepository {
@@ -14,23 +17,22 @@ class SupabaseCitiesRepository implements CitiesRepository {
   final SupabaseClient _client;
 
   @override
-  Future<List<City>> fetchActiveCities() async {
-    final rows = await _client
-        .from('cities')
-        .select()
-        .eq('is_active', true)
-        .order('name', ascending: true);
-    return rows.map(City.fromMap).toList();
+  Future<City> getOrCreateCity({
+    required String placeId,
+    required String name,
+  }) async {
+    final row = await _client.rpc(
+      'get_or_create_city',
+      params: {
+        'p_place_id': placeId,
+        'p_name': name,
+        'p_normalized_name': normalizeText(name),
+      },
+    ).single();
+    return City.fromMap(row);
   }
 }
 
 final citiesRepositoryProvider = Provider<CitiesRepository>((ref) {
   return SupabaseCitiesRepository(supabase);
-});
-
-/// Ciudades activas, cargadas una sola vez; el filtrado del selector es en
-/// memoria. (El catálogo solo cambia por migración/panel, no hace falta
-/// recargarlo por usuario ni por sesión.)
-final activeCitiesProvider = FutureProvider<List<City>>((ref) {
-  return ref.read(citiesRepositoryProvider).fetchActiveCities();
 });

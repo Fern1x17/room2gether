@@ -3,14 +3,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../cities/cities_repository.dart';
 import '../cities/city.dart';
-import '../cities/city_ranking.dart';
-import '../utils/normalize_text.dart';
+import '../places/places_service.dart';
 
-/// Selector de ciudad con autocompletado (RF-15).
+/// Selector de ciudad con autocompletado de Google Places (RF-15).
 ///
-/// - Carga las ciudades activas una sola vez ([activeCitiesProvider]) y filtra
-///   en memoria a cada pulsación con el ranking de [rankCities].
-/// - Con el campo vacío muestra directamente las ciudades activas.
+/// - Las sugerencias vienen de Places Autocomplete (API nueva) restringido a
+///   localidades de España, con debounce y session tokens para abaratar coste.
+/// - Al elegir una sugerencia se resuelve contra la tabla `cities` mediante la
+///   RPC `get_or_create_city` (la crea si es la primera vez que alguien la
+///   selecciona) y se emite la [City] resultante.
 /// - Emite SIEMPRE una [City] seleccionada (o null si se borra la selección):
 ///   el texto libre nunca cuenta como ciudad — al perder el foco, si el texto
 ///   no corresponde a una selección se restaura o se descarta.
@@ -38,7 +39,23 @@ class CitySelector extends ConsumerStatefulWidget {
 }
 
 class _CitySelectorState extends ConsumerState<CitySelector> {
+  static const _debounce = Duration(milliseconds: 350);
+  static const _minQueryLength = 2;
+
   String? _selectedName;
+
+  /// Controller interno del Autocomplete (asignado en fieldViewBuilder) para
+  /// poder corregir el texto al nombre canónico tras resolver la selección.
+  TextEditingController? _controller;
+
+  /// Resolviendo la selección contra `cities` (RPC en curso).
+  bool _resolving = false;
+  bool _searchFailed = false;
+
+  /// Identifica la última búsqueda lanzada para descartar respuestas obsoletas
+  /// (el debounce se implementa esperando y comprobando que sigue siendo la
+  /// última).
+  int _searchId = 0;
 
   @override
   void initState() {
@@ -46,10 +63,69 @@ class _CitySelectorState extends ConsumerState<CitySelector> {
     _selectedName = widget.initialCityName;
   }
 
-  /// Al perder el foco: si el texto coincide exactamente con una ciudad se
-  /// selecciona; si no, se restaura la última selección (o se vacía). Así el
-  /// usuario nunca puede dejar texto libre como ciudad.
-  void _resolveOnBlur(TextEditingController controller, List<City> cities) {
+  Future<Iterable<CityPrediction>> _buildOptions(String rawQuery) async {
+    final query = rawQuery.trim();
+    // Tras seleccionar, el campo contiene el nombre canónico: no re-buscar.
+    if (_resolving || query.length < _minQueryLength || query == _selectedName) {
+      _searchId++;
+      return const [];
+    }
+
+    final id = ++_searchId;
+    await Future<void>.delayed(_debounce);
+    if (id != _searchId || !mounted) return const [];
+    // Re-comprobación: la selección puede haberse resuelto durante la espera
+    // (el framework escribe el nombre en el campo antes de resolver la RPC).
+    if (query == _selectedName) return const [];
+
+    try {
+      final results = await ref
+          .read(placesServiceProvider)
+          .autocompleteCities(query);
+      if (id != _searchId || !mounted) return const [];
+      if (_searchFailed) setState(() => _searchFailed = false);
+      return results;
+    } catch (_) {
+      if (id == _searchId && mounted) setState(() => _searchFailed = true);
+      return const [];
+    }
+  }
+
+  /// Resuelve la sugerencia elegida contra el catálogo `cities` y emite la
+  /// ciudad canónica resultante.
+  Future<void> _onPredictionSelected(
+    CityPrediction prediction,
+    TextEditingController controller,
+  ) async {
+    ref.read(placesServiceProvider).endSession();
+    setState(() {
+      _resolving = true;
+      _searchFailed = false;
+    });
+    try {
+      final city = await ref
+          .read(citiesRepositoryProvider)
+          .getOrCreateCity(placeId: prediction.placeId, name: prediction.name);
+      if (!mounted) return;
+      _selectedName = city.name;
+      controller.text = city.name;
+      widget.onCitySelected(city);
+    } catch (_) {
+      if (!mounted) return;
+      controller.text = _selectedName ?? '';
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No se pudo seleccionar la ciudad. Inténtalo de nuevo.'),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _resolving = false);
+    }
+  }
+
+  /// Al perder el foco, si el texto no corresponde a una selección se restaura
+  /// la última (o se vacía). Así el usuario nunca deja texto libre como ciudad.
+  void _restoreOnBlur(TextEditingController controller) {
     final text = controller.text.trim();
     if (text == (_selectedName ?? '')) return;
 
@@ -58,97 +134,91 @@ class _CitySelectorState extends ConsumerState<CitySelector> {
       widget.onCitySelected(null);
       return;
     }
-
-    final normalized = normalizeText(text);
-    City? exact;
-    for (final city in cities) {
-      if (city.normalizedName == normalized) {
-        exact = city;
-        break;
-      }
-    }
-    if (exact != null) {
-      _selectedName = exact.name;
-      controller.text = exact.name;
-      widget.onCitySelected(exact);
-    } else {
-      controller.text = _selectedName ?? '';
-    }
+    controller.text = _selectedName ?? '';
   }
 
   @override
   Widget build(BuildContext context) {
-    final citiesAsync = ref.watch(activeCitiesProvider);
-
-    return citiesAsync.when(
-      loading: () => TextFormField(
-        enabled: false,
-        decoration: InputDecoration(
-          labelText: widget.labelText,
-          border: const OutlineInputBorder(),
-          suffixIcon: const Padding(
-            padding: EdgeInsets.all(12),
-            child: SizedBox(
-              width: 16,
-              height: 16,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ),
-          ),
-        ),
-      ),
-      error: (error, stackTrace) => TextFormField(
-        readOnly: true,
-        decoration: InputDecoration(
-          labelText: widget.labelText,
-          border: const OutlineInputBorder(),
-          errorText: 'No se pudieron cargar las ciudades.',
-          suffixIcon: IconButton(
-            onPressed: () => ref.invalidate(activeCitiesProvider),
-            icon: const Icon(Icons.refresh),
-            tooltip: 'Reintentar',
-          ),
-        ),
-      ),
-      data: (cities) => Autocomplete<City>(
-        initialValue: TextEditingValue(text: widget.initialCityName ?? ''),
-        displayStringForOption: (city) => city.name,
-        optionsBuilder: (textEditingValue) =>
-            rankCities(cities, textEditingValue.text),
-        onSelected: (city) {
-          _selectedName = city.name;
-          widget.onCitySelected(city);
-        },
-        fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
-          return Focus(
-            onFocusChange: (hasFocus) {
-              if (hasFocus) return;
-              // Un microtask para no pisar la selección cuando el blur viene
-              // de tocar una opción del desplegable.
-              Future.microtask(() {
-                if (mounted) _resolveOnBlur(controller, cities);
-              });
-            },
-            child: TextFormField(
-              controller: controller,
-              focusNode: focusNode,
-              validator: widget.validator,
-              onChanged: (text) {
-                if (_selectedName != null && text != _selectedName) {
-                  _selectedName = null;
-                  widget.onCitySelected(null);
-                }
-              },
-              onFieldSubmitted: (_) => onFieldSubmitted(),
-              decoration: InputDecoration(
-                labelText: widget.labelText,
-                hintText: widget.hintText,
-                border: const OutlineInputBorder(),
-                suffixIcon: const Icon(Icons.location_city_outlined),
+    return Autocomplete<CityPrediction>(
+      initialValue: TextEditingValue(text: widget.initialCityName ?? ''),
+      displayStringForOption: (prediction) => prediction.name,
+      optionsBuilder: (textEditingValue) => _buildOptions(textEditingValue.text),
+      optionsViewBuilder: (context, onSelected, options) {
+        // Vista propia para mostrar la descripción completa ("Toro, Zamora,
+        // España") y así distinguir municipios homónimos.
+        return Align(
+          alignment: Alignment.topLeft,
+          child: Material(
+            elevation: 4,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 260, maxWidth: 400),
+              child: ListView.builder(
+                padding: EdgeInsets.zero,
+                shrinkWrap: true,
+                itemCount: options.length,
+                itemBuilder: (context, index) {
+                  final option = options.elementAt(index);
+                  return ListTile(
+                    title: Text(option.name),
+                    subtitle: Text(option.description),
+                    onTap: () => onSelected(option),
+                  );
+                },
               ),
             ),
-          );
-        },
-      ),
+          ),
+        );
+      },
+      onSelected: (prediction) {
+        final controller = _controller;
+        if (controller != null) {
+          _onPredictionSelected(prediction, controller);
+        }
+      },
+      fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
+        _controller = controller;
+        return Focus(
+          onFocusChange: (hasFocus) {
+            if (hasFocus) return;
+            // Un microtask para no pisar la selección cuando el blur viene de
+            // tocar una opción del desplegable.
+            Future.microtask(() {
+              if (mounted && !_resolving) _restoreOnBlur(controller);
+            });
+          },
+          child: TextFormField(
+            controller: controller,
+            focusNode: focusNode,
+            validator: widget.validator,
+            enabled: !_resolving,
+            onChanged: (text) {
+              if (_selectedName != null && text != _selectedName) {
+                _selectedName = null;
+                widget.onCitySelected(null);
+              }
+            },
+            onFieldSubmitted: (_) => onFieldSubmitted(),
+            decoration: InputDecoration(
+              labelText: widget.labelText,
+              hintText: widget.hintText,
+              border: const OutlineInputBorder(),
+              errorText: _searchFailed
+                  ? 'No se pudieron cargar las sugerencias.'
+                  : null,
+              suffixIcon: _resolving
+                  ? const Padding(
+                      padding: EdgeInsets.all(12),
+                      child: SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    )
+                  : const Icon(Icons.location_city_outlined),
+            ),
+          ),
+        );
+      },
     );
   }
 }

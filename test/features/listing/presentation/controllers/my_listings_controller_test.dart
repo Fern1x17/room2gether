@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:roomie/core/supabase/current_user_provider.dart';
-import 'package:roomie/features/listing/data/listing_repository.dart';
-import 'package:roomie/features/listing/presentation/controllers/my_listings_controller.dart';
+import 'package:room2gether/core/supabase/current_user_provider.dart';
+import 'package:room2gether/features/listing/data/listing_repository.dart';
+import 'package:room2gether/features/listing/presentation/controllers/my_listings_controller.dart';
 
 import '../../../feed/fakes/fake_feed_repository.dart';
 import '../../fakes/fake_listing_repository.dart';

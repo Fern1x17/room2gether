@@ -1,4 +1,4 @@
-# Roomie
+# Room2gether
 
 App de búsqueda de compañeros de piso (Flutter + Supabase).
 

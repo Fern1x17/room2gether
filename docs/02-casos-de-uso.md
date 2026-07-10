@@ -1,4 +1,4 @@
-# Casos de Uso — Roomie
+# Casos de Uso — Room2gether
 
 > Plantilla. Añade y detalla los casos de uso. Formato sugerido abajo.
 
@@ -89,9 +89,10 @@
   2. Selecciona si ya tiene piso y busca compañero o si busca piso y compañero.
      2.1. Si ya tiene piso se deben adjuntar imágenes y seleccionar el precio por mes.
      2.2. Si no tiene piso selecciona un rango de mínimo y máximo presupuesto que esté dispuesto a pagar.
-  3. Se introduce la ciudad y el barrio en el que está ubicado el piso o se desea buscar
+  3. Se introduce la ciudad y la dirección/barrio en el que está ubicado el piso o se desea buscar
      (si se está buscando piso, el barrio se puede dejar como "cualquiera").
   4. Se puede escribir una pequeña descripción y posteriormente se publica.
+- **Comentarios:** Cuando se escribe la dirección del piso, el usuario podrá elegir si mostrar la dirección completa o solo el barrio. Tambien si el usuario no escribe la dirección completa y por ejemplo solo pone el barrio no debe dar error y será eso lo que se muestre
 - **Postcondición:** Publicación creada, cualquiera puede verla y contactar.
 
 ### CU-07: Eliminar publicación
@@ -165,7 +166,7 @@
 - **Precondición:** Tener un correo válido para moderador (correo de la empresa)
 - **Flujo principal:**
   1. Abre la app y entra en crear cuenta
-  2. Introduce su correo de la empresa (@roomie.com por ejemplo) y la contraseña
+  2. Introduce su correo de la empresa (@room2gether.com por ejemplo) y la contraseña
   3. Introduce edad
   4. Confirmar email
 - **Postcondición:** La cuenta debe quedar registrada en la base de datos

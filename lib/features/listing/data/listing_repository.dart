@@ -62,12 +62,17 @@ class SupabaseListingRepository implements ListingRepository {
     return urls;
   }
 
+  /// Columnas del join de dirección exacta (RLS decide si la fila llega).
+  static const _addressJoin =
+      'address:listing_addresses(google_place_id, formatted_address, '
+      'latitude, longitude, is_public)';
+
   @override
   Future<List<Listing>> fetchMyListings() async {
     final userId = _client.auth.currentUser!.id;
     final rows = await _client
         .from('listings')
-        .select('*, city:cities(name)')
+        .select('*, city:cities(name), $_addressJoin')
         .eq('owner_id', userId)
         .order('created_at', ascending: false);
     return rows.map(Listing.fromMap).toList();
@@ -103,6 +108,7 @@ class SupabaseListingRepository implements ListingRepository {
           'photos': photoUrls,
         })
         .eq('id', id);
+    await _saveAddress(id, draft);
   }
 
   @override
@@ -111,18 +117,43 @@ class SupabaseListingRepository implements ListingRepository {
     required List<String> photoUrls,
   }) async {
     final userId = _client.auth.currentUser!.id;
-    await _client.from('listings').insert({
-      'owner_id': userId,
-      'type': draft.type,
-      'title': draft.title,
-      'description': draft.description,
-      'city_id': draft.cityId,
-      'neighborhood': draft.neighborhood,
-      'price': draft.price,
-      'budget_min': draft.budgetMin,
-      'budget_max': draft.budgetMax,
-      'photos': photoUrls,
-    });
+    final row = await _client
+        .from('listings')
+        .insert({
+          'owner_id': userId,
+          'type': draft.type,
+          'title': draft.title,
+          'description': draft.description,
+          'city_id': draft.cityId,
+          'neighborhood': draft.neighborhood,
+          'price': draft.price,
+          'budget_min': draft.budgetMin,
+          'budget_max': draft.budgetMax,
+          'photos': photoUrls,
+        })
+        .select('id')
+        .single();
+    await _saveAddress(row['id'] as String, draft);
+  }
+
+  /// Sincroniza la dirección exacta de la publicación: upsert si el borrador
+  /// la trae, borrado si ya no (p. ej. al cambiar a solo barrio en CU-08).
+  Future<void> _saveAddress(String listingId, ListingDraft draft) async {
+    if (draft.hasExactAddress) {
+      await _client.from('listing_addresses').upsert({
+        'listing_id': listingId,
+        'formatted_address': draft.formattedAddress,
+        'google_place_id': draft.addressPlaceId,
+        'latitude': draft.latitude,
+        'longitude': draft.longitude,
+        'is_public': draft.showExactAddress,
+      });
+    } else {
+      await _client
+          .from('listing_addresses')
+          .delete()
+          .eq('listing_id', listingId);
+    }
   }
 }
 

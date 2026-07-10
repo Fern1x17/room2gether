@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:roomie/features/auth/data/auth_repository.dart';
-import 'package:roomie/features/auth/presentation/screens/register_screen.dart';
+import 'package:room2gether/features/auth/data/auth_repository.dart';
+import 'package:room2gether/features/auth/presentation/screens/register_screen.dart';
 
 import '../../fakes/fake_auth_repository.dart';
 

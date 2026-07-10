@@ -32,7 +32,7 @@ class FeedScreen extends ConsumerWidget {
         label: const Text('Crear publicación'),
       ),
       appBar: AppBar(
-        title: const Text('Roomie'),
+        title: const Text('Room2gether'),
         actions: [
           IconButton(
             onPressed: () => _openFilters(context, ref),

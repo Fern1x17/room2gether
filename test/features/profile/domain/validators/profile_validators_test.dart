@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:roomie/features/profile/domain/validators/profile_validators.dart';
+import 'package:room2gether/features/profile/domain/validators/profile_validators.dart';
 
 void main() {
   group('validateDisplayName', () {

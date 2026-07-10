@@ -16,17 +16,17 @@ Future<void> main() async {
     publishableKey: dotenv.env['SUPABASE_ANON_KEY']!,
   );
 
-  runApp(const ProviderScope(child: RoomieApp()));
+  runApp(const ProviderScope(child: Room2getherApp()));
 }
 
-class RoomieApp extends ConsumerWidget {
-  const RoomieApp({super.key});
+class Room2getherApp extends ConsumerWidget {
+  const Room2getherApp({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(appRouterProvider);
     return MaterialApp.router(
-      title: 'Roomie',
+      title: 'Room2gether',
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
       routerConfig: router,

@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:roomie/features/chat/data/chat_repository.dart';
-import 'package:roomie/features/chat/presentation/controllers/chat_controllers.dart';
-import 'package:roomie/features/moderation/data/moderation_repository.dart';
+import 'package:room2gether/features/chat/data/chat_repository.dart';
+import 'package:room2gether/features/chat/presentation/controllers/chat_controllers.dart';
+import 'package:room2gether/features/moderation/data/moderation_repository.dart';
 
 import '../../../moderation/fakes/fake_moderation_repository.dart';
 import '../../fakes/fake_chat_repository.dart';

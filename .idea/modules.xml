@@ -2,8 +2,8 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/roomie.iml" filepath="$PROJECT_DIR$/roomie.iml" />
-      <module fileurl="file://$PROJECT_DIR$/android/roomie_android.iml" filepath="$PROJECT_DIR$/android/roomie_android.iml" />
+      <module fileurl="file://$PROJECT_DIR$/room2gether.iml" filepath="$PROJECT_DIR$/room2gether.iml" />
+      <module fileurl="file://$PROJECT_DIR$/android/room2gether_android.iml" filepath="$PROJECT_DIR$/android/room2gether_android.iml" />
     </modules>
   </component>
 </project>

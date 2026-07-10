@@ -1,6 +1,6 @@
-import 'package:roomie/features/feed/data/feed_repository.dart';
-import 'package:roomie/features/feed/domain/models/listing.dart';
-import 'package:roomie/features/feed/domain/models/listing_filter.dart';
+import 'package:room2gether/features/feed/data/feed_repository.dart';
+import 'package:room2gether/features/feed/domain/models/listing.dart';
+import 'package:room2gether/features/feed/domain/models/listing_filter.dart';
 
 Listing fakeListing({
   String id = 'listing-1',

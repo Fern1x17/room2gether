@@ -1,4 +1,4 @@
-# Roomie — Plataforma de búsqueda de compañeros de piso
+# Room2gether — Plataforma de búsqueda de compañeros de piso
 
 > Este fichero lo lee Claude Code automáticamente al abrir el proyecto.
 > Contiene las reglas permanentes, el contexto de negocio y el plan de trabajo.
@@ -50,8 +50,11 @@ competitiva frente a Badi, que cobra por contactar).
 - Código compartido en `lib/core/` (theme, constantes, utilidades, cliente Supabase).
 - Usar `const` en widgets siempre que sea posible.
 - **Nunca** hardcodear claves API, secretos ni URLs sensibles. Usar variables de
-  entorno vía `--dart-define` o `flutter_dotenv`. Las claves van en `.env` (que
-  está en `.gitignore`).
+  entorno vía `--dart-define` o `flutter_dotenv`. Las claves van en `.env`.
+  Decisión 2026-07-10: `.env` se committea (el build web de GitHub Actions lo
+  necesita como asset y el repo es público). Solo puede contener claves públicas
+  de cliente (anon key de Supabase, clave de Places restringida por referrer).
+  Nada de `service_role` ni secretos de servidor, nunca.
 - Un widget por fichero cuando el widget sea reutilizable o no trivial.
 - Preferir `StatelessWidget` + Riverpod sobre `StatefulWidget` salvo necesidad real.
 

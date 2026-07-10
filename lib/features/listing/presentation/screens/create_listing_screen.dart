@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../../../core/widgets/address_selector.dart';
 import '../../../../core/widgets/city_selector.dart';
 import '../../../feed/domain/models/listing.dart';
 import '../../../feed/presentation/controllers/feed_controller.dart';
@@ -33,7 +34,8 @@ class _CreateListingScreenState extends ConsumerState<CreateListingScreen> {
   final _titleController = TextEditingController();
   String? _cityId;
   String? _cityName;
-  final _neighborhoodController = TextEditingController();
+  AddressSelection? _address;
+  bool _showExactAddress = false;
   final _priceController = TextEditingController();
   final _budgetMinController = TextEditingController();
   final _budgetMaxController = TextEditingController();
@@ -56,7 +58,26 @@ class _CreateListingScreenState extends ConsumerState<CreateListingScreen> {
       _titleController.text = initial.title;
       _cityId = initial.cityId;
       _cityName = initial.cityName;
-      _neighborhoodController.text = initial.neighborhood ?? '';
+      // Precarga de la ubicación: dirección exacta si la hay (RLS siempre la
+      // devuelve al dueño), si no el barrio guardado.
+      if (initial.formattedAddress != null) {
+        _address = AddressSelection(
+          placeId: initial.addressPlaceId,
+          displayText: initial.formattedAddress!,
+          formattedAddress: initial.formattedAddress,
+          neighborhood: initial.neighborhood,
+          latitude: initial.latitude,
+          longitude: initial.longitude,
+          isPreciseAddress: true,
+        );
+        _showExactAddress = initial.addressIsPublic;
+      } else if (initial.neighborhood != null) {
+        _address = AddressSelection(
+          displayText: initial.neighborhood!,
+          neighborhood: initial.neighborhood,
+          isPreciseAddress: false,
+        );
+      }
       _priceController.text = initial.price?.toString() ?? '';
       _budgetMinController.text = initial.budgetMin?.toString() ?? '';
       _budgetMaxController.text = initial.budgetMax?.toString() ?? '';
@@ -68,7 +89,6 @@ class _CreateListingScreenState extends ConsumerState<CreateListingScreen> {
   @override
   void dispose() {
     _titleController.dispose();
-    _neighborhoodController.dispose();
     _priceController.dispose();
     _budgetMinController.dispose();
     _budgetMaxController.dispose();
@@ -115,14 +135,22 @@ class _CreateListingScreenState extends ConsumerState<CreateListingScreen> {
     });
     if (!formValid || photosError != null || budgetError != null) return;
 
-    final neighborhood = _neighborhoodController.text.trim();
     final description = _descriptionController.text.trim();
+    final address = _address;
+    final isPrecise = address?.isPreciseAddress ?? false;
     final draft = ListingDraft(
       type: _isOffering ? 'offering' : 'seeking',
       title: _titleController.text.trim(),
       description: description.isEmpty ? null : description,
       cityId: _cityId!,
-      neighborhood: neighborhood.isEmpty ? null : neighborhood,
+      // El barrio (texto) es lo que se muestra públicamente si la dirección
+      // exacta no es pública o no existe (CU-06).
+      neighborhood: address?.neighborhood,
+      addressPlaceId: isPrecise ? address?.placeId : null,
+      formattedAddress: isPrecise ? address?.formattedAddress : null,
+      latitude: isPrecise ? address?.latitude : null,
+      longitude: isPrecise ? address?.longitude : null,
+      showExactAddress: isPrecise && _showExactAddress,
       price: _isOffering ? int.parse(_priceController.text.trim()) : null,
       budgetMin: _isOffering
           ? null
@@ -370,24 +398,59 @@ class _CreateListingScreenState extends ConsumerState<CreateListingScreen> {
                 CitySelector(
                   initialCityName: _cityName,
                   onCitySelected: (city) {
-                    _cityId = city?.id;
-                    _cityName = city?.name;
+                    setState(() {
+                      _cityId = city?.id;
+                      _cityName = city?.name;
+                      // La ubicación pertenece a una ciudad: al cambiarla se
+                      // descarta la selección anterior.
+                      _address = null;
+                      _showExactAddress = false;
+                    });
                   },
                   validator: (_) => validateListingCityId(_cityId),
                 ),
                 const SizedBox(height: 16),
-                TextFormField(
-                  controller: _neighborhoodController,
-                  decoration: InputDecoration(
-                    labelText: 'Barrio',
-                    hintText: _isOffering ? null : 'Vacío = cualquiera',
-                    border: const OutlineInputBorder(),
-                  ),
-                  validator: (value) => validateListingNeighborhood(
-                    value,
+                AddressSelector(
+                  // Recrea el selector al cambiar de ciudad (vacía su campo).
+                  key: ValueKey('address-$_cityId'),
+                  cityName: _cityName,
+                  initialSelection: _address,
+                  onSelected: (selection) {
+                    setState(() {
+                      _address = selection;
+                      if (selection == null || !selection.isPreciseAddress) {
+                        _showExactAddress = false;
+                      }
+                    });
+                  },
+                  hintText: _isOffering
+                      ? 'Calle y número, o solo el barrio'
+                      : 'Vacío = cualquiera',
+                  validator: (_) => validateListingLocation(
+                    _address?.displayText,
                     isOffering: _isOffering,
                   ),
                 ),
+                if (_address?.isPreciseAddress ?? false) ...[
+                  if (_address?.neighborhood != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8, left: 12),
+                      child: Text(
+                        'Barrio: ${_address!.neighborhood}',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Mostrar la dirección completa'),
+                    subtitle: const Text(
+                      'Si está desactivado, el anuncio solo muestra el barrio.',
+                    ),
+                    value: _showExactAddress,
+                    onChanged: (value) =>
+                        setState(() => _showExactAddress = value),
+                  ),
+                ],
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _descriptionController,

@@ -1,4 +1,4 @@
-name: roomie
+name: room2gether
 description: "App móvil para encontrar compañeros de piso."
 publish_to: 'none'
 
@@ -23,6 +23,9 @@ dependencies:
 
   # Variables de entorno
   flutter_dotenv: ^5.2.1
+
+  # Google Places (autocompletado de ciudades y direcciones, RF-15)
+  flutter_google_places_sdk: ^0.4.3
 
   # UI
   cupertino_icons: ^1.0.8

@@ -1,6 +1,6 @@
-import 'package:roomie/features/feed/domain/models/listing.dart';
-import 'package:roomie/features/listing/data/listing_repository.dart';
-import 'package:roomie/features/listing/domain/models/listing_draft.dart';
+import 'package:room2gether/features/feed/domain/models/listing.dart';
+import 'package:room2gether/features/listing/data/listing_repository.dart';
+import 'package:room2gether/features/listing/domain/models/listing_draft.dart';
 
 class FakeListingRepository implements ListingRepository {
   FakeListingRepository({

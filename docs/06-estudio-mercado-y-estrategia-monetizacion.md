@@ -1,4 +1,4 @@
-# Estudio de mercado y estrategia de monetización — Roomie
+# Estudio de mercado y estrategia de monetización — Room2gether
 
 > Documento de estrategia de negocio. Pensado para vivir en `docs/` del repo y servir de contexto
 > a Claude Code. Fecha de elaboración: julio 2026. Fuentes: idealista/data (T1 2026), JLL,
@@ -20,13 +20,13 @@ El mercado objetivo es grande, crece y está estructuralmente desabastecido. Esp
 con un crecimiento sostenido de ~2% anual desde 2019. De ellos, unos 417.000 se desplazaron a otra
 provincia para estudiar en el curso 2024-25 (+2,9% interanual), a los que se suman ~170.000
 estudiantes internacionales (64.000 vía Erasmus+). Ese bloque de ~590.000 personas que cada año
-necesita techo fuera de casa es el mercado direccionable directo de Roomie, y se renueva
+necesita techo fuera de casa es el mercado direccionable directo de Room2gether, y se renueva
 parcialmente cada septiembre.
 
 La oferta formal no da abasto: las residencias de estudiantes suman ~106.000-111.000 camas frente
 a una demanda estimada de más de 594.000-655.000, un déficit de ~482.000 camas según JLL (335.000
 proyectadas aún sin cubrir en 2029-30). **Consecuencia estructural: la inmensa mayoría de la
-demanda estudiantil se resuelve en el piso compartido**, que es exactamente el terreno de Roomie.
+demanda estudiantil se resuelve en el piso compartido**, que es exactamente el terreno de Room2gether.
 
 El propio mercado de habitaciones está en expansión: la oferta de habitaciones en piso compartido
 creció un 22% interanual en el T1 de 2026, con un precio medio nacional de 430 €/mes. Cada vez más
@@ -297,7 +297,7 @@ anticipado y colchón.
 
 El mercado es grande (~590.000 estudiantes/año buscan techo fuera de casa), crece, y su líder
 (Badi) es odiado precisamente por cobrar al que busca (1,8/5 en Trustpilot). La tacañería del
-usuario no es un obstáculo del plan: es el hueco de mercado. Roomie será gratis para siempre para
+usuario no es un obstáculo del plan: es el hueco de mercado. Room2gether será gratis para siempre para
 quien busca — esa es la adquisición — y cobrará solo a quien gana dinero con esa audiencia,
 siempre después de demostrar valor con métricas, siempre por debajo del ancla de Idealista, y
 siempre enmarcando el precio contra el coste de la vacancia. Cuatro patas de ingreso

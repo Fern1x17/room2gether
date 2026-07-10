@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:roomie/core/supabase/current_user_provider.dart';
-import 'package:roomie/core/cities/cities_repository.dart';
-import 'package:roomie/features/auth/data/auth_repository.dart';
-import 'package:roomie/features/listing/data/listing_repository.dart';
-import 'package:roomie/features/profile/data/profile_repository.dart';
-import 'package:roomie/features/profile/presentation/screens/edit_profile_screen.dart';
+import 'package:room2gether/core/supabase/current_user_provider.dart';
+import 'package:room2gether/core/cities/cities_repository.dart';
+import 'package:room2gether/features/auth/data/auth_repository.dart';
+import 'package:room2gether/features/listing/data/listing_repository.dart';
+import 'package:room2gether/features/profile/data/profile_repository.dart';
+import 'package:room2gether/features/profile/presentation/screens/edit_profile_screen.dart';
 
 import '../../../../core/cities/fake_cities.dart';
 import '../../../auth/fakes/fake_auth_repository.dart';

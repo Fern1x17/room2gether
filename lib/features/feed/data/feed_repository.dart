@@ -16,11 +16,17 @@ class SupabaseFeedRepository implements FeedRepository {
 
   final SupabaseClient _client;
 
+  /// Columnas del join de dirección exacta. RLS solo devuelve la fila si es
+  /// pública o si la publicación es del usuario actual.
+  static const _addressJoin =
+      'address:listing_addresses(google_place_id, formatted_address, '
+      'latitude, longitude, is_public)';
+
   @override
   Future<List<Listing>> fetchListings(ListingFilter filter) async {
     var query = _client
         .from('listings')
-        .select('*, city:cities(name)')
+        .select('*, city:cities(name), $_addressJoin')
         .eq('status', 'active');
 
     if (filter.cityId != null) {
@@ -48,7 +54,7 @@ class SupabaseFeedRepository implements FeedRepository {
   Future<Listing> fetchListingById(String id) async {
     final row = await _client
         .from('listings')
-        .select('*, city:cities(name)')
+        .select('*, city:cities(name), $_addressJoin')
         .eq('id', id)
         .single();
     return Listing.fromMap(row);

@@ -1,4 +1,4 @@
-# Modelo de Datos — Roomie
+# Modelo de Datos — Room2gether
 
 > Diagrama entidad-relación en Mermaid. Se renderiza en GitHub y en VS Code
 > (con la extensión de Mermaid). Mantenlo sincronizado con la skill
@@ -15,6 +15,7 @@ erDiagram
     PROFILES ||--o{ BLOCKS : "bloquea"
     CITIES ||--o{ PROFILES : "es ciudad de"
     CITIES ||--o{ LISTINGS : "ubica"
+    LISTINGS ||--o| LISTING_ADDRESSES : "dirección exacta"
 
     PROFILES {
         uuid id PK
@@ -86,7 +87,19 @@ erDiagram
         text name "nombre canonico, ej. A Coruna"
         text normalized_name "minusculas y sin tildes, ej. a coruna"
         text_array aliases "alternativos normalizados, ej. la coruna"
-        bool is_active "solo las activas salen en el selector"
+        text google_place_id "identidad canonica (Google Places), unico"
+        bool is_active "ciudad foco de marketing; no limita el selector"
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    LISTING_ADDRESSES {
+        uuid listing_id PK "FK a listings, 1:1"
+        text formatted_address
+        text google_place_id
+        double latitude
+        double longitude
+        bool is_public "true = mostrar direccion completa"
         timestamptz created_at
         timestamptz updated_at
     }
@@ -97,7 +110,19 @@ erDiagram
 - `profiles.id` = `auth.users.id` de Supabase.
 - Las fotos de las publicaciones pueden ir en un `text[]` o en una tabla
   `listing_photos` aparte si necesitas orden/metadatos.
-- `cities` (RF-15): catálogo gestionado por migración/panel — el cliente solo
-  lee. `city_id` usa `on delete restrict`: una ciudad con perfiles o
-  publicaciones no puede borrarse; para retirarla se pone `is_active = false`
-  y deja de aparecer en el selector sin romper datos históricos.
+- `cities` (RF-15): registro de ciudades poblado bajo demanda desde Google
+  Places. El selector sugiere cualquier localidad de España vía Places
+  Autocomplete; al elegir una, la RPC `get_or_create_city` (security definer)
+  devuelve su fila creándola si es la primera vez. La identidad canónica es
+  `google_place_id` (único); `normalized_name` ya NO es único (hay municipios
+  homónimos en España) y solo sirve para casar filas antiguas sin place_id.
+  `is_active` se reinterpreta como "ciudad foco de marketing" y no limita el
+  selector. El cliente sigue sin escribir directamente (RLS solo SELECT);
+  `city_id` usa `on delete restrict`.
+- `listing_addresses` (CU-06): dirección exacta opcional de una publicación,
+  1:1 con `listings` y en tabla propia porque RLS es por fila — así "mostrar
+  solo el barrio" se garantiza en la BD. SELECT solo si `is_public` o si la
+  publicación es del usuario; escritura solo del dueño. El barrio y la
+  dirección vienen de Google Places (el catálogo `neighborhoods` se retiró):
+  `listings.neighborhood` sigue siendo texto y almacena el nombre
+  canónico elegido en el selector.

@@ -1,8 +1,8 @@
 import 'dart:async';
 
-import 'package:roomie/features/chat/data/chat_repository.dart';
-import 'package:roomie/features/chat/domain/models/conversation.dart';
-import 'package:roomie/features/chat/domain/models/message.dart';
+import 'package:room2gether/features/chat/data/chat_repository.dart';
+import 'package:room2gether/features/chat/domain/models/conversation.dart';
+import 'package:room2gether/features/chat/domain/models/message.dart';
 
 Conversation fakeConversation({
   String id = 'conv-1',

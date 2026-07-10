@@ -148,10 +148,14 @@ class ListingDetailScreen extends ConsumerWidget {
           final theme = Theme.of(context);
           final isOwner =
               currentUserId != null && listing.ownerId == currentUserId;
-          final location = [
-            listing.neighborhood,
-            listing.cityName,
-          ].where((part) => part != null && part.isNotEmpty).join(', ');
+          // La dirección completa solo llega si es pública o si la
+          // publicación es del propio usuario (RLS); si no, barrio + ciudad.
+          final location =
+              listing.formattedAddress ??
+              [
+                listing.neighborhood,
+                listing.cityName,
+              ].where((part) => part != null && part.isNotEmpty).join(', ');
 
           return SingleChildScrollView(
             padding: const EdgeInsets.all(24),

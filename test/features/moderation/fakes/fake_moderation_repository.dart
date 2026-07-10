@@ -1,4 +1,4 @@
-import 'package:roomie/features/moderation/data/moderation_repository.dart';
+import 'package:room2gether/features/moderation/data/moderation_repository.dart';
 
 class FakeModerationRepository implements ModerationRepository {
   FakeModerationRepository({Set<String>? blockedIds, this.reportError})

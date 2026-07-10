@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:roomie/core/cities/cities_repository.dart';
-import 'package:roomie/core/supabase/current_user_provider.dart';
-import 'package:roomie/features/feed/data/feed_repository.dart';
-import 'package:roomie/features/feed/data/recent_searches_repository.dart';
-import 'package:roomie/features/feed/presentation/screens/feed_screen.dart';
-import 'package:roomie/features/moderation/data/moderation_repository.dart';
-import 'package:roomie/features/profile/data/profile_repository.dart';
+import 'package:room2gether/core/cities/cities_repository.dart';
+import 'package:room2gether/core/places/places_service.dart';
+import 'package:room2gether/core/supabase/current_user_provider.dart';
+import 'package:room2gether/features/feed/data/feed_repository.dart';
+import 'package:room2gether/features/feed/data/recent_searches_repository.dart';
+import 'package:room2gether/features/feed/presentation/screens/feed_screen.dart';
+import 'package:room2gether/features/moderation/data/moderation_repository.dart';
+import 'package:room2gether/features/profile/data/profile_repository.dart';
 
 import '../../../../core/cities/fake_cities.dart';
+import '../../../../core/places/fake_places.dart';
 import '../../../moderation/fakes/fake_moderation_repository.dart';
 import '../../../profile/fakes/fake_profile_repository.dart';
 import '../../fakes/fake_feed_repository.dart';
@@ -30,6 +32,7 @@ Widget _wrap({FakeFeedRepository? feedRepository}) {
         FakeModerationRepository(),
       ),
       citiesRepositoryProvider.overrideWithValue(FakeCitiesRepository()),
+      placesServiceProvider.overrideWithValue(FakePlacesService()),
     ],
     child: const MaterialApp(home: FeedScreen()),
   );

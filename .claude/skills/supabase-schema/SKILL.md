@@ -79,17 +79,40 @@ que lee `birthdate` de los metadatos de `signUp()`).
 - `blocker_id`, `blocked_id` (uuid, FK → profiles.id)
 - PK compuesta.
 
-### cities (catálogo de ciudades, RF-15)
+### listing_addresses (dirección exacta de una publicación, CU-06)
+- `listing_id` (uuid, PK y FK → listings.id, on delete cascade) — 1:1
+- `formatted_address` (text, NOT NULL) — dirección formateada de Google Places
+- `google_place_id` (text)
+- `latitude`, `longitude` (double precision)
+- `is_public` (bool, default false) — true = el dueño eligió mostrar la
+  dirección completa en el anuncio
+- Vive en tabla propia (no como columnas de `listings`) porque RLS es por
+  fila: "mostrar solo el barrio" se garantiza así en la BD.
+- RLS: SELECT solo si `is_public` o si la publicación es del usuario;
+  INSERT/UPDATE/DELETE solo el dueño de la publicación.
+- El barrio y la dirección vienen de Google Places (el catálogo
+  `neighborhoods` se retiró en la migración `20260710000017`). OJO:
+  `listings.neighborhood` sigue siendo texto y guarda el nombre de barrio
+  que devuelve Places; es lo que se muestra si no hay dirección pública.
+
+### cities (registro de ciudades, RF-15 — poblado desde Google Places)
 - `id` (uuid, PK)
 - `name` (text) — nombre canónico a mostrar, ej. "A Coruña"
-- `normalized_name` (text, único) — minúsculas y sin tildes, ej. "a coruna"
+- `normalized_name` (text, indexado NO único: hay municipios homónimos en
+  España) — minúsculas y sin tildes, ej. "a coruna"; solo sirve para casar
+  filas antiguas sin place_id
 - `aliases` (text[]) — nombres alternativos normalizados, ej. {"la coruna"}
-- `is_active` (bool, default false) — solo las activas salen en el selector;
-  para retirar una ciudad se desactiva, nunca se borra (las FKs usan
-  `on delete restrict`)
-- RLS: SELECT para authenticated (incluye inactivas, para poder mostrar
-  ciudades históricas); NINGUNA escritura desde el cliente — se gestiona por
-  migración o panel.
+- `google_place_id` (text, único) — identidad canónica de la ciudad (Google
+  Places); evita duplicados de la misma localidad
+- `is_active` (bool, default false) — "ciudad foco de marketing"; NO limita
+  el selector (cualquier localidad de España es seleccionable)
+- RLS: SELECT para authenticated; NINGUNA escritura directa desde el cliente.
+- RPC `get_or_create_city(p_place_id, p_name, p_normalized_name)` — security
+  definer, execute solo para authenticated. Devuelve la fila por place_id;
+  si no existe, reclama una fila sin place_id que case por nombre/alias; si
+  tampoco, la inserta (`on conflict (google_place_id)` para carreras). Es la
+  única vía de escritura en `cities` desde la app; las FKs siguen con
+  `on delete restrict`.
 
 ## Reglas al modificar la BD
 

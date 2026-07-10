@@ -1,4 +1,4 @@
-# Documentación técnica — Roomie
+# Documentación técnica — Room2gether
 
 > Documentación del código ya construido: qué se hizo, decisiones técnicas y
 > cómo probarlo a mano. Distinta de los documentos de especificación (`01`, `02`,
@@ -387,6 +387,11 @@ para el futuro panel de moderación (RF-14, CU-13 a CU-17, no implementado).
 
 ## Selector de ciudades con autocompletado (RF-15)
 
+> **Sustituido (2026-07-10):** el autocompletado ya no usa el catálogo en
+> memoria sino Google Places — ver la sección "Selector de ciudades con
+> Google Places" al final. Se conserva esta sección como historia del modelo
+> de datos.
+
 **Modelo de datos (migraciones `20260708000013` y `...014` — las aplica el
 usuario, NO están aplicadas al escribir esto):**
 - Tabla `cities`: `name` canónico, `normalized_name` (minúsculas sin tildes,
@@ -434,3 +439,165 @@ registro no escribe ciudad — auth intacta.
    muestra "Vigo".
 4. Escribir "coruna" o "la coruna" NO sugiere nada (A Coruña está inactiva);
    activarla en BD y reabrir la app la haría aparecer.
+   (Nota: desde la migración `20260709000015`, A Coruña y Santiago están
+   ACTIVAS y sí aparecen en el selector.)
+
+---
+
+## Selector de barrios con autocompletado
+
+> **Sustituido (2026-07-10):** el barrio y la dirección vienen ahora de Google
+> Places y el catálogo `neighborhoods` se retiró — ver la sección "Dirección y
+> barrio con Google Places" al final. Se conserva como historia.
+
+**Modelo de datos (migraciones `20260709000015`, `20260709101505` y
+`20260709120000` — aplicadas):**
+- `20260709000015` activa A Coruña y Santiago de Compostela en el selector.
+- `20260709101505` crea `neighborhoods`: catálogo de barrios por ciudad
+  (`city_id` FK restrict a `cities`, `name`, `normalized_name` único,
+  `aliases` normalizados con variantes gallego/castellano, `is_active`),
+  mismas reglas RLS que `cities` (solo SELECT para `authenticated`), y siembra
+  23 barrios de A Coruña activos.
+- `20260709120000` corrige datos del seed: cinco barrios llevaban
+  `normalized_name` con ñ/tildes/mayúsculas (violaba el invariante y los hacía
+  inencontrables al buscar sin tildes), un alias de Orzán mal partido, y añade
+  el alias "sdc" a Santiago.
+- **Decisión de esquema:** `listings.neighborhood` sigue siendo texto (sin
+  FK): el selector guarda el nombre canónico del barrio del catálogo. Si en el
+  futuro se quiere integridad referencial, habría que añadir
+  `neighborhood_id` con su propia migración.
+- Nota pendiente: el índice único de `normalized_name` en `neighborhoods` es
+  global; si dos ciudades tienen un barrio con el mismo nombre habrá que
+  cambiarlo a único por (city_id, normalized_name).
+
+**Cliente (`lib/core/`):**
+- `neighborhoods/` — modelo, repositorio + `activeNeighborhoodsProvider`
+  (carga única, filtrado en memoria) y ranking idéntico al de ciudades
+  (5 niveles, máx. 8, vacío → activos).
+- `widgets/neighborhood_selector.dart` — mismo comportamiento que
+  `CitySelector` (carga/error, texto libre descartado al perder foco, emite
+  siempre la selección) **más filtro por ciudad**: con `cityId` solo ofrece
+  los barrios de esa ciudad.
+
+**Puntos sustituidos:** campo Barrio del formulario de publicación
+(obligatorio si "tengo piso", opcional/"cualquiera" si "busco") y de los
+filtros del feed. En ambos, al cambiar la ciudad se descarta el barrio
+seleccionado y el selector se recrea vacío (`ValueKey` por ciudad). El feed
+sigue filtrando por `eq('neighborhood', nombre)` — funciona porque siempre se
+guarda el nombre canónico.
+
+**Cómo probarlo a mano:**
+1. Crear publicación → elegir "A Coruña" → el campo Barrio sugiere los 23
+   barrios; escribir "elvina" (sin ñ) encuentra Elviña; "adormideras"
+   encuentra Adurmideiras por alias.
+2. Cambiar la ciudad a Vigo → el barrio elegido se borra y el selector no
+   ofrece ninguno (Vigo no tiene barrios sembrados aún).
+3. Filtros del feed → mismo comportamiento; filtrar por Oza muestra solo las
+   publicaciones de ese barrio.
+
+## Selector de ciudades con Google Places (RF-15, sustituye al catálogo)
+
+**Decisión:** el autocompletado de ciudad pasa de un catálogo curado a Google
+Places Autocomplete (API nueva) restringido a localidades de España. Cualquier
+ciudad es seleccionable; el esfuerzo de marketing se concentra en unas pocas
+(`cities.is_active` pasa a significar "ciudad foco", ya no limita nada).
+
+**Paquete:** `flutter_google_places_sdk ^0.4.3` con `useNewApi: true` (SDKs
+nativos, compatible con la clave restringida a Android). La clave vive en
+`.env` como `GOOGLE_PLACES_API_KEY` (no hace falta meta-data en el
+AndroidManifest: solo la exige el Maps SDK para renderizar mapas). Coste
+controlado con session tokens (nuevo token por sesión de tecleo, cerrado al
+seleccionar) y debounce de 350 ms con mínimo de 2 caracteres.
+
+**Modelo de datos (migración `20260710000016` ):**
+- `cities.google_place_id` (text, único): nueva identidad canónica.
+- `normalized_name` deja de ser único (municipios homónimos en España); su
+  índice queda solo para casar filas antiguas.
+- RPC `get_or_create_city(place_id, name, normalized_name)` — security
+  definer, solo `authenticated`: devuelve la fila por place_id; si no existe,
+  reclama una fila antigua sin place_id que case por nombre/alias; si tampoco,
+  inserta la ciudad (con `on conflict` para carreras). El cliente sigue sin
+  permisos de escritura directa sobre `cities`.
+
+**Cliente (`lib/core/`):**
+- `places/places_service.dart` — `PlacesService` (abstracto, falseable en
+  tests) + `GooglePlacesService`: autocompletado restringido a `countries:
+  ['es']` y `PlaceTypeFilter.CITIES`, gestión del session token, locale es-ES.
+- `cities/cities_repository.dart` — `getOrCreateCity()` llama a la RPC; se
+  eliminaron `fetchActiveCities`/`activeCitiesProvider` y
+  `city_ranking.dart` (muertos tras el cambio).
+- `widgets/city_selector.dart` — misma API pública (`onCitySelected(City?)`),
+  por lo que perfil, publicación y filtros del feed no cambiaron. Sugerencias
+  asíncronas con debounce y descarte de respuestas obsoletas; el desplegable
+  muestra la descripción completa ("Toro, Zamora, España") para desambiguar
+  homónimos; al elegir se resuelve contra `cities` vía RPC (spinner mientras
+  tanto) y se emite la `City` canónica. Texto libre sigue sin contar como
+  ciudad (se restaura/descarta al perder el foco).
+
+**Limitación conocida (hasta la fase de dirección con Places):** en una ciudad
+recién creada el selector de barrios no ofrece opciones (el catálogo
+`neighborhoods` solo tiene A Coruña sembrada), así que una publicación
+"ofrezco" fuera de las ciudades sembradas no puede cumplir el barrio
+obligatorio. Se resuelve al integrar la dirección/barrio con Places.
+
+**Cómo probarlo a mano:**
+1. Crear publicación → escribir "coru" → sugerencias de Google con provincia;
+   elegir "A Coruña" → se guarda la misma fila de siempre del catálogo (por
+   nombre/alias) y queda ligada a su place_id.
+2. Escribir "Madrid" y elegirla → se crea la fila en `cities` al vuelo y la
+   publicación la referencia por `city_id`.
+3. Filtros del feed → mismo selector; cualquier ciudad de España es filtrable.
+4. Sin conexión → el campo muestra "No se pudieron cargar las sugerencias."
+
+## Dirección y barrio con Google Places (CU-06, sustituye al catálogo de barrios)
+
+**Decisión:** la ubicación fina de una publicación (dirección con calle o solo
+barrio) viene de Places Autocomplete + Place Details, sesgada a la ciudad
+elegida (se añade la ciudad a la consulta; el SDK solo sesga por coordenadas).
+El catálogo `neighborhoods` se retiró.
+
+**Privacidad (comentario de CU-06):** el usuario elige con un interruptor si
+el anuncio muestra la dirección completa o solo el barrio. La dirección exacta
+vive en `listing_addresses` (tabla 1:1 con `listings`) porque RLS es por fila:
+si `is_public = false`, la BD no entrega la fila a nadie más que al dueño — la
+privacidad no depende del cliente. Si el usuario pone solo el barrio, no hay
+fila de dirección y no da error (se muestra el barrio).
+
+**Modelo de datos (migración `20260710000017`):**
+- `listing_addresses`: `listing_id` (PK/FK cascade), `formatted_address`,
+  `google_place_id`, `latitude`, `longitude`, `is_public`. RLS: SELECT si
+  `is_public` o dueño; escritura solo dueño.
+- `drop table neighborhoods` — el barrio ya no tiene catálogo.
+- `listings.neighborhood` (texto) ahora guarda el barrio que devuelve Places
+  (derivado de los address components de la dirección, o el elegido a mano).
+
+**Cliente:**
+- `places/places_service.dart` — `autocompleteAddresses(query, cityName,
+  neighborhoodsOnly)` (GEOCODE o REGIONS + filtro a barrios) y
+  `fetchDetails(placeId)` con field mask mínima (Address, AddressComponents,
+  Location, Types); la petición de detalles consume el session token.
+- `widgets/address_selector.dart` — nuevo selector compartido: en publicación
+  ofrece direcciones y barrios (pide detalles al elegir, deriva el barrio de
+  los components); en los filtros (`neighborhoodsOnly`) solo barrios y sin
+  petición de detalles (el nombre basta, no factura Details).
+- Publicación: `ListingDraft` lleva la dirección estructurada y
+  `showExactAddress`; el repositorio hace upsert/delete de
+  `listing_addresses` tras crear/editar. El interruptor de privacidad solo
+  aparece si la selección es una dirección con calle.
+- Feed/detalle: los selects embeben `address:listing_addresses(...)` — RLS
+  decide si llega. El detalle muestra `formatted_address` si está disponible
+  y si no "barrio, ciudad".
+- Validación: `validateListingLocation` (antes `validateListingNeighborhood`):
+  obligatoria solo en "ofrezco"; sirve dirección O barrio (CU-06).
+
+**Cómo probarlo a mano:**
+1. Crear publicación (ofrezco) → en "Dirección o barrio" escribir una calle →
+   elegirla → aparece "Barrio: X" y el interruptor "Mostrar la dirección
+   completa" (apagado por defecto).
+2. Publicar con el interruptor apagado → el detalle visto por OTRO usuario
+   muestra solo "barrio, ciudad"; el dueño sí ve la dirección.
+3. Publicar con el interruptor encendido → todos ven la dirección completa.
+4. Escribir solo un barrio ("Os Castros") → publica sin error y se muestra el
+   barrio (CU-06).
+5. Filtros del feed → campo Barrio sugiere barrios de la ciudad elegida;
+   filtrar muestra solo publicaciones con ese barrio.

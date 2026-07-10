@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:roomie/core/supabase/current_user_provider.dart';
-import 'package:roomie/features/moderation/data/moderation_repository.dart';
-import 'package:roomie/features/moderation/presentation/controllers/report_controller.dart';
+import 'package:room2gether/core/supabase/current_user_provider.dart';
+import 'package:room2gether/features/moderation/data/moderation_repository.dart';
+import 'package:room2gether/features/moderation/presentation/controllers/report_controller.dart';
 
 import '../../fakes/fake_moderation_repository.dart';
 

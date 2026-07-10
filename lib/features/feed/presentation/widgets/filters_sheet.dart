@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/widgets/address_selector.dart';
 import '../../../../core/widgets/city_selector.dart';
 import '../../domain/models/listing_filter.dart';
 import '../controllers/recent_searches_controller.dart';
@@ -22,7 +23,7 @@ class FiltersSheet extends ConsumerStatefulWidget {
 class _FiltersSheetState extends ConsumerState<FiltersSheet> {
   String? _cityId;
   String? _cityName;
-  late final TextEditingController _neighborhoodController;
+  String? _neighborhoodName;
   late final TextEditingController _maxPriceController;
   String? _type;
 
@@ -31,9 +32,7 @@ class _FiltersSheetState extends ConsumerState<FiltersSheet> {
     super.initState();
     _cityId = widget.initialFilter.cityId;
     _cityName = widget.initialFilter.cityName;
-    _neighborhoodController = TextEditingController(
-      text: widget.initialFilter.neighborhood ?? '',
-    );
+    _neighborhoodName = widget.initialFilter.neighborhood;
     _maxPriceController = TextEditingController(
       text: widget.initialFilter.maxPrice?.toString() ?? '',
     );
@@ -42,7 +41,6 @@ class _FiltersSheetState extends ConsumerState<FiltersSheet> {
 
   @override
   void dispose() {
-    _neighborhoodController.dispose();
     _maxPriceController.dispose();
     super.dispose();
   }
@@ -51,9 +49,8 @@ class _FiltersSheetState extends ConsumerState<FiltersSheet> {
     final filter = ListingFilter(
       cityId: _cityId,
       cityName: _cityName,
-      neighborhood: _neighborhoodController.text.trim().isEmpty
-          ? null
-          : _neighborhoodController.text.trim(),
+      // El barrio se filtra por su nombre canónico del catálogo.
+      neighborhood: _neighborhoodName,
       maxPrice: int.tryParse(_maxPriceController.text.trim()),
       type: _type,
     );
@@ -90,17 +87,29 @@ class _FiltersSheetState extends ConsumerState<FiltersSheet> {
             CitySelector(
               initialCityName: _cityName,
               onCitySelected: (city) {
-                _cityId = city?.id;
-                _cityName = city?.name;
+                setState(() {
+                  _cityId = city?.id;
+                  _cityName = city?.name;
+                  _neighborhoodName = null;
+                });
               },
             ),
             const SizedBox(height: 16),
-            TextField(
-              controller: _neighborhoodController,
-              decoration: const InputDecoration(
-                labelText: 'Barrio',
-                border: OutlineInputBorder(),
-              ),
+            AddressSelector(
+              key: ValueKey('filter-neighborhood-$_cityId'),
+              cityName: _cityName,
+              neighborhoodsOnly: true,
+              labelText: 'Barrio',
+              initialSelection: _neighborhoodName == null
+                  ? null
+                  : AddressSelection(
+                      displayText: _neighborhoodName!,
+                      neighborhood: _neighborhoodName,
+                      isPreciseAddress: false,
+                    ),
+              onSelected: (selection) {
+                _neighborhoodName = selection?.neighborhood;
+              },
             ),
             const SizedBox(height: 16),
             TextField(

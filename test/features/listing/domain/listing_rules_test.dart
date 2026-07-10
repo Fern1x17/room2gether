@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:roomie/features/listing/domain/listing_policy.dart';
-import 'package:roomie/features/listing/domain/validators/listing_validators.dart';
+import 'package:room2gether/features/listing/domain/listing_policy.dart';
+import 'package:room2gether/features/listing/domain/validators/listing_validators.dart';
 
 void main() {
   group('canCreateListing (regla: una publicación activa por usuario)', () {
@@ -24,10 +24,10 @@ void main() {
       expect(validateListingCityId('city-vigo'), isNull);
     });
 
-    test('barrio obligatorio solo si ofrece piso', () {
-      expect(validateListingNeighborhood('', isOffering: true), isNotNull);
-      expect(validateListingNeighborhood('', isOffering: false), isNull);
-      expect(validateListingNeighborhood('Ruzafa', isOffering: true), isNull);
+    test('ubicación (dirección o barrio) obligatoria solo si ofrece piso', () {
+      expect(validateListingLocation('', isOffering: true), isNotNull);
+      expect(validateListingLocation('', isOffering: false), isNull);
+      expect(validateListingLocation('Ruzafa', isOffering: true), isNull);
     });
 
     test('precio: obligatorio, numérico y no negativo', () {

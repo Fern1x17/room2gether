@@ -1,13 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:roomie/core/supabase/current_user_provider.dart';
-import 'package:roomie/features/feed/data/feed_repository.dart';
-import 'package:roomie/features/feed/data/recent_searches_repository.dart';
-import 'package:roomie/features/feed/domain/models/listing_filter.dart';
-import 'package:roomie/features/feed/presentation/controllers/feed_controller.dart';
-import 'package:roomie/features/feed/presentation/controllers/recent_searches_controller.dart';
-import 'package:roomie/features/moderation/data/moderation_repository.dart';
-import 'package:roomie/features/profile/data/profile_repository.dart';
+import 'package:room2gether/core/supabase/current_user_provider.dart';
+import 'package:room2gether/features/feed/data/feed_repository.dart';
+import 'package:room2gether/features/feed/data/recent_searches_repository.dart';
+import 'package:room2gether/features/feed/domain/models/listing_filter.dart';
+import 'package:room2gether/features/feed/presentation/controllers/feed_controller.dart';
+import 'package:room2gether/features/feed/presentation/controllers/recent_searches_controller.dart';
+import 'package:room2gether/features/moderation/data/moderation_repository.dart';
+import 'package:room2gether/features/profile/data/profile_repository.dart';
 
 import '../../../moderation/fakes/fake_moderation_repository.dart';
 import '../../../profile/fakes/fake_profile_repository.dart';

@@ -2,9 +2,9 @@ import 'dart:typed_data';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:roomie/features/listing/data/listing_repository.dart';
-import 'package:roomie/features/listing/domain/models/listing_draft.dart';
-import 'package:roomie/features/listing/presentation/controllers/create_listing_controller.dart';
+import 'package:room2gether/features/listing/data/listing_repository.dart';
+import 'package:room2gether/features/listing/domain/models/listing_draft.dart';
+import 'package:room2gether/features/listing/presentation/controllers/create_listing_controller.dart';
 
 import '../../fakes/fake_listing_repository.dart';
 

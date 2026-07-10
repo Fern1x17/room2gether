@@ -1,7 +1,7 @@
 import 'dart:typed_data';
 
-import 'package:roomie/features/profile/data/profile_repository.dart';
-import 'package:roomie/features/profile/domain/models/profile.dart';
+import 'package:room2gether/features/profile/data/profile_repository.dart';
+import 'package:room2gether/features/profile/domain/models/profile.dart';
 
 Profile fakeProfile({
   String id = 'user-1',

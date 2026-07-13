@@ -21,8 +21,9 @@ build/
 *.swp
 
 # Secretos — NUNCA subir
-# Excepción (2026-07-10): .env sí se committea — el build web de CI lo necesita
-# como asset. Solo puede contener claves públicas de cliente.
+# (2026-07-13): .env ya NO se committea. El workflow de deploy lo genera desde
+# GitHub Secrets antes del build. En local, copia .env.example a .env.
+.env
 .env.*
 *.keystore
 *.jks

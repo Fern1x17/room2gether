@@ -51,10 +51,13 @@ competitiva frente a Badi, que cobra por contactar).
 - Usar `const` en widgets siempre que sea posible.
 - **Nunca** hardcodear claves API, secretos ni URLs sensibles. Usar variables de
   entorno vía `--dart-define` o `flutter_dotenv`. Las claves van en `.env`.
-  Decisión 2026-07-10: `.env` se committea (el build web de GitHub Actions lo
-  necesita como asset y el repo es público). Solo puede contener claves públicas
-  de cliente (anon key de Supabase, clave de Places restringida por referrer).
-  Nada de `service_role` ni secretos de servidor, nunca.
+  Decisión 2026-07-13 (sustituye a la de 2026-07-10): `.env` NO se committea.
+  El workflow de deploy lo genera desde GitHub Secrets (`SUPABASE_URL`,
+  `SUPABASE_ANON_KEY`, `GOOGLE_PLACES_API_KEY`) antes de compilar. Ojo: en web
+  `.env` se empaqueta como asset y es descargable desde el navegador, así que
+  solo puede contener claves públicas de cliente (anon key de Supabase, clave
+  de Places restringida por referrer). Nada de `service_role` ni secretos de
+  servidor, nunca.
 - Un widget por fichero cuando el widget sea reutilizable o no trivial.
 - Preferir `StatelessWidget` + Riverpod sobre `StatefulWidget` salvo necesidad real.
 

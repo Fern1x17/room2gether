@@ -44,7 +44,7 @@ create policy "messages_insert_participant"
     )
   );
 
--- Update solo para marcar read_at; no se permite borrar mensajes
+-- Update: Permite actualizar a los participantes (necesario para marcar read_at y para que el remitente edite)
 create policy "messages_update_participants"
   on public.messages for update
   to authenticated
@@ -62,3 +62,9 @@ create policy "messages_update_participants"
         and (c.user_a = auth.uid() or c.user_b = auth.uid())
     )
   );
+
+-- Delete: Solo permite borrar el mensaje si eres el remitente original
+create policy "messages_delete_sender"
+  on public.messages for delete
+  to authenticated
+  using ( sender_id = auth.uid() );

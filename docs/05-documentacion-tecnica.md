@@ -339,6 +339,39 @@ por tipo: 'offering' exige price, 'seeking' exige rango válido; las filas
 3. Volver a "Enviar mensaje" desde otra publicación del mismo usuario → se
    reabre el mismo chat (no se duplica).
 
+### Edición y borrado de mensajes (Extensión CU-10)
+
+**Ficheros nuevos/tocados:**
+
+- `supabase/migrations/20260701000004_create_messages.sql` — Se modificaron las políticas RLS (Row Level Security) para permitir la eliminación de mensajes (la política de edición ya existía para el `read_at`).
+- `lib/features/chat/data/chat_repository.dart` — Se añadieron los métodos `updateMessage(messageId, newContent)` y `deleteMessage(messageId)`.
+- `lib/features/chat/presentation/controllers/chat_controllers.dart` — Se creó `MessageActionsController` (`AsyncNotifier`) para gestionar los estados de carga y error de las acciones de modificar y borrar, evitando bloquear la UI.
+- `lib/features/chat/presentation/screens/chat_screen.dart` — Se añadió un `GestureDetector` con `onLongPress` en las burbujas de texto. Despliega un menú inferior (`showModalBottomSheet`) y diálogos de confirmación/edición (`AlertDialog`).
+
+**Decisiones técnicas:**
+- **Seguridad restrictiva (RLS):** Originalmente el sistema bloqueaba el borrado de mensajes por auditoría. Al habilitarlo, se ha creado una política estricta (`messages_delete_sender`) que evalúa `using ( sender_id = auth.uid() )`. De esta forma, la base de datos garantiza que es matemáticamente imposible que un usuario borre o edite el mensaje de la otra persona.
+- **Defensa en profundidad:** Aunque el servidor (Supabase) ya bloquea accesos indebidos mediante RLS, los métodos del `ChatRepository` en Flutter inyectan de forma forzosa un filtro adicional `.eq('sender_id', _myId)` en las peticiones de `update` y `delete` para evitar errores del lado del cliente.
+- **Validación visual preventiva:** El detector de gestos (`onLongPress`) se anula de forma condicional desde el propio widget (`isMine ? () => _showMessageOptions() : null`). Esto impide que el usuario pueda abrir el menú de edición en los mensajes de la otra persona.
+
+**Cómo probarlo a mano:**
+
+**Paso previo indispensable (Configuración de Supabase):**
+Para que el cliente no reciba errores de permisos, un administrador debe habilitar el borrado en la base de datos aplicando la nueva política RLS. 
+
+Para hacerlo, debe hacer lo siguiente:
+- **Vía Web:** Entrar al panel del proyecto en `app.supabase.com`, ir al **SQL Editor**, abrir una *New query*, pegar este código y pulsar *Run*:
+  ```sql
+  create policy "messages_delete_sender"
+    on public.messages for delete
+    to authenticated
+    using ( sender_id = auth.uid() );
+    
+Una vez aplicado hacer lo siguiente para poder probarlo:
+    1. Iniciar sesión y entrar en la pestaña de Chats.
+    2. Abrir cualquier conversación existente (o crear una nueva desde una publicación).
+    3. **Probar bloqueo:** Mantener pulsado de forma prolongada sobre un mensaje recibido (gris). No debe ocurrir nada.
+    4. **Probar edición:** Mantener pulsado sobre un mensaje propio (color primario). Se abrirá un menú inferior. Seleccionar "Editar", cambiar el texto y pulsar "Guardar". El globo   de texto se actualizará en vivo.
+    5. **Probar borrado:** Mantener pulsado sobre un mensaje propio, seleccionar "Eliminar" en el menú inferior y confirmar en el diálogo rojo. La burbuja desaparecerá del chat.
 ---
 
 ## Moderación (CU-11 Reportar / bloquear)

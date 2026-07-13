@@ -102,3 +102,42 @@ final sendMessageControllerProvider =
     AsyncNotifierProvider<SendMessageController, void>(
       SendMessageController.new,
     );
+
+class MessageActionsController extends AsyncNotifier<void> {
+  @override
+  FutureOr<void> build() {}
+
+  Future<bool> deleteMessage(String messageId) async {
+    state = const AsyncLoading();
+    try {
+      await ref.read(chatRepositoryProvider).deleteMessage(messageId);
+      state = const AsyncData(null);
+      return true;
+    } catch (error, stackTrace) {
+      state = AsyncError('No se pudo borrar el mensaje.', stackTrace);
+      return false;
+    }
+  }
+
+  Future<bool> updateMessage(String messageId, String newContent) async {
+    final trimmed = newContent.trim();
+    if (trimmed.isEmpty) return false;
+    state = const AsyncLoading();
+    try {
+      await ref.read(chatRepositoryProvider).updateMessage(
+            messageId: messageId,
+            newContent: trimmed,
+          );
+      state = const AsyncData(null);
+      return true;
+    } catch (error, stackTrace) {
+      state = AsyncError('No se pudo editar el mensaje.', stackTrace);
+      return false;
+    }
+  }
+}
+
+final messageActionsControllerProvider =
+    AsyncNotifierProvider<MessageActionsController, void>(
+  MessageActionsController.new,
+);

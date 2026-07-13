@@ -5,6 +5,7 @@ import '../../../../core/supabase/current_user_provider.dart';
 import '../../../feed/presentation/controllers/feed_controller.dart';
 import '../../../moderation/presentation/controllers/report_controller.dart';
 import '../../../moderation/presentation/widgets/report_dialog.dart';
+import '../../domain/models/message.dart';
 import '../controllers/chat_controllers.dart';
 
 class ChatScreen extends ConsumerStatefulWidget {
@@ -51,6 +52,91 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     );
   }
 
+  // --- NUEVAS FUNCIONES PARA EDITAR Y BORRAR ---
+
+  Future<void> _deleteMessage(String messageId) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Eliminar mensaje'),
+        content: const Text('¿Seguro que quieres borrar este mensaje?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Eliminar', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true || !mounted) return;
+    await ref.read(messageActionsControllerProvider.notifier).deleteMessage(messageId);
+  }
+
+  Future<void> _editMessage(Message message) async {
+    final editController = TextEditingController(text: message.content);
+    final newContent = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Editar mensaje'),
+        content: TextField(
+          controller: editController,
+          autofocus: true,
+          decoration: const InputDecoration(border: OutlineInputBorder()),
+          maxLines: null,
+          textCapitalization: TextCapitalization.sentences,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(editController.text),
+            child: const Text('Guardar'),
+          ),
+        ],
+      ),
+    );
+
+    if (newContent == null || newContent.trim().isEmpty || newContent == message.content || !mounted) return;
+    await ref.read(messageActionsControllerProvider.notifier).updateMessage(message.id, newContent);
+  }
+
+  void _showMessageOptions(Message message) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.edit),
+              title: const Text('Editar mensaje'),
+              onTap: () {
+                Navigator.of(context).pop();
+                _editMessage(message);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.delete, color: Colors.red),
+              title: const Text('Eliminar mensaje', style: TextStyle(color: Colors.red)),
+              onTap: () {
+                Navigator.of(context).pop();
+                _deleteMessage(message.id);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+  // ---------------------------------------------
+
   @override
   Widget build(BuildContext context) {
     final conversationAsync = ref.watch(
@@ -62,6 +148,14 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final currentUserId = ref.watch(currentUserIdProvider);
     final isSending = ref.watch(sendMessageControllerProvider).isLoading;
     final theme = Theme.of(context);
+
+    // Escuchamos posibles errores en las acciones del mensaje
+    ref.listen(messageActionsControllerProvider, (previous, next) {
+      final error = next.error;
+      if (error != null) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.toString())));
+      }
+    });
 
     ref.listen(sendMessageControllerProvider, (previous, next) {
       final error = next.error;
@@ -133,22 +227,25 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                         alignment: isMine
                             ? Alignment.centerRight
                             : Alignment.centerLeft,
-                        child: Container(
-                          margin: const EdgeInsets.only(bottom: 8),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 10,
+                        child: GestureDetector(
+                          onLongPress: isMine ? () => _showMessageOptions(message) : null,
+                          child: Container(
+                            margin: const EdgeInsets.only(bottom: 8),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 10,
+                            ),
+                            constraints: BoxConstraints(
+                              maxWidth: MediaQuery.of(context).size.width * 0.75,
+                            ),
+                            decoration: BoxDecoration(
+                              color: isMine
+                                  ? theme.colorScheme.primaryContainer
+                                  : theme.colorScheme.surfaceContainerHighest,
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Text(message.content),
                           ),
-                          constraints: BoxConstraints(
-                            maxWidth: MediaQuery.of(context).size.width * 0.75,
-                          ),
-                          decoration: BoxDecoration(
-                            color: isMine
-                                ? theme.colorScheme.primaryContainer
-                                : theme.colorScheme.surfaceContainerHighest,
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: Text(message.content),
                         ),
                       );
                     },
@@ -178,6 +275,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                         controller: _messageController,
                         textInputAction: TextInputAction.send,
                         onSubmitted: (_) => _send(),
+                        textCapitalization: TextCapitalization.sentences,
                         decoration: const InputDecoration(
                           hintText: 'Escribe un mensaje…',
                           border: OutlineInputBorder(),

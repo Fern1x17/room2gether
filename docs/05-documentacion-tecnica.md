@@ -634,3 +634,34 @@ fila de dirección y no da error (se muestra el barrio).
    barrio (CU-06).
 5. Filtros del feed → campo Barrio sugiere barrios de la ciudad elegida;
    filtrar muestra solo publicaciones con ese barrio.
+   
+## Modo Oscuro / Modo Claro (RF-16)
+
+**Carpeta: lib/core/theme/**
+
+    - core/theme/theme_controller.dart — ThemeController (AsyncNotifier<ThemeMode>). Gestiona la lógica de alternancia y la persistencia local de la preferencia del usuario.
+
+    - core/theme/app_theme.dart — Definiciones de ThemeData (light y dark) utilizando ColorScheme.fromSeed para mantener consistencia con el color primario del proyecto.
+
+    - main.dart — Integración con MaterialApp.themeMode. El widget Room2getherApp escucha al provider para reconstruir el árbol de widgets con el tema correcto.
+
+    - features/profile/presentation/screens/edit_profile_screen.dart — Implementación del SwitchListTile en la pantalla de perfil para la gestión del usuario.
+
+**Decisiones técnicas:**
+
+    - Persistencia local: Se utiliza shared_preferences para almacenar el estado ('light', 'dark' o 'system') en el dispositivo. Al ser una preferencia meramente estética del cliente, se descartó cualquier sincronización con la base de datos (Supabase) para evitar latencia y consumo innecesario de red.
+
+    - Reactividad centralizada: Se utiliza un AsyncNotifier para el estado del tema. Esto permite que MaterialApp.themeMode reaccione instantáneamente ante cualquier cambio de estado (ref.watch(themeControllerProvider)), propagando el cambio a toda la jerarquía de la app sin necesidad de refrescos manuales.
+
+    - Fallback al sistema: Si el usuario no ha realizado ninguna elección previa, el ThemeController devuelve ThemeMode.system, respetando así la configuración de accesibilidad del sistema operativo del usuario.
+
+**Cómo probarlo a mano:**
+
+    - Navegar a la pantalla de "Tu perfil".
+
+    - Localizar el interruptor "Modo Oscuro" (debajo de "Guardar cambios").
+
+    - Activar/Desactivar el interruptor → La interfaz debe cambiar su esquema de colores (fondo y texto) de forma instantánea.
+
+    - Cerrar la aplicación por completo (eliminar de la multitarea) y volver a abrirla → La aplicación debe recordar y aplicar automáticamente la última preferencia elegida (persistencia).
+   

@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../../core/widgets/city_selector.dart';
+// 1. Añadimos la importación del controlador del tema
+import '../../../../core/theme/theme_controller.dart';
 import '../../../auth/presentation/controllers/sign_out_controller.dart';
 import '../../../listing/presentation/widgets/my_listings_section.dart';
 import '../../domain/models/profile.dart';
@@ -171,6 +173,11 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   Widget build(BuildContext context) {
     final profileAsync = ref.watch(profileControllerProvider);
     final isSaving = profileAsync.isLoading && _initialized;
+
+    // 2. Leemos el estado del tema para saber qué mostrar en el interruptor
+    final themeMode = ref.watch(themeControllerProvider).value ?? ThemeMode.system;
+    final isDarkMode = themeMode == ThemeMode.dark ||
+        (themeMode == ThemeMode.system && MediaQuery.platformBrightnessOf(context) == Brightness.dark);
 
     return Scaffold(
       appBar: AppBar(
@@ -378,8 +385,21 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                       ),
                     ),
                     const SizedBox(height: 32),
+
+                    // 3. Añadimos el interruptor de Modo Oscuro con su separador
+                    const Divider(),
+                    SwitchListTile(
+                      title: const Text('Modo Oscuro'),
+                      secondary: Icon(isDarkMode ? Icons.dark_mode : Icons.light_mode),
+                      value: isDarkMode,
+                      onChanged: (bool value) {
+                        ref.read(themeControllerProvider.notifier).toggleTheme(value);
+                      },
+                      contentPadding: EdgeInsets.zero,
+                    ),
                     const Divider(),
                     const SizedBox(height: 8),
+
                     Text(
                       'Tus publicaciones',
                       style: Theme.of(context).textTheme.titleMedium,

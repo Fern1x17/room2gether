@@ -223,12 +223,17 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                     itemBuilder: (context, index) {
                       final message = messages[messages.length - 1 - index];
                       final isMine = message.senderId == currentUserId;
+
+                      // NUEVO: Detectamos si es un mensaje "eliminado"
+                      final isDeleted = message.content == '🚫 Este mensaje ha sido eliminado';
+
                       return Align(
                         alignment: isMine
                             ? Alignment.centerRight
                             : Alignment.centerLeft,
                         child: GestureDetector(
-                          onLongPress: isMine ? () => _showMessageOptions(message) : null,
+                          // NUEVO: Bloqueamos las opciones si el mensaje está borrado
+                          onLongPress: (isMine && !isDeleted) ? () => _showMessageOptions(message) : null,
                           child: Container(
                             margin: const EdgeInsets.only(bottom: 8),
                             padding: const EdgeInsets.symmetric(
@@ -244,7 +249,16 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                                   : theme.colorScheme.surfaceContainerHighest,
                               borderRadius: BorderRadius.circular(16),
                             ),
-                            child: Text(message.content),
+                            child: Text(
+                              message.content,
+                              // NUEVO: Estilo atenuado para el texto de eliminado
+                              style: isDeleted
+                                ? TextStyle(
+                                    fontStyle: FontStyle.italic,
+                                    color: theme.colorScheme.onSurface.withOpacity(0.5),
+                                  )
+                                : null,
+                            ),
                           ),
                         ),
                       );

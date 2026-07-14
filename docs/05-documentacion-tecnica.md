@@ -354,9 +354,9 @@ por tipo: 'offering' exige price, 'seeking' exige rango válido; las filas
   las migraciones aplicadas son inmutables; los cambios van en una nueva).
   La política de edición (`messages_update_participants`) ya existía para el
   `read_at` y no necesitó cambios.
-- `lib/features/chat/data/chat_repository.dart` — Se añadieron los métodos `updateMessage(messageId, newContent)` y `deleteMessage(messageId)`.
+- `lib/features/chat/data/chat_repository.dart` — Se añadieron los métodos `updateMessage(messageId, newContent)` y `deleteMessage(messageId)` (este último implementado como borrado lógico modificando el texto).
 - `lib/features/chat/presentation/controllers/chat_controllers.dart` — Se creó `MessageActionsController` (`AsyncNotifier`) para gestionar los estados de carga y error de las acciones de modificar y borrar, evitando bloquear la UI.
-- `lib/features/chat/presentation/screens/chat_screen.dart` — Se añadió un `GestureDetector` con `onLongPress` en las burbujas de texto. Despliega un menú inferior (`showModalBottomSheet`) y diálogos de confirmación/edición (`AlertDialog`).
+- `lib/features/chat/presentation/screens/chat_screen.dart` — Se añadió un `GestureDetector` con `onLongPress` en las burbujas de texto. Despliega un menú inferior (`showModalBottomSheet`) y diálogos de confirmación/edición (`AlertDialog`). Se añadió la detección visual de mensajes eliminados.
 - `test/features/chat/presentation/controllers/chat_controllers_test.dart` —
   tests de `MessageActionsController`: borrado y edición (caso feliz, contenido
   recortado, rechazo de vacíos y estados de error). El fake
@@ -364,17 +364,16 @@ por tipo: 'offering' exige price, 'seeking' exige rango válido; las filas
   `deletedMessageIds` / `updatedMessages` y permite inyectar errores.
 
 **Decisiones técnicas:**
-- **Seguridad restrictiva (RLS) en el borrado:** la política
-  `messages_delete_sender` evalúa `using ( sender_id = auth.uid() )`: la base
-  de datos garantiza que un usuario no puede borrar mensajes de otra persona.
+- **Borrado Lógico (Soft Delete) vs Físico:** Para conseguir el efecto visual de "🚫 Este mensaje ha sido eliminado" y asegurar que la eliminación se propague en tiempo real a ambos clientes (Supabase Realtime tiene limitaciones enviando eventos `DELETE` si RLS falla al evaluar datos que ya no existen), la acción de "borrar" ejecuta en realidad un `UPDATE`. La fila no se elimina de la base de datos, sino que su contenido cambia a una frase clave.
+- **Seguridad restrictiva (RLS) en el borrado:** Aunque a nivel de código de Flutter hacemos un Soft Delete (UPDATE), la política `messages_delete_sender` que evalúa `using ( sender_id = auth.uid() )` se mantiene en el servidor como medida de seguridad estricta de la base de datos por si en el futuro se requiriese un borrado físico.
 - **Matiz en la edición:** la política de UPDATE permite actualizar a ambos
   participantes (necesario para marcar `read_at`), así que la restricción de
   "solo el remitente edita el contenido" NO la garantiza la BD hoy — la aplican
   el filtro del repositorio y la UI (puntos siguientes). Si se quisiera
   garantía a nivel de BD habría que separar `read_at` del `content` (p. ej.
   con una columna/policy específica o un trigger), pendiente de decidir.
-- **Defensa en profundidad:** Aunque el servidor (Supabase) ya bloquea accesos indebidos mediante RLS, los métodos del `ChatRepository` en Flutter inyectan de forma forzosa un filtro adicional `.eq('sender_id', _myId)` en las peticiones de `update` y `delete` para evitar errores del lado del cliente.
-- **Validación visual preventiva:** El detector de gestos (`onLongPress`) se anula de forma condicional desde el propio widget (`isMine ? () => _showMessageOptions() : null`). Esto impide que el usuario pueda abrir el menú de edición en los mensajes de la otra persona.
+- **Defensa en profundidad:** Aunque el servidor (Supabase) ya bloquea accesos indebidos mediante RLS, los métodos del `ChatRepository` en Flutter inyectan de forma forzosa un filtro adicional `.eq('sender_id', _myId)` en las peticiones de `update` y borrado lógico para evitar errores del lado del cliente.
+- **Validación visual preventiva:** El detector de gestos (`onLongPress`) se anula de forma condicional desde el propio widget (`(isMine && !isDeleted) ? () => _showMessageOptions() : null`). Esto impide que el usuario pueda interactuar con los mensajes de la otra persona, ni tampoco editar/borrar un mensaje que ya ha sido marcado como eliminado.
 
 **Cómo probarlo a mano:**
 
@@ -386,7 +385,8 @@ por tipo: 'offering' exige price, 'seeking' exige rango válido; las filas
 2. Abrir cualquier conversación existente (o crear una nueva desde una publicación).
 3. **Probar bloqueo:** Mantener pulsado de forma prolongada sobre un mensaje recibido (gris). No debe ocurrir nada.
 4. **Probar edición:** Mantener pulsado sobre un mensaje propio (color primario). Se abrirá un menú inferior. Seleccionar "Editar", cambiar el texto y pulsar "Guardar". El globo de texto se actualizará en vivo.
-5. **Probar borrado:** Mantener pulsado sobre un mensaje propio, seleccionar "Eliminar" en el menú inferior y confirmar en el diálogo rojo. La burbuja desaparecerá del chat.
+5. **Probar borrado:** Mantener pulsado sobre un mensaje propio, seleccionar "Eliminar" en el menú inferior y confirmar en el diálogo rojo. El globo de texto cambiará instantáneamente a "*🚫 Este mensaje ha sido eliminado*" en color gris/cursiva.
+6. **Probar bloqueo post-borrado:** Mantener pulsado sobre el mensaje que acabas de eliminar. No debe ocurrir nada ni abrirse el menú.
 ---
 
 ## Moderación (CU-11 Reportar / bloquear)

@@ -125,9 +125,10 @@ class SupabaseChatRepository implements ChatRepository {
 
   @override
   Future<void> deleteMessage(String messageId) async {
+    // Soft Delete: Actualiza el texto para que Supabase lo envíe por Realtime
     await _client
         .from('messages')
-        .delete()
+        .update({'content': '🚫 Este mensaje ha sido eliminado'})
         .eq('id', messageId)
         .eq('sender_id', _myId);
   }

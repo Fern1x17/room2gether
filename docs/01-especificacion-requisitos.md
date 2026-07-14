@@ -33,6 +33,7 @@ Monetización vía anuncios B2B de inmobiliarias y destacados de pago.
 | RF-15 | Buscador de ciudades y barrios/direcciones con api de google places
 | RF-16 | Poder cambiar la contraseña del usuario
 | RF-17 | Notificaciones de mensajes
+| RF-18 | Favoritos. Poder guardar las publicaciones que te gusten
 
 ## 5. Requisitos no funcionales
 - RGPD y protección de datos personales.

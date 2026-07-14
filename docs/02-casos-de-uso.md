@@ -227,6 +227,15 @@
   4. Aparecerá una lista de usuarios con ese nombre o similar y seleccionar uno de ellos
 - **Postcondición:** Quedará guardado en el historial de búsqueda
 
+### CU-19: Guardar en favoritos
+- **Actor:** Ususario
+- **Precondición:** Tener la sesión abierta
+- **Flujo principal:**
+  1. Abrir la app y entrar en una publicación
+  2. Seleccionar añadir a favoritos
+  3. Confirmar
+- **Postcondición:** La publicación deberá quedar guardada en la pestaña de favoritos del usuario
+
 ### CU-xx: (Fase 3) Inmobiliaria publica anuncio
 
 /_ No implementar por ahora _/

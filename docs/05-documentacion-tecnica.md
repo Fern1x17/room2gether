@@ -343,35 +343,50 @@ por tipo: 'offering' exige price, 'seeking' exige rango válido; las filas
 
 **Ficheros nuevos/tocados:**
 
-- `supabase/migrations/20260701000004_create_messages.sql` — Se modificaron las políticas RLS (Row Level Security) para permitir la eliminación de mensajes (la política de edición ya existía para el `read_at`).
+- `supabase/migrations/20260714000018_messages_delete_policy.sql` — **(aplicada
+  al remoto el 2026-07-14 con `supabase db push --linked`)** crea la política
+  RLS `messages_delete_sender` que permite el borrado de mensajes. Idempotente
+  (`drop policy if exists` + `create policy`).
+- `supabase/migrations/20260701000004_create_messages.sql` — se añadió la misma
+  política al fichero original para que un `db reset` desde cero la incluya.
+  Ojo: esa migración ya estaba aplicada en el remoto ANTES del cambio, por lo
+  que editarla no tuvo efecto allí — de ahí la migración `...018` (lección:
+  las migraciones aplicadas son inmutables; los cambios van en una nueva).
+  La política de edición (`messages_update_participants`) ya existía para el
+  `read_at` y no necesitó cambios.
 - `lib/features/chat/data/chat_repository.dart` — Se añadieron los métodos `updateMessage(messageId, newContent)` y `deleteMessage(messageId)`.
 - `lib/features/chat/presentation/controllers/chat_controllers.dart` — Se creó `MessageActionsController` (`AsyncNotifier`) para gestionar los estados de carga y error de las acciones de modificar y borrar, evitando bloquear la UI.
 - `lib/features/chat/presentation/screens/chat_screen.dart` — Se añadió un `GestureDetector` con `onLongPress` en las burbujas de texto. Despliega un menú inferior (`showModalBottomSheet`) y diálogos de confirmación/edición (`AlertDialog`).
+- `test/features/chat/presentation/controllers/chat_controllers_test.dart` —
+  tests de `MessageActionsController`: borrado y edición (caso feliz, contenido
+  recortado, rechazo de vacíos y estados de error). El fake
+  (`test/features/chat/fakes/fake_chat_repository.dart`) rastrea
+  `deletedMessageIds` / `updatedMessages` y permite inyectar errores.
 
 **Decisiones técnicas:**
-- **Seguridad restrictiva (RLS):** Originalmente el sistema bloqueaba el borrado de mensajes por auditoría. Al habilitarlo, se ha creado una política estricta (`messages_delete_sender`) que evalúa `using ( sender_id = auth.uid() )`. De esta forma, la base de datos garantiza que es matemáticamente imposible que un usuario borre o edite el mensaje de la otra persona.
+- **Seguridad restrictiva (RLS) en el borrado:** la política
+  `messages_delete_sender` evalúa `using ( sender_id = auth.uid() )`: la base
+  de datos garantiza que un usuario no puede borrar mensajes de otra persona.
+- **Matiz en la edición:** la política de UPDATE permite actualizar a ambos
+  participantes (necesario para marcar `read_at`), así que la restricción de
+  "solo el remitente edita el contenido" NO la garantiza la BD hoy — la aplican
+  el filtro del repositorio y la UI (puntos siguientes). Si se quisiera
+  garantía a nivel de BD habría que separar `read_at` del `content` (p. ej.
+  con una columna/policy específica o un trigger), pendiente de decidir.
 - **Defensa en profundidad:** Aunque el servidor (Supabase) ya bloquea accesos indebidos mediante RLS, los métodos del `ChatRepository` en Flutter inyectan de forma forzosa un filtro adicional `.eq('sender_id', _myId)` en las peticiones de `update` y `delete` para evitar errores del lado del cliente.
 - **Validación visual preventiva:** El detector de gestos (`onLongPress`) se anula de forma condicional desde el propio widget (`isMine ? () => _showMessageOptions() : null`). Esto impide que el usuario pueda abrir el menú de edición en los mensajes de la otra persona.
 
 **Cómo probarlo a mano:**
 
-**Paso previo indispensable (Configuración de Supabase):**
-Para que el cliente no reciba errores de permisos, un administrador debe habilitar el borrado en la base de datos aplicando la nueva política RLS. 
+> El paso manual que había aquí (crear la política desde el SQL Editor) ya no
+> es necesario: la política se aplica con la migración `20260714000018`, que
+> ya está en el proyecto remoto desde el 2026-07-14.
 
-Para hacerlo, debe hacer lo siguiente:
-- **Vía Web:** Entrar al panel del proyecto en `app.supabase.com`, ir al **SQL Editor**, abrir una *New query*, pegar este código y pulsar *Run*:
-  ```sql
-  create policy "messages_delete_sender"
-    on public.messages for delete
-    to authenticated
-    using ( sender_id = auth.uid() );
-    
-Una vez aplicado hacer lo siguiente para poder probarlo:
-    1. Iniciar sesión y entrar en la pestaña de Chats.
-    2. Abrir cualquier conversación existente (o crear una nueva desde una publicación).
-    3. **Probar bloqueo:** Mantener pulsado de forma prolongada sobre un mensaje recibido (gris). No debe ocurrir nada.
-    4. **Probar edición:** Mantener pulsado sobre un mensaje propio (color primario). Se abrirá un menú inferior. Seleccionar "Editar", cambiar el texto y pulsar "Guardar". El globo   de texto se actualizará en vivo.
-    5. **Probar borrado:** Mantener pulsado sobre un mensaje propio, seleccionar "Eliminar" en el menú inferior y confirmar en el diálogo rojo. La burbuja desaparecerá del chat.
+1. Iniciar sesión y entrar en la pestaña de Chats.
+2. Abrir cualquier conversación existente (o crear una nueva desde una publicación).
+3. **Probar bloqueo:** Mantener pulsado de forma prolongada sobre un mensaje recibido (gris). No debe ocurrir nada.
+4. **Probar edición:** Mantener pulsado sobre un mensaje propio (color primario). Se abrirá un menú inferior. Seleccionar "Editar", cambiar el texto y pulsar "Guardar". El globo de texto se actualizará en vivo.
+5. **Probar borrado:** Mantener pulsado sobre un mensaje propio, seleccionar "Eliminar" en el menú inferior y confirmar en el diálogo rojo. La burbuja desaparecerá del chat.
 ---
 
 ## Moderación (CU-11 Reportar / bloquear)

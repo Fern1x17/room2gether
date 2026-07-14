@@ -345,7 +345,6 @@ class _CreateListingScreenState extends ConsumerState<CreateListingScreen> {
                     keyboardType: TextInputType.number,
                     decoration: const InputDecoration(
                       labelText: 'Precio por mes (€)',
-                      border: OutlineInputBorder(),
                     ),
                     validator: (value) =>
                         _isOffering ? validateListingPrice(value) : null,
@@ -359,7 +358,6 @@ class _CreateListingScreenState extends ConsumerState<CreateListingScreen> {
                           keyboardType: TextInputType.number,
                           decoration: const InputDecoration(
                             labelText: 'Presupuesto mín. (€)',
-                            border: OutlineInputBorder(),
                           ),
                         ),
                       ),
@@ -370,7 +368,6 @@ class _CreateListingScreenState extends ConsumerState<CreateListingScreen> {
                           keyboardType: TextInputType.number,
                           decoration: const InputDecoration(
                             labelText: 'Presupuesto máx. (€)',
-                            border: OutlineInputBorder(),
                           ),
                         ),
                       ),
@@ -388,10 +385,7 @@ class _CreateListingScreenState extends ConsumerState<CreateListingScreen> {
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _titleController,
-                  decoration: const InputDecoration(
-                    labelText: 'Título',
-                    border: OutlineInputBorder(),
-                  ),
+                  decoration: const InputDecoration(labelText: 'Título'),
                   validator: validateListingTitle,
                 ),
                 const SizedBox(height: 16),
@@ -457,7 +451,6 @@ class _CreateListingScreenState extends ConsumerState<CreateListingScreen> {
                   maxLines: 4,
                   decoration: const InputDecoration(
                     labelText: 'Descripción (opcional)',
-                    border: OutlineInputBorder(),
                   ),
                 ),
                 const SizedBox(height: 24),

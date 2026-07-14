@@ -115,10 +115,7 @@ class _FiltersSheetState extends ConsumerState<FiltersSheet> {
             TextField(
               controller: _maxPriceController,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: 'Precio máximo (€)',
-                border: OutlineInputBorder(),
-              ),
+              decoration: const InputDecoration(labelText: 'Precio máximo (€)'),
             ),
             const SizedBox(height: 16),
             Wrap(

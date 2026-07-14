@@ -66,7 +66,9 @@ class _CitySelectorState extends ConsumerState<CitySelector> {
   Future<Iterable<CityPrediction>> _buildOptions(String rawQuery) async {
     final query = rawQuery.trim();
     // Tras seleccionar, el campo contiene el nombre canónico: no re-buscar.
-    if (_resolving || query.length < _minQueryLength || query == _selectedName) {
+    if (_resolving ||
+        query.length < _minQueryLength ||
+        query == _selectedName) {
       _searchId++;
       return const [];
     }
@@ -115,7 +117,9 @@ class _CitySelectorState extends ConsumerState<CitySelector> {
       controller.text = _selectedName ?? '';
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('No se pudo seleccionar la ciudad. Inténtalo de nuevo.'),
+          content: Text(
+            'No se pudo seleccionar la ciudad. Inténtalo de nuevo.',
+          ),
         ),
       );
     } finally {
@@ -142,7 +146,8 @@ class _CitySelectorState extends ConsumerState<CitySelector> {
     return Autocomplete<CityPrediction>(
       initialValue: TextEditingValue(text: widget.initialCityName ?? ''),
       displayStringForOption: (prediction) => prediction.name,
-      optionsBuilder: (textEditingValue) => _buildOptions(textEditingValue.text),
+      optionsBuilder: (textEditingValue) =>
+          _buildOptions(textEditingValue.text),
       optionsViewBuilder: (context, onSelected, options) {
         // Vista propia para mostrar la descripción completa ("Toro, Zamora,
         // España") y así distinguir municipios homónimos.
@@ -201,7 +206,6 @@ class _CitySelectorState extends ConsumerState<CitySelector> {
             decoration: InputDecoration(
               labelText: widget.labelText,
               hintText: widget.hintText,
-              border: const OutlineInputBorder(),
               errorText: _searchFailed
                   ? 'No se pudieron cargar las sugerencias.'
                   : null,

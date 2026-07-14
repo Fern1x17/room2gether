@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/widgets/app_logo.dart';
 import '../../domain/validators/auth_validators.dart';
 import '../controllers/register_controller.dart';
 import '../widgets/auth_text_field.dart';
@@ -102,6 +103,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                const SizedBox(height: 8),
+                const Center(child: AppLogo()),
+                const SizedBox(height: 24),
                 AuthTextField(
                   controller: _emailController,
                   label: 'Email',
@@ -125,7 +129,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   validator: (_) => validateBirthdate(_birthdate),
                   decoration: const InputDecoration(
                     labelText: 'Fecha de nacimiento',
-                    border: OutlineInputBorder(),
                     suffixIcon: Icon(Icons.calendar_today_outlined),
                   ),
                 ),

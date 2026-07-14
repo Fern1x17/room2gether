@@ -175,9 +175,12 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     final isSaving = profileAsync.isLoading && _initialized;
 
     // 2. Leemos el estado del tema para saber qué mostrar en el interruptor
-    final themeMode = ref.watch(themeControllerProvider).value ?? ThemeMode.system;
-    final isDarkMode = themeMode == ThemeMode.dark ||
-        (themeMode == ThemeMode.system && MediaQuery.platformBrightnessOf(context) == Brightness.dark);
+    final themeMode =
+        ref.watch(themeControllerProvider).value ?? ThemeMode.system;
+    final isDarkMode =
+        themeMode == ThemeMode.dark ||
+        (themeMode == ThemeMode.system &&
+            MediaQuery.platformBrightnessOf(context) == Brightness.dark);
 
     return Scaffold(
       appBar: AppBar(
@@ -258,19 +261,13 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                     const SizedBox(height: 24),
                     TextFormField(
                       controller: _displayNameController,
-                      decoration: const InputDecoration(
-                        labelText: 'Nombre',
-                        border: OutlineInputBorder(),
-                      ),
+                      decoration: const InputDecoration(labelText: 'Nombre'),
                       validator: validateDisplayName,
                     ),
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _bioController,
-                      decoration: const InputDecoration(
-                        labelText: 'Bio',
-                        border: OutlineInputBorder(),
-                      ),
+                      decoration: const InputDecoration(labelText: 'Bio'),
                       maxLines: 3,
                     ),
                     const SizedBox(height: 16),
@@ -290,7 +287,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                             keyboardType: TextInputType.number,
                             decoration: const InputDecoration(
                               labelText: 'Presupuesto mín. (€)',
-                              border: OutlineInputBorder(),
                             ),
                           ),
                         ),
@@ -301,7 +297,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                             keyboardType: TextInputType.number,
                             decoration: const InputDecoration(
                               labelText: 'Presupuesto máx. (€)',
-                              border: OutlineInputBorder(),
                             ),
                           ),
                         ),
@@ -390,10 +385,14 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                     const Divider(),
                     SwitchListTile(
                       title: const Text('Modo Oscuro'),
-                      secondary: Icon(isDarkMode ? Icons.dark_mode : Icons.light_mode),
+                      secondary: Icon(
+                        isDarkMode ? Icons.dark_mode : Icons.light_mode,
+                      ),
                       value: isDarkMode,
                       onChanged: (bool value) {
-                        ref.read(themeControllerProvider.notifier).toggleTheme(value);
+                        ref
+                            .read(themeControllerProvider.notifier)
+                            .toggleTheme(value);
                       },
                       contentPadding: EdgeInsets.zero,
                     ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/widgets/app_logo.dart';
 import '../../domain/validators/auth_validators.dart';
 import '../controllers/login_controller.dart';
 import '../widgets/auth_text_field.dart';
@@ -67,6 +68,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                const SizedBox(height: 8),
+                const Center(child: AppLogo()),
+                const SizedBox(height: 24),
                 AuthTextField(
                   controller: _emailController,
                   label: 'Email',

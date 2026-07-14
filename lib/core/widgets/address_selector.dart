@@ -90,7 +90,9 @@ class _AddressSelectorState extends ConsumerState<AddressSelector> {
 
   Future<Iterable<AddressPrediction>> _buildOptions(String rawQuery) async {
     final query = rawQuery.trim();
-    if (_resolving || query.length < _minQueryLength || query == _selectedText) {
+    if (_resolving ||
+        query.length < _minQueryLength ||
+        query == _selectedText) {
       _searchId++;
       return const [];
     }
@@ -194,7 +196,8 @@ class _AddressSelectorState extends ConsumerState<AddressSelector> {
     return Autocomplete<AddressPrediction>(
       initialValue: TextEditingValue(text: _selectedText ?? ''),
       displayStringForOption: (prediction) => prediction.name,
-      optionsBuilder: (textEditingValue) => _buildOptions(textEditingValue.text),
+      optionsBuilder: (textEditingValue) =>
+          _buildOptions(textEditingValue.text),
       optionsViewBuilder: (context, onSelected, options) {
         return Align(
           alignment: Alignment.topLeft,
@@ -249,7 +252,6 @@ class _AddressSelectorState extends ConsumerState<AddressSelector> {
             decoration: InputDecoration(
               labelText: widget.labelText,
               hintText: widget.hintText,
-              border: const OutlineInputBorder(),
               errorText: _searchFailed
                   ? 'No se pudieron cargar las sugerencias.'
                   : null,

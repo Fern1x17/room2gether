@@ -67,14 +67,19 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Eliminar', style: TextStyle(color: Colors.red)),
+            child: Text(
+              'Eliminar',
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
           ),
         ],
       ),
     );
 
     if (confirm != true || !mounted) return;
-    await ref.read(messageActionsControllerProvider.notifier).deleteMessage(messageId);
+    await ref
+        .read(messageActionsControllerProvider.notifier)
+        .deleteMessage(messageId);
   }
 
   Future<void> _editMessage(Message message) async {
@@ -86,7 +91,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         content: TextField(
           controller: editController,
           autofocus: true,
-          decoration: const InputDecoration(border: OutlineInputBorder()),
           maxLines: null,
           textCapitalization: TextCapitalization.sentences,
         ),
@@ -103,8 +107,15 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       ),
     );
 
-    if (newContent == null || newContent.trim().isEmpty || newContent == message.content || !mounted) return;
-    await ref.read(messageActionsControllerProvider.notifier).updateMessage(message.id, newContent);
+    if (newContent == null ||
+        newContent.trim().isEmpty ||
+        newContent == message.content ||
+        !mounted) {
+      return;
+    }
+    await ref
+        .read(messageActionsControllerProvider.notifier)
+        .updateMessage(message.id, newContent);
   }
 
   void _showMessageOptions(Message message) {
@@ -123,8 +134,14 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.delete, color: Colors.red),
-              title: const Text('Eliminar mensaje', style: TextStyle(color: Colors.red)),
+              leading: Icon(
+                Icons.delete,
+                color: Theme.of(context).colorScheme.error,
+              ),
+              title: Text(
+                'Eliminar mensaje',
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              ),
               onTap: () {
                 Navigator.of(context).pop();
                 _deleteMessage(message.id);
@@ -153,7 +170,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     ref.listen(messageActionsControllerProvider, (previous, next) {
       final error = next.error;
       if (error != null) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.toString())));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(error.toString())));
       }
     });
 
@@ -225,7 +244,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                       final isMine = message.senderId == currentUserId;
 
                       // NUEVO: Detectamos si es un mensaje "eliminado"
-                      final isDeleted = message.content == '🚫 Este mensaje ha sido eliminado';
+                      final isDeleted =
+                          message.content ==
+                          '🚫 Este mensaje ha sido eliminado';
 
                       return Align(
                         alignment: isMine
@@ -233,7 +254,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                             : Alignment.centerLeft,
                         child: GestureDetector(
                           // NUEVO: Bloqueamos las opciones si el mensaje está borrado
-                          onLongPress: (isMine && !isDeleted) ? () => _showMessageOptions(message) : null,
+                          onLongPress: (isMine && !isDeleted)
+                              ? () => _showMessageOptions(message)
+                              : null,
                           child: Container(
                             margin: const EdgeInsets.only(bottom: 8),
                             padding: const EdgeInsets.symmetric(
@@ -241,7 +264,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                               vertical: 10,
                             ),
                             constraints: BoxConstraints(
-                              maxWidth: MediaQuery.of(context).size.width * 0.75,
+                              maxWidth:
+                                  MediaQuery.of(context).size.width * 0.75,
                             ),
                             decoration: BoxDecoration(
                               color: isMine
@@ -253,11 +277,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                               message.content,
                               // NUEVO: Estilo atenuado para el texto de eliminado
                               style: isDeleted
-                                ? TextStyle(
-                                    fontStyle: FontStyle.italic,
-                                    color: theme.colorScheme.onSurface.withOpacity(0.5),
-                                  )
-                                : null,
+                                  ? TextStyle(
+                                      fontStyle: FontStyle.italic,
+                                      color: theme.colorScheme.onSurface
+                                          .withValues(alpha: 0.5),
+                                    )
+                                  : null,
                             ),
                           ),
                         ),
@@ -292,7 +317,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                         textCapitalization: TextCapitalization.sentences,
                         decoration: const InputDecoration(
                           hintText: 'Escribe un mensaje…',
-                          border: OutlineInputBorder(),
                         ),
                       ),
                     ),

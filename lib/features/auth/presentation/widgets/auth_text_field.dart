@@ -36,7 +36,6 @@ class _AuthTextFieldState extends State<AuthTextField> {
       autovalidateMode: AutovalidateMode.onUserInteraction,
       decoration: InputDecoration(
         labelText: widget.label,
-        border: const OutlineInputBorder(),
         suffixIcon: widget.isPassword
             ? IconButton(
                 icon: Icon(

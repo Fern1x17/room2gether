@@ -123,6 +123,78 @@ void main() {
     });
   });
 
+  group('MessageActionsController.deleteMessage', () {
+    test('borra el mensaje por id (postcondición CU editar/borrar)', () async {
+      final fakeRepo = FakeChatRepository();
+      final container = _container(fakeRepo);
+
+      final deleted = await container
+          .read(messageActionsControllerProvider.notifier)
+          .deleteMessage('msg-1');
+
+      expect(deleted, isTrue);
+      expect(fakeRepo.deletedMessageIds.single, 'msg-1');
+      expect(container.read(messageActionsControllerProvider).hasError, isFalse);
+    });
+
+    test('deja estado de error si falla el borrado', () async {
+      final fakeRepo = FakeChatRepository(deleteError: Exception('fallo'));
+      final container = _container(fakeRepo);
+
+      final deleted = await container
+          .read(messageActionsControllerProvider.notifier)
+          .deleteMessage('msg-1');
+
+      expect(deleted, isFalse);
+      expect(fakeRepo.deletedMessageIds, isEmpty);
+      final state = container.read(messageActionsControllerProvider);
+      expect(state.hasError, isTrue);
+      expect(state.error, 'No se pudo borrar el mensaje.');
+    });
+  });
+
+  group('MessageActionsController.updateMessage', () {
+    test('edita el mensaje con el contenido recortado', () async {
+      final fakeRepo = FakeChatRepository();
+      final container = _container(fakeRepo);
+
+      final updated = await container
+          .read(messageActionsControllerProvider.notifier)
+          .updateMessage('msg-1', '  Nuevo texto  ');
+
+      expect(updated, isTrue);
+      expect(fakeRepo.updatedMessages.single.messageId, 'msg-1');
+      expect(fakeRepo.updatedMessages.single.newContent, 'Nuevo texto');
+    });
+
+    test('no edita con contenido vacío', () async {
+      final fakeRepo = FakeChatRepository();
+      final container = _container(fakeRepo);
+
+      final updated = await container
+          .read(messageActionsControllerProvider.notifier)
+          .updateMessage('msg-1', '   ');
+
+      expect(updated, isFalse);
+      expect(fakeRepo.updatedMessages, isEmpty);
+    });
+
+    test('deja estado de error si falla la edición', () async {
+      final fakeRepo = FakeChatRepository(updateError: Exception('fallo'));
+      final container = _container(fakeRepo);
+
+      final updated = await container
+          .read(messageActionsControllerProvider.notifier)
+          .updateMessage('msg-1', 'Nuevo texto');
+
+      expect(updated, isFalse);
+      expect(fakeRepo.updatedMessages, isEmpty);
+      final state = container.read(messageActionsControllerProvider);
+      expect(state.hasError, isTrue);
+      expect(state.error, 'No se pudo editar el mensaje.');
+    });
+  });
+
   group('messagesStreamProvider', () {
     test('emite los mensajes del stream del repositorio', () async {
       final fakeRepo = FakeChatRepository();

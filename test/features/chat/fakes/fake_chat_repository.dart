@@ -37,12 +37,18 @@ class FakeChatRepository implements ChatRepository {
     List<Conversation>? conversations,
     this.sendError,
     this.openError,
+    this.deleteError,
+    this.updateError,
   }) : conversations = conversations ?? [];
 
   final List<Conversation> conversations;
   final Object? sendError;
   final Object? openError;
+  final Object? deleteError;
+  final Object? updateError;
   final List<({String conversationId, String content})> sentMessages = [];
+  final List<String> deletedMessageIds = [];
+  final List<({String messageId, String newContent})> updatedMessages = [];
   final messagesController = StreamController<List<Message>>.broadcast();
   int createdConversations = 0;
 
@@ -86,5 +92,20 @@ class FakeChatRepository implements ChatRepository {
   @override
   Stream<List<Message>> watchMessages(String conversationId) {
     return messagesController.stream;
+  }
+  
+  @override
+  Future<void> deleteMessage(String messageId) async {
+    if (deleteError != null) throw deleteError!;
+    deletedMessageIds.add(messageId);
+  }
+
+  @override
+  Future<void> updateMessage({
+    required String messageId,
+    required String newContent,
+  }) async {
+    if (updateError != null) throw updateError!;
+    updatedMessages.add((messageId: messageId, newContent: newContent));
   }
 }

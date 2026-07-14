@@ -3,10 +3,18 @@ import 'package:flutter/material.dart';
 import '../../domain/models/listing.dart';
 
 class ListingCard extends StatelessWidget {
-  const ListingCard({super.key, required this.listing, required this.onTap});
+  const ListingCard({
+    super.key,
+    required this.listing,
+    required this.onTap,
+    this.selected = false,
+  });
 
   final Listing listing;
   final VoidCallback onTap;
+
+  /// Resalta la tarjeta cuando su detalle está abierto (panel de escritorio).
+  final bool selected;
 
   @override
   Widget build(BuildContext context) {
@@ -17,6 +25,12 @@ class ListingCard extends StatelessWidget {
     ].where((part) => part != null && part.isNotEmpty).join(', ');
 
     return Card(
+      shape: selected
+          ? RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(color: theme.colorScheme.primary, width: 2),
+            )
+          : null,
       child: InkWell(
         onTap: onTap,
         child: Padding(

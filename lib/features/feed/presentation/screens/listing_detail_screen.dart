@@ -16,6 +16,17 @@ class ListingDetailScreen extends ConsumerWidget {
 
   final String listingId;
 
+  /// Cierra el detalle tras eliminar o reportar: vuelve atrás si hay
+  /// historial (flujo normal en móvil y en el panel de escritorio) o al feed
+  /// si se entró por enlace directo y no hay nada debajo que hacer pop.
+  void _closeDetail(BuildContext context) {
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      context.go('/feed');
+    }
+  }
+
   /// CU-11 desde una publicación: reportar al dueño y bloquearlo.
   Future<void> _reportOwner(
     BuildContext context,
@@ -39,7 +50,7 @@ class ListingDetailScreen extends ConsumerWidget {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Usuario reportado y bloqueado.')),
     );
-    context.pop();
+    _closeDetail(context);
   }
 
   Future<void> _confirmDelete(BuildContext context, WidgetRef ref) async {
@@ -73,7 +84,7 @@ class ListingDetailScreen extends ConsumerWidget {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Publicación eliminada.')));
-      context.pop();
+      _closeDetail(context);
     }
   }
 

@@ -11,6 +11,7 @@ import '../../features/feed/presentation/screens/listing_detail_screen.dart';
 import '../../features/listing/presentation/screens/create_listing_screen.dart';
 import '../../features/listing/presentation/screens/edit_listing_screen.dart';
 import '../../features/profile/presentation/screens/edit_profile_screen.dart';
+import '../layout/adaptive_shell.dart';
 import '../supabase/supabase_client.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
@@ -18,30 +19,32 @@ final appRouterProvider = Provider<GoRouter>((ref) {
   // en Supabase.initialize(); si existe, se entra directo al feed sin pasar
   // por la pantalla de bienvenida. La sesión solo se destruye con signOut().
   final hasSession = supabase.auth.currentSession != null;
+  return buildAppRouter(initialLocation: hasSession ? '/feed' : '/');
+});
 
+/// Construye el router. Separado del provider para poder crearlo en tests
+/// sin inicializar Supabase.
+GoRouter buildAppRouter({required String initialLocation}) {
   return GoRouter(
-    initialLocation: hasSession ? '/feed' : '/',
+    initialLocation: initialLocation,
     routes: [
+      // --- Fuera del shell: pantalla completa, sin barra ni rail. ---
       GoRoute(path: '/', builder: (context, state) => const WelcomeScreen()),
       GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
       GoRoute(
         path: '/register',
         builder: (context, state) => const RegisterScreen(),
       ),
+      // Alta tras el registro; la misma pantalla vive también en la pestaña
+      // Perfil (/profile), dentro del shell.
       GoRoute(
         path: '/onboarding',
         builder: (context, state) => const EditProfileScreen(),
       ),
-      GoRoute(path: '/feed', builder: (context, state) => const FeedScreen()),
       // Debe ir antes de '/listings/:id' para que 'new' no se capture como id.
       GoRoute(
         path: '/listings/new',
         builder: (context, state) => const CreateListingScreen(),
-      ),
-      GoRoute(
-        path: '/listings/:id',
-        builder: (context, state) =>
-            ListingDetailScreen(listingId: state.pathParameters['id']!),
       ),
       GoRoute(
         path: '/listings/:id/edit',
@@ -49,14 +52,52 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             EditListingScreen(listingId: state.pathParameters['id']!),
       ),
       GoRoute(
-        path: '/chats',
-        builder: (context, state) => const ConversationsScreen(),
-      ),
-      GoRoute(
         path: '/chats/:id',
         builder: (context, state) =>
             ChatScreen(conversationId: state.pathParameters['id']!),
       ),
+
+      // --- Shell adaptativo: barra inferior (móvil) o rail (escritorio). ---
+      StatefulShellRoute.indexedStack(
+        builder: (context, state, navigationShell) => AdaptiveShell(
+          navigationShell: navigationShell,
+          currentUri: state.uri,
+        ),
+        branches: [
+          // Buscar: el detalle vive en la rama para que en móvil conserve la
+          // barra inferior y en escritorio se muestre como panel junto a la
+          // lista (fase 3).
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/feed',
+                builder: (context, state) => const FeedScreen(),
+              ),
+              GoRoute(
+                path: '/listings/:id',
+                builder: (context, state) =>
+                    ListingDetailScreen(listingId: state.pathParameters['id']!),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/chats',
+                builder: (context, state) => const ConversationsScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/profile',
+                builder: (context, state) => const EditProfileScreen(),
+              ),
+            ],
+          ),
+        ],
+      ),
     ],
   );
-});
+}

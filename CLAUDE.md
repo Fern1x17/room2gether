@@ -152,6 +152,10 @@ Funcionalidad mínima imprescindible. Construir en este orden:
 - [x] Publicación (crear CU-06, eliminar CU-07, modificar CU-08)
 - [x] Chat (CU-10)
 - [x] Reporte/bloqueo (CU-11)
+- [x] Layout adaptativo: móvil (Android + web estrecha, barra inferior) y
+      escritorio (solo web ancha, rail + master-detail). Breakpoint único de
+      840 dp en `lib/core/layout/breakpoints.dart`; convenciones en la skill
+      `ui-conventions`. Pendiente: sección "Guardados" cuando exista la feature.
 - [ ] Lanzamiento Google Play
 
 ---

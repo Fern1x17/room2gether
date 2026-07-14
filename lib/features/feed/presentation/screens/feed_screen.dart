@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/layout/adaptive_shell.dart';
+import '../../../../core/layout/breakpoints.dart';
 import '../controllers/feed_controller.dart';
 import '../widgets/filters_sheet.dart';
-import '../widgets/listing_card.dart';
+import '../widgets/listing_list_view.dart';
 
 class FeedScreen extends ConsumerWidget {
   const FeedScreen({super.key});
@@ -23,7 +25,16 @@ class FeedScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final listingsAsync = ref.watch(feedControllerProvider);
+    // En escritorio los filtros y la lista los pinta el DesktopShell como
+    // columnas persistentes; la página /feed queda como el panel de detalle
+    // sin selección. Misma regla de ancho que el AdaptiveShell.
+    final desktopSupported = ref.watch(desktopLayoutSupportedProvider);
+    final isDesktopLayout =
+        desktopSupported &&
+        MediaQuery.sizeOf(context).width >= kDesktopMinWidth;
+    if (isDesktopLayout) {
+      return const _ListingDetailPlaceholder();
+    }
 
     return Scaffold(
       floatingActionButton: FloatingActionButton.extended(
@@ -33,70 +44,50 @@ class FeedScreen extends ConsumerWidget {
       ),
       appBar: AppBar(
         title: const Text('Room2gether'),
+        // Chats y Perfil viven ahora en la barra de navegación inferior.
         actions: [
           IconButton(
             onPressed: () => _openFilters(context, ref),
             icon: const Icon(Icons.search),
             tooltip: 'Buscar',
           ),
-          IconButton(
-            onPressed: () => context.push('/chats'),
-            icon: const Icon(Icons.chat_bubble_outline),
-            tooltip: 'Chats',
-          ),
-          IconButton(
-            onPressed: () => context.push('/onboarding'),
-            icon: const Icon(Icons.person_outline),
-            tooltip: 'Tu perfil',
-          ),
         ],
       ),
-      body: listingsAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stackTrace) => Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(error.toString(), textAlign: TextAlign.center),
-                const SizedBox(height: 16),
-                FilledButton(
-                  onPressed: () => ref.invalidate(feedControllerProvider),
-                  child: const Text('Reintentar'),
-                ),
-              ],
+      body: ListingListView(
+        onListingTap: (listing) => context.push('/listings/${listing.id}'),
+      ),
+    );
+  }
+}
+
+/// Estado vacío del panel de detalle en escritorio.
+class _ListingDetailPlaceholder extends StatelessWidget {
+  const _ListingDetailPlaceholder();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.maps_home_work_outlined,
+              size: 56,
+              color: theme.colorScheme.outline,
             ),
-          ),
-        ),
-        data: (listings) {
-          if (listings.isEmpty) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Text(
-                  'No hay publicaciones que coincidan con tu búsqueda.',
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodyLarge,
-                ),
+            const SizedBox(height: 16),
+            Text(
+              'Selecciona una publicación para ver el detalle',
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyLarge?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
               ),
-            );
-          }
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: listings.length,
-            itemBuilder: (context, index) {
-              final listing = listings[index];
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: ListingCard(
-                  listing: listing,
-                  onTap: () => context.push('/listings/${listing.id}'),
-                ),
-              );
-            },
-          );
-        },
+            ),
+          ],
+        ),
       ),
     );
   }

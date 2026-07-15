@@ -1,7 +1,9 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/utils/link_opener.dart';
 import '../../../../core/widgets/app_logo.dart';
 import '../../domain/validators/auth_validators.dart';
 import '../controllers/register_controller.dart';
@@ -22,6 +24,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   DateTime? _birthdate;
   bool _acceptsPrivacyPolicy = false;
   bool _privacyPolicyError = false;
+
+  // Documentos legales servidos como páginas estáticas del sitio (web/legal/).
+  static const _privacyPolicyPath = '/legal/privacy.html';
+  static const _termsPath = '/legal/terms.html';
 
   @override
   void dispose() {
@@ -47,6 +53,17 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       _birthdateController.text =
           '${picked.day.toString().padLeft(2, '0')}/${picked.month.toString().padLeft(2, '0')}/${picked.year}';
     });
+  }
+
+  void _openLegalDoc(String path) {
+    if (kIsWeb) {
+      openExternalLink(path);
+    } else {
+      // En móvil aún no hay lanzador de enlaces; se indica dónde consultarlo.
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Disponible en room2gether.com$path')),
+      );
+    }
   }
 
   Future<void> _submit() async {
@@ -133,6 +150,32 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
+                Padding(
+                  padding: const EdgeInsets.only(left: 12, right: 12),
+                  child: Wrap(
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      Text(
+                        'Antes de continuar, consulta la ',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                      _LegalLink(
+                        label: 'política de privacidad',
+                        onTap: () => _openLegalDoc(_privacyPolicyPath),
+                      ),
+                      Text(
+                        ' y los ',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                      _LegalLink(
+                        label: 'términos y condiciones',
+                        onTap: () => _openLegalDoc(_termsPath),
+                      ),
+                      Text('.', style: Theme.of(context).textTheme.bodySmall),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 4),
                 CheckboxListTile(
                   value: _acceptsPrivacyPolicy,
                   onChanged: (value) {
@@ -180,6 +223,31 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Texto pulsable con estilo de enlace, para los documentos legales.
+class _LegalLink extends StatelessWidget {
+  const _LegalLink({required this.label, required this.onTap});
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return GestureDetector(
+      onTap: onTap,
+      child: Text(
+        label,
+        style: theme.textTheme.bodySmall?.copyWith(
+          color: theme.colorScheme.primary,
+          decoration: TextDecoration.underline,
+          decorationColor: theme.colorScheme.primary,
+          fontWeight: FontWeight.w600,
         ),
       ),
     );

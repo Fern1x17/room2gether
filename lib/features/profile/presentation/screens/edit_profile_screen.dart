@@ -1,8 +1,10 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../../../core/utils/link_opener.dart';
 import '../../../../core/widgets/city_selector.dart';
 // 1. Añadimos la importación del controlador del tema
 import '../../../../core/theme/theme_controller.dart';
@@ -41,6 +43,21 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   String? _avatarUrl;
   String? _budgetError;
   bool _uploadingAvatar = false;
+
+  // Documentos legales servidos como páginas estáticas del sitio (web/legal/).
+  static const _privacyPolicyPath = '/legal/privacy.html';
+  static const _termsPath = '/legal/terms.html';
+
+  void _openLegalDoc(String path) {
+    if (kIsWeb) {
+      openExternalLink(path);
+    } else {
+      // En móvil aún no hay lanzador de enlaces; se indica dónde consultarlo.
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Disponible en room2gether.com$path')),
+      );
+    }
+  }
 
   @override
   void dispose() {
@@ -405,6 +422,27 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                     ),
                     const SizedBox(height: 8),
                     const MyListingsSection(),
+                    const SizedBox(height: 24),
+
+                    const Divider(),
+                    Text(
+                      'Legal',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    ListTile(
+                      leading: const Icon(Icons.privacy_tip_outlined),
+                      title: const Text('Política de privacidad'),
+                      trailing: const Icon(Icons.open_in_new, size: 18),
+                      contentPadding: EdgeInsets.zero,
+                      onTap: () => _openLegalDoc(_privacyPolicyPath),
+                    ),
+                    ListTile(
+                      leading: const Icon(Icons.description_outlined),
+                      title: const Text('Términos y condiciones'),
+                      trailing: const Icon(Icons.open_in_new, size: 18),
+                      contentPadding: EdgeInsets.zero,
+                      onTap: () => _openLegalDoc(_termsPath),
+                    ),
                   ],
                 ),
               ),

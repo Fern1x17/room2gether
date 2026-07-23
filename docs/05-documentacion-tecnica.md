@@ -20,7 +20,11 @@
 - `presentation/controllers/{register,login}_controller.dart` — `AsyncNotifier<void>`,
   gestionan carga/error de cada flujo por separado (para que un error en una
   pantalla no contamine el estado de la otra).
-- `presentation/screens/{welcome,login,register}_screen.dart`.
+- `presentation/screens/{welcome,login,register}_screen.dart`. En escritorio
+  (ancho ≥ 840 dp) su contenido se enmarca centrado y con ancho máximo mediante
+  `CenteredFormFrame` (`core/widgets/`); en móvil ocupa el ancho completo. No
+  hay variante de escritorio: mismo formulario y validación, solo cambia el
+  encuadre.
 - `presentation/utils/auth_error_translator.dart` — traduce `AuthException` a
   mensajes en español.
 
@@ -314,9 +318,24 @@ por tipo: 'offering' exige price, 'seeking' exige rango válido; las filas
   entrada de texto y envío; los mensajes del otro llegan en vivo.
 - `presentation/screens/conversations_screen.dart` — pantalla "Chats"
   (aprobada como plomería necesaria para "entrar en un chat existente" de
-  CU-11), accesible desde un icono en el feed.
+  CU-11). En móvil pinta la lista; en escritorio devuelve un *placeholder*
+  porque la lista la pinta el shell (ver más abajo).
+- `presentation/widgets/conversations_list_view.dart` — lista de conversaciones
+  compartida (estados carga/error/vacío + resaltado del seleccionado);
+  `presentation/widgets/conversations_pane.dart` — columna persistente de
+  escritorio que la envuelve.
 - Entrada del flujo: botón "Enviar mensaje" en el detalle de una publicación
   ajena (paso 2 de CU-10). Rutas `/chats` y `/chats/:id`.
+
+**Layout en escritorio (master-detail):** `/chats` y `/chats/:id` viven en la
+rama "Chats" del `StatefulShellRoute`, igual que `/feed` y `/listings/:id` en
+Buscar. En web ancha, `DesktopShell` muestra la lista de conversaciones como
+columna persistente y el chat (`ChatScreen`) como panel a la derecha, con el
+rail y el resto visibles detrás; el chat abierto viaja por la URL. En móvil el
+chat es una pantalla de la sección (comparte la barra inferior, como el detalle
+de publicación). "Enviar mensaje" desde una publicación cruza de la rama Buscar
+a la de Chats con `context.go` (`push` no cruza ramas). Detalle del patrón y
+cómo añadir un tercer panel: skill `ui-conventions`.
 
 **Decisiones técnicas:**
 - Migración `20260707000012` (aprobada): añade `messages` a la publicación

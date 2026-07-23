@@ -13,3 +13,13 @@ library;
 /// tablets en vertical y las ventanas de escritorio a media pantalla, que
 /// reciben el layout móvil (el master-detail de tres columnas no cabe ahí).
 const double kDesktopMinWidth = 840;
+
+/// Ancho máximo (dp) del contenido de las pantallas sin navegación principal
+/// (bienvenida, login, registro) cuando se encuadran en escritorio.
+///
+/// A partir de [kDesktopMinWidth] estas pantallas dejan de ocupar todo el
+/// ancho y se centran dentro de este contenedor. 448 es la anchura habitual
+/// de un formulario/diálogo Material —cómoda para una sola columna de campos—
+/// y equivale a ~la mitad de la clase "expanded" (840). Por debajo del
+/// breakpoint no se aplica: el formulario ocupa el ancho completo (móvil).
+const double kAuthContentMaxWidth = 448;

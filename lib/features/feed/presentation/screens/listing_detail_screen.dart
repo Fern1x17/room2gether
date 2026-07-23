@@ -230,7 +230,11 @@ class ListingDetailScreen extends ConsumerWidget {
                                     listingId: listing.id,
                                   );
                               if (conversation != null && context.mounted) {
-                                context.push('/chats/${conversation.id}');
+                                // El chat vive en otra rama del shell (Chats):
+                                // se usa go para cambiar de sección y abrirlo
+                                // (en escritorio, como panel; en móvil, como
+                                // pantalla de esa sección). push no cruza ramas.
+                                context.go('/chats/${conversation.id}');
                               }
                             },
                       icon: isOpeningChat

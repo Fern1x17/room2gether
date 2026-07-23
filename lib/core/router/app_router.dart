@@ -51,11 +51,6 @@ GoRouter buildAppRouter({required String initialLocation}) {
         builder: (context, state) =>
             EditListingScreen(listingId: state.pathParameters['id']!),
       ),
-      GoRoute(
-        path: '/chats/:id',
-        builder: (context, state) =>
-            ChatScreen(conversationId: state.pathParameters['id']!),
-      ),
 
       // --- Shell adaptativo: barra inferior (móvil) o rail (escritorio). ---
       StatefulShellRoute.indexedStack(
@@ -80,11 +75,20 @@ GoRouter buildAppRouter({required String initialLocation}) {
               ),
             ],
           ),
+          // Chats: la conversación individual vive en la rama (igual que el
+          // detalle de publicación en Buscar) para que en escritorio se muestre
+          // como panel junto a la lista de conversaciones, y en móvil comparta
+          // la barra inferior con el resto de la sección.
           StatefulShellBranch(
             routes: [
               GoRoute(
                 path: '/chats',
                 builder: (context, state) => const ConversationsScreen(),
+              ),
+              GoRoute(
+                path: '/chats/:id',
+                builder: (context, state) =>
+                    ChatScreen(conversationId: state.pathParameters['id']!),
               ),
             ],
           ),

@@ -21,7 +21,20 @@
   <!-- Sin esta meta, un navegador móvil simula ~980 px de ancho y el
        breakpoint elegiría el layout de escritorio en un teléfono. -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="App para encontrar compañeros de piso.">
+  <meta name="description" content="App gratuita para encontrar compañero de piso en España. Publica o explora anuncios de habitaciones y contacta por chat sin pagar.">
+
+  <!-- Open Graph / Twitter: título, descripción e imagen al compartir el
+       enlace (redes sociales, chats). -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Room2gether">
+  <meta property="og:title" content="Room2gether — Encuentra compañero de piso">
+  <meta property="og:description" content="App gratuita para encontrar compañero de piso en España. Publica o explora anuncios y contacta por chat sin pagar.">
+  <meta property="og:url" content="https://room2gether.com/">
+  <meta property="og:image" content="https://room2gether.com/icons/Icon-512.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Room2gether — Encuentra compañero de piso">
+  <meta name="twitter:description" content="App gratuita para encontrar compañero de piso en España. Publica o explora anuncios y contacta por chat sin pagar.">
+  <meta name="twitter:image" content="https://room2gether.com/icons/Icon-512.png">
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
@@ -29,8 +42,12 @@
   <meta name="apple-mobile-web-app-title" content="room2gether">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
-  <!-- Favicon -->
-  <link rel="icon" type="image/png" href="favicon.png"/>
+  <!-- Favicon en varias resoluciones. El de 16x16 es demasiado pequeño para el
+       icono de los resultados de Google (prefiere múltiplos de 48): se ofrecen
+       también 192 y 512 para que elija uno nítido. -->
+  <link rel="icon" type="image/png" sizes="16x16" href="favicon.png"/>
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/Icon-192.png"/>
+  <link rel="icon" type="image/png" sizes="512x512" href="icons/Icon-512.png"/>
 
   <title>room2gether</title>
   <link rel="manifest" href="manifest.json">

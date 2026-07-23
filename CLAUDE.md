@@ -153,9 +153,15 @@ Funcionalidad mínima imprescindible. Construir en este orden:
 - [x] Chat (CU-10)
 - [x] Reporte/bloqueo (CU-11)
 - [x] Layout adaptativo: móvil (Android + web estrecha, barra inferior) y
-      escritorio (solo web ancha, rail + master-detail). Breakpoint único de
-      840 dp en `lib/core/layout/breakpoints.dart`; convenciones en la skill
-      `ui-conventions`. Pendiente: sección "Guardados" cuando exista la feature.
+      escritorio (solo web ancha, rail + master-detail en **Buscar** y
+      **Chats**). Breakpoint único de 840 dp en
+      `lib/core/layout/breakpoints.dart`. Las pantallas sin navegación principal
+      (bienvenida, login, registro) se enmarcan centradas y con ancho máximo
+      (`kAuthContentMaxWidth`) en escritorio; en móvil ocupan el ancho completo.
+      El panel de detalle (publicación / chat) es un **patrón de routing**
+      reutilizable, no un widget: cómo funciona y cómo añadir un tercer panel
+      está en la skill `ui-conventions`. Pendiente: sección "Guardados" cuando
+      exista la feature.
 - [ ] Lanzamiento Google Play
 
 ---

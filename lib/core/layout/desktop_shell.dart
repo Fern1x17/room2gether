@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/chat/presentation/widgets/conversations_pane.dart';
 import '../../features/feed/presentation/widgets/feed_desktop_panes.dart';
 import '../widgets/app_logo.dart';
 import 'shell_destinations.dart';
@@ -82,7 +83,10 @@ class DesktopShell extends StatelessWidget {
                   thickness: 1,
                   color: theme.colorScheme.outlineVariant,
                 ),
-                // Columnas extra solo en Buscar (master-detail).
+                // Columnas extra en las secciones master-detail. Buscar tiene
+                // filtros + lista; Chats, la lista de conversaciones. En ambas,
+                // el panel de detalle es el navegador de la rama (el Expanded
+                // de abajo): la publicación o el chat abiertos.
                 if (navigationShell.currentIndex == 0) ...[
                   const SizedBox(width: 300, child: FeedFiltersPane()),
                   VerticalDivider(
@@ -93,6 +97,17 @@ class DesktopShell extends StatelessWidget {
                   Expanded(
                     flex: 5,
                     child: FeedListPane(currentUri: currentUri),
+                  ),
+                  VerticalDivider(
+                    width: 1,
+                    thickness: 1,
+                    color: theme.colorScheme.outlineVariant,
+                  ),
+                ],
+                if (navigationShell.currentIndex == 1) ...[
+                  SizedBox(
+                    width: 320,
+                    child: ConversationsListPane(currentUri: currentUri),
                   ),
                   VerticalDivider(
                     width: 1,
@@ -112,12 +127,13 @@ class DesktopShell extends StatelessWidget {
                     alignment: Alignment.topCenter,
                     child: ConstrainedBox(
                       constraints: BoxConstraints(
-                        // En las secciones de contenido único (Chats, Perfil)
-                        // se limita el ancho para que los formularios no se
-                        // estiren de borde a borde.
-                        maxWidth: navigationShell.currentIndex == 0
-                            ? double.infinity
-                            : 840,
+                        // En Buscar y Chats el navegador de la rama es el panel
+                        // de detalle (publicación / chat) y ocupa todo su ancho.
+                        // En Perfil, sección de contenido único, se limita para
+                        // que el formulario no se estire de borde a borde.
+                        maxWidth: navigationShell.currentIndex == 2
+                            ? 840
+                            : double.infinity,
                       ),
                       child: navigationShell,
                     ),

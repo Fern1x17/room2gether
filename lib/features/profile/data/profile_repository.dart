@@ -15,13 +15,18 @@ abstract class ProfileRepository {
 
   Future<void> updateProfile(Profile profile);
 
-  /// Sube [bytes] (siempre JPEG ya recortado y redimensionado) y devuelve su
-  /// URL pública. [previousAvatarUrl] es la foto que queda obsoleta, para
-  /// borrarla del bucket.
+  /// Sube [bytes] y devuelve su URL pública. [previousAvatarUrl] es la foto que
+  /// queda obsoleta, para borrarla del bucket.
+  ///
+  /// Normalmente es un JPEG ya recortado y redimensionado, pero la foto también
+  /// puede subirse sin procesar cuando no hay forma de decodificarla; de ahí
+  /// que el formato sea un parámetro y no una constante.
   Future<String> uploadAvatar({
     required String userId,
     required Uint8List bytes,
     String? previousAvatarUrl,
+    String extension = 'jpg',
+    String contentType = 'image/jpeg',
   });
 }
 
@@ -91,19 +96,21 @@ class SupabaseProfileRepository implements ProfileRepository {
     required String userId,
     required Uint8List bytes,
     String? previousAvatarUrl,
+    String extension = 'jpg',
+    String contentType = 'image/jpeg',
   }) async {
     // Ruta única por subida (mismo patrón que las fotos de publicación). Antes
     // era fija (`{userId}/avatar.ext` con upsert), así que la URL pública no
     // cambiaba al reemplazar la foto y las cachés —la de Flutter, la del
     // navegador y la del CDN— seguían sirviendo la imagen anterior, también a
     // los demás usuarios. Con un nombre nuevo no hay nada que invalidar.
-    final path = '$userId/${DateTime.now().microsecondsSinceEpoch}.jpg';
+    final path = '$userId/${DateTime.now().microsecondsSinceEpoch}.$extension';
     await _client.storage
         .from(kAvatarsBucket)
         .uploadBinary(
           path,
           bytes,
-          fileOptions: const FileOptions(contentType: 'image/jpeg'),
+          fileOptions: FileOptions(contentType: contentType),
         );
 
     // Borrado de la foto anterior para no dejar huérfanos en el bucket. Es

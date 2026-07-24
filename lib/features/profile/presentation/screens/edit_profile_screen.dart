@@ -134,6 +134,100 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         unsupported.any(mimeType.toLowerCase().contains);
   }
 
+  /// Tamaño máximo que se acepta subir sin procesar. Una foto de perfil de más
+  /// de esto castiga a quien la descargue en datos móviles.
+  static const int _maxRawUploadBytes = 2 * 1024 * 1024;
+
+  /// Ningún decodificador pudo con la foto. En vez de dejar al usuario sin
+  /// poder usarla, se le ofrece subirla tal cual: si el navegador consigue
+  /// pintarla en un `<img>` —que es lo único que hace falta para verla como
+  /// avatar— funcionará igual, solo que sin recortar ni comprimir.
+  Future<void> _handleUnprocessablePhoto({
+    required XFile picked,
+    required Uint8List original,
+    required Object? failure,
+  }) async {
+    final kb = (original.lengthInBytes / 1024).round();
+    final mimeType = picked.mimeType ?? 'sin tipo';
+    final extension = picked.name.contains('.')
+        ? picked.name.split('.').last.toLowerCase()
+        : 'sin extensión';
+    // Lo que el fichero ES, frente a lo que el sistema dice que es.
+    final realFormat = describeImageBytes(original);
+    // El tamaño declarado por el sistema: si no cuadra con lo leído, la
+    // lectura se quedó a medias y por eso no hay decodificador que valga.
+    int? declaredBytes;
+    try {
+      declaredBytes = await picked.length();
+    } catch (_) {
+      declaredBytes = null;
+    }
+    if (!mounted) return;
+
+    final diagnosis =
+        '$extension · $mimeType · real:$realFormat · '
+        'leídos:${kb}KB${declaredBytes != null ? '/declarados:${(declaredBytes / 1024).round()}KB' : ''} · '
+        '${failure ?? 'sin error'}';
+
+    if (_isUnsupportedInBrowser(mimeType, extension) ||
+        realFormat.startsWith('ISOBMFF')) {
+      _showAvatarError(
+        'Esta foto está en un formato que el navegador no sabe abrir '
+        '($realFormat). Guárdala como JPG o elige otra. [$diagnosis]',
+        detailed: true,
+      );
+      return;
+    }
+
+    if (original.lengthInBytes > _maxRawUploadBytes) {
+      _showAvatarError(
+        'No se pudo preparar esa foto y pesa demasiado para subirla tal cual. '
+        '[$diagnosis]',
+        detailed: true,
+      );
+      return;
+    }
+
+    final useAsIs = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Usar la foto sin recortar'),
+        content: Text(
+          'No se ha podido preparar esta foto para recortarla, pero se puede '
+          'subir tal cual. Se verá completa, sin encuadrar.\n\n$diagnosis',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Usar tal cual'),
+          ),
+        ],
+      ),
+    );
+    if (useAsIs != true || !mounted) return;
+
+    setState(() => _uploadingAvatar = true);
+    final url = await ref
+        .read(profileControllerProvider.notifier)
+        .uploadAvatar(
+          bytes: original,
+          extension: extension == 'sin extensión' ? 'img' : extension,
+          contentType: picked.mimeType ?? 'application/octet-stream',
+        );
+    if (!mounted) return;
+    setState(() {
+      _uploadingAvatar = false;
+      if (url != null) _avatarUrl = url;
+    });
+    if (url == null) {
+      _showAvatarError('No se pudo subir la foto. Inténtalo de nuevo.');
+    }
+  }
+
   Future<void> _changeAvatar() async {
     final source = await _askImageSource();
     if (source == null || !mounted) return;
@@ -173,28 +267,11 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     if (!mounted) return;
     if (forCrop == null) {
       setState(() => _uploadingAvatar = false);
-      // El motivo va en el propio mensaje: esto se prueba en el navegador de
-      // un móvil, donde no hay consola a mano para mirar qué ha fallado.
-      final kb = (original.lengthInBytes / 1024).round();
-      final mimeType = picked.mimeType ?? 'sin tipo';
-      final extension = picked.name.contains('.')
-          ? picked.name.split('.').last.toLowerCase()
-          : 'sin extensión';
-
-      if (_isUnsupportedInBrowser(mimeType, extension)) {
-        _showAvatarError(
-          'Esta foto está en formato ${extension.toUpperCase()}, que el '
-          'navegador no sabe abrir. Guárdala como JPG o elige otra.',
-          detailed: true,
-        );
-      } else {
-        _showAvatarError(
-          'No se pudo abrir esa foto ($extension · $mimeType · ${kb}KB · '
-          '${firstFailure?.runtimeType ?? 'motivo desconocido'}). '
-          'Prueba con otra imagen.',
-          detailed: true,
-        );
-      }
+      await _handleUnprocessablePhoto(
+        picked: picked,
+        original: original,
+        failure: firstFailure,
+      );
       return;
     }
 

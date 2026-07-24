@@ -105,6 +105,35 @@ void main() {
     });
   });
 
+  group('describeImageBytes', () {
+    test('reconoce un PNG y un JPEG de verdad', () {
+      expect(describeImageBytes(_pngOf(width: 8, height: 8)), 'PNG');
+      final jpeg = resizeAndEncodeJpeg(_pngOf(width: 8, height: 8))!;
+      expect(describeImageBytes(jpeg), 'JPEG');
+    });
+
+    test('reconoce un contenedor HEIC por su marca ftyp', () {
+      final heic = Uint8List.fromList([
+        0, 0, 0, 24, // tamaño de la caja
+        ...'ftyp'.codeUnits,
+        ...'heic'.codeUnits,
+        0, 0, 0, 0,
+      ]);
+
+      expect(describeImageBytes(heic), 'ISOBMFF/heic');
+    });
+
+    test('avisa de un fichero truncado', () {
+      expect(describeImageBytes(Uint8List(3)), startsWith('truncado'));
+    });
+
+    test('describe la cabecera de algo irreconocible', () {
+      final garbage = Uint8List.fromList(List.filled(16, 0xAB));
+
+      expect(describeImageBytes(garbage), 'desconocido(abababab)');
+    });
+  });
+
   group('cropSquareCenterAndEncodeJpeg', () {
     test('deja un cuadrado aunque la foto sea apaisada', () {
       final result = cropSquareCenterAndEncodeJpeg(

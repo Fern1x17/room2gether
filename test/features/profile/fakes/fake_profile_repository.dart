@@ -39,6 +39,8 @@ class FakeProfileRepository implements ProfileRepository {
   /// URL que se pasó como foto anterior en la última subida, para comprobar
   /// que el repositorio real podría borrarla.
   String? lastPreviousAvatarUrl;
+  String? lastUploadExtension;
+  String? lastUploadContentType;
   int uploadAvatarCalls = 0;
 
   @override
@@ -59,8 +61,12 @@ class FakeProfileRepository implements ProfileRepository {
     required String userId,
     required Uint8List bytes,
     String? previousAvatarUrl,
+    String extension = 'jpg',
+    String contentType = 'image/jpeg',
   }) async {
     lastPreviousAvatarUrl = previousAvatarUrl;
+    lastUploadExtension = extension;
+    lastUploadContentType = contentType;
     uploadAvatarCalls++;
     // Sin URL fija, cada subida devuelve una distinta: es justo la propiedad
     // que arregla el bug de refresco.

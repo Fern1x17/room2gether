@@ -190,6 +190,34 @@ Future<ui.Image> _scaleImage(ui.Image source, int width, int height) async {
   }
 }
 
+/// Identifica el formato real de [bytes] por su cabecera, sin decodificar.
+///
+/// La extensión y el MIME que da el selector son lo que *dice* el sistema; esto
+/// es lo que el fichero *es*. Cuando ningún decodificador puede con una imagen,
+/// es el dato que distingue "formato que no soportamos" de "bytes corruptos".
+String describeImageBytes(Uint8List bytes) {
+  if (bytes.length < 12) return 'truncado(${bytes.length}B)';
+
+  if (bytes[0] == 0xFF && bytes[1] == 0xD8) return 'JPEG';
+  if (bytes[0] == 0x89 && bytes[1] == 0x50) return 'PNG';
+  if (bytes[0] == 0x47 && bytes[1] == 0x49) return 'GIF';
+
+  final riff = String.fromCharCodes(bytes.sublist(0, 4));
+  if (riff == 'RIFF' && String.fromCharCodes(bytes.sublist(8, 12)) == 'WEBP') {
+    return 'WEBP';
+  }
+  // HEIC, HEIF y AVIF son contenedores ISO-BMFF: 'ftyp' + marca.
+  if (String.fromCharCodes(bytes.sublist(4, 8)) == 'ftyp') {
+    return 'ISOBMFF/${String.fromCharCodes(bytes.sublist(8, 12))}';
+  }
+
+  final head = bytes
+      .sublist(0, 4)
+      .map((b) => b.toRadixString(16).padLeft(2, '0'))
+      .join();
+  return 'desconocido($head)';
+}
+
 /// Recorta [bytes] a un cuadrado centrado y lo deja en [maxSide] px, JPEG.
 ///
 /// Es la salida de emergencia del recorte manual: si el recortador no consigue

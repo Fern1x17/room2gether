@@ -14,24 +14,21 @@ const int kAvatarMaxSide = 512;
 /// Calidad JPEG de la foto de perfil.
 const int kAvatarJpegQuality = 85;
 
-/// Lado máximo (px) con el que se pide la foto al selector, es decir, lo que
-/// entra en el recorte.
-///
-/// `crop_your_image` decodifica en Dart puro y en web **no hay isolates**: todo
-/// ocurre en el hilo principal. A 2048 son 4,2 M de píxeles, que en un móvil
-/// dejan el recorte congelado varios segundos o se quedan sin memoria; a 1280
-/// son 1,6 M, 2,6 veces menos trabajo. Sigue sobrando resolución: hasta un
-/// recorte de un tercio del encuadre supera los [kAvatarMaxSide] finales, y el
-/// redimensionado de la galería/cámara lo hace la plataforma (canvas en web,
-/// nativo en Android), no nosotros.
-const int kAvatarPickMaxSide = 1280;
-
 /// Lados que [normalizeForCrop] intenta, de mayor a menor.
 ///
-/// Si una foto no se puede preparar a 1280 px (memoria del navegador móvil),
-/// se reintenta más pequeña en vez de rendirse. 512 es el último recurso: sigue
-/// siendo suficiente para recortar un avatar de [kAvatarMaxSide].
-const List<int> kAvatarNormalizeSides = <int>[1280, 1024, 768, 512];
+/// Se empieza bajo a propósito: el avatar acaba en [kAvatarMaxSide] pase lo que
+/// pase, así que darle al recortador más de 1024 px es trabajo que se tira, y
+/// ese trabajo lo paga el hilo principal del navegador en móvil. Se baja hasta
+/// 256 px, que sigue dando un avatar decente, antes de rendirse: es preferible
+/// una foto un poco menos nítida a no poder ponerla.
+const List<int> kAvatarNormalizeSides = <int>[1024, 768, 512, 384, 256];
+
+/// Tiempo máximo por intento de [normalizeForCrop].
+///
+/// Sin esto, un intento que no termina nunca deja la pantalla colgada y no se
+/// llega a probar un tamaño menor. Con esto, "tarda demasiado" cuenta como
+/// fallo y se reintenta más pequeño.
+const Duration kAvatarNormalizeTimeout = Duration(seconds: 10);
 
 /// Deja una foto recién elegida en un JPEG pequeño que el recortador pueda
 /// abrir, o `null` si no hay manera.
@@ -48,13 +45,17 @@ const List<int> kAvatarNormalizeSides = <int>[1280, 1024, 768, 512];
 Future<Uint8List?> normalizeForCrop(
   Uint8List bytes, {
   List<int> sides = kAvatarNormalizeSides,
+  Duration timeout = kAvatarNormalizeTimeout,
 }) async {
   for (final side in sides) {
     try {
-      final normalized = await _decodeAndEncodeJpeg(bytes, maxSide: side);
+      final normalized = await _decodeAndEncodeJpeg(
+        bytes,
+        maxSide: side,
+      ).timeout(timeout);
       if (normalized != null) return normalized;
     } catch (_) {
-      // Siguiente intento, más pequeño.
+      // Falló o tardó demasiado: siguiente intento, más pequeño.
     }
   }
   return null;

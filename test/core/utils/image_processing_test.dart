@@ -16,7 +16,7 @@ void main() {
 
   group('normalizeForCrop', () {
     test('reduce la foto al lado máximo manteniendo la proporción', () async {
-      final result = await normalizeForCrop(_pngOf(width: 3000, height: 1500));
+      final result = await normalizeForCrop(_pngOf(width: 4000, height: 2000));
 
       final decoded = img.decodeImage(result!)!;
       expect(decoded.width, kAvatarNormalizeSides.first);
@@ -54,6 +54,30 @@ void main() {
 
     test('devuelve null si ningún tamaño funciona', () async {
       expect(await normalizeForCrop(Uint8List.fromList([1, 2, 3, 4])), isNull);
+    });
+
+    test('un intento que tarda demasiado no bloquea: se reintenta', () async {
+      // Timeout imposible de cumplir: todos los intentos "tardan demasiado",
+      // así que la función tiene que rendirse en vez de quedarse colgada.
+      final result = await normalizeForCrop(
+        _pngOf(width: 800, height: 800),
+        timeout: Duration.zero,
+      );
+
+      expect(result, isNull);
+    });
+
+    test('la escalera baja hasta un tamaño usable para el avatar', () {
+      // Aunque haga falta el último peldaño, sigue dando un avatar razonable.
+      expect(kAvatarNormalizeSides.last, greaterThanOrEqualTo(256));
+      expect(kAvatarNormalizeSides.first, greaterThanOrEqualTo(kAvatarMaxSide));
+      // Estrictamente decreciente: cada intento pide menos que el anterior.
+      for (var i = 1; i < kAvatarNormalizeSides.length; i++) {
+        expect(
+          kAvatarNormalizeSides[i],
+          lessThan(kAvatarNormalizeSides[i - 1]),
+        );
+      }
     });
   });
 

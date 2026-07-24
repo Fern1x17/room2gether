@@ -122,14 +122,13 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     final source = await _askImageSource();
     if (source == null || !mounted) return;
 
-    // El límite lo fija kAvatarPickMaxSide: es lo que el recorte tendrá que
-    // decodificar, y en web eso ocurre en el hilo principal (ver la constante).
-    final picked = await ImagePicker().pickImage(
-      source: source,
-      maxWidth: kAvatarPickMaxSide.toDouble(),
-      maxHeight: kAvatarPickMaxSide.toDouble(),
-      imageQuality: 90,
-    );
+    // Se pide la foto tal cual, sin maxWidth/maxHeight/imageQuality: en web
+    // esas opciones hacen que image_picker redimensione dibujando en un canvas,
+    // y los navegadores móviles limitan el tamaño de canvas (iOS Safari, sobre
+    // los 16 M de píxeles), así que con una foto grande devuelve algo roto o
+    // falla. De reescalar se encarga normalizeForCrop, que usa el decodificador
+    // de la plataforma y no tiene ese techo.
+    final picked = await ImagePicker().pickImage(source: source);
     if (picked == null || !mounted) return;
 
     // Preparar la foto puede tardar (decodificar y recomprimir), así que el

@@ -746,9 +746,13 @@ nunca puede apuntar el borrado a la carpeta de otra persona.
 - `core/utils/image_processing.dart` — dos pasos:
   - `normalizeForCrop()` prepara la foto **antes** de abrir el recortador.
     Decodifica con `dart:ui` (el decodificador del navegador en web, Skia en
-    Android), reescala al vuelo a 1280 px y recodifica en JPEG. Si un tamaño
-    falla, reintenta con el siguiente de `kAvatarNormalizeSides`
-    (1280 → 1024 → 768 → 512) antes de rendirse.
+    Android), reescala al vuelo y recodifica en JPEG. Si un tamaño falla **o
+    tarda más de `kAvatarNormalizeTimeout`**, reintenta con el siguiente de
+    `kAvatarNormalizeSides` (1024 → 768 → 512 → 384 → 256) antes de rendirse.
+    El límite de arriba es 1024 porque el avatar acaba en `kAvatarMaxSide`
+    (512) pase lo que pase: pedir más es trabajo que se tira, y lo paga el
+    hilo principal del navegador. El de abajo es 256 porque más vale una foto
+    algo menos nítida que no poder ponerla.
   - `resizeAndEncodeJpeg()` (función pura, testeada) deja el recorte final en
     **512 px** y **JPEG calidad 85**; `resizeAvatarBytes()` la lanza con
     `compute`. Un fichero corrupto devuelve `null` en vez de propagar la
@@ -763,9 +767,17 @@ nunca puede apuntar el borrado a la carpeta de otra persona.
   recortador un JPEG pequeño. Se detectó probando en el navegador del móvil,
   donde con algunas fotos el recorte no llegaba a aparecer.
 - `edit_profile_screen.dart` — hoja inferior **Galería / Cámara** (antes solo
-  había galería) → `image_picker` (con `maxWidth/maxHeight` a
-  `kAvatarPickMaxSide`) → normalización → recorte → compresión → subida. Cada
-  paso que puede fallar muestra un SnackBar concreto en vez de no hacer nada.
+  había galería) → `image_picker` → normalización → recorte → compresión →
+  subida. Cada paso que puede fallar muestra un SnackBar distinto ("no se pudo
+  leer" / "abrir" / "procesar" / "subir"), para que un fallo se pueda situar
+  sin depurar.
+
+  A `pickImage()` **no** se le pasan `maxWidth`/`maxHeight`/`imageQuality`: en
+  web esas opciones hacen que `image_picker_for_web` redimensione dibujando en
+  un `canvas`, y los navegadores móviles limitan el tamaño de canvas (iOS
+  Safari, en torno a 16 M de píxeles), justo donde cae una foto de 12 MP. De
+  reescalar se encarga `normalizeForCrop`, que usa el decodificador de la
+  plataforma y no tiene ese techo.
 
 **Tamaño elegido (512 px):** el avatar se pinta con `radius: 48` (96 dp), que a
 3x de densidad son 288 px reales; 512 deja margen para una futura cabecera de

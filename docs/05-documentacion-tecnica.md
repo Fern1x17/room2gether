@@ -752,7 +752,22 @@ nunca puede apuntar el borrado a la carpeta de otra persona.
     El límite de arriba es 1024 porque el avatar acaba en `kAvatarMaxSide`
     (512) pase lo que pase: pedir más es trabajo que se tira, y lo paga el
     hilo principal del navegador. El de abajo es 256 porque más vale una foto
-    algo menos nítida que no poder ponerla.
+    algo menos nítida que no poder ponerla. Si fallan los cinco, queda un
+    último recurso que decodifica con el paquete `image` (más lento y con
+    menos formatos, pero independiente de `dart:ui`).
+
+    **`targetWidth`/`targetHeight` son una petición, no una garantía:** no
+    todos los códecs los respetan, y en web depende del navegador. Si el códec
+    los ignora, la imagen sale a tamaño completo y leerla en RGBA son decenas
+    de MB que después hay que recomprimir en Dart — que es exactamente cómo se
+    rompió esto una vez. Por eso, si las dimensiones no coinciden con lo
+    pedido, `_scaleImage()` la redibuja con `PictureRecorder` (escalado del
+    motor de pintado, no de Dart) antes de leer un solo byte.
+
+  Cuando la normalización se rinde, el SnackBar incluye **el tamaño del fichero
+  y el tipo del primer error**. Es feo a propósito: esto se prueba en el
+  navegador de un móvil, donde no hay consola a mano. Se puede quitar cuando la
+  feature lleve un tiempo estable.
   - `resizeAndEncodeJpeg()` (función pura, testeada) deja el recorte final en
     **512 px** y **JPEG calidad 85**; `resizeAvatarBytes()` la lanza con
     `compute`. Un fichero corrupto devuelve `null` en vez de propagar la
@@ -772,12 +787,15 @@ nunca puede apuntar el borrado a la carpeta de otra persona.
   leer" / "abrir" / "procesar" / "subir"), para que un fallo se pueda situar
   sin depurar.
 
-  A `pickImage()` **no** se le pasan `maxWidth`/`maxHeight`/`imageQuality`: en
-  web esas opciones hacen que `image_picker_for_web` redimensione dibujando en
-  un `canvas`, y los navegadores móviles limitan el tamaño de canvas (iOS
-  Safari, en torno a 16 M de píxeles), justo donde cae una foto de 12 MP. De
-  reescalar se encarga `normalizeForCrop`, que usa el decodificador de la
-  plataforma y no tiene ese techo.
+  A `pickImage()` **no** se le pasan `maxWidth`/`maxHeight`/`imageQuality`, y
+  esto no es cosmético: en web esas opciones activan el redimensionado de
+  `image_picker_for_web`, que dibuja en un `canvas` y completa su `Completer`
+  dentro del callback de `canvas.toBlob`. Cuando el navegador pasa `null` a ese
+  callback —lo que hace justo cuando el canvas supera su límite de tamaño, en
+  torno a los 16 M de píxeles en iOS Safari— **el `Completer` no se completa
+  nunca y `pickImage()` se queda colgado para siempre**. No hay forma de
+  detectarlo desde fuera: no lanza, no vuelve. De reescalar se encarga
+  `normalizeForCrop`, que no pasa por canvas.
 
 **Tamaño elegido (512 px):** el avatar se pinta con `radius: 48` (96 dp), que a
 3x de densidad son 288 px reales; 512 deja margen para una futura cabecera de

@@ -27,8 +27,10 @@ const List<int> kAvatarNormalizeSides = <int>[1024, 768, 512, 384, 256];
 ///
 /// Sin esto, un intento que no termina nunca deja la pantalla colgada y no se
 /// llega a probar un tamaño menor. Con esto, "tarda demasiado" cuenta como
-/// fallo y se reintenta más pequeño.
-const Duration kAvatarNormalizeTimeout = Duration(seconds: 10);
+/// fallo y se reintenta más pequeño. Es holgado a propósito: en un móvil lento
+/// abrir una foto de 12 MP puede tardar unos segundos, y es preferible esperar
+/// a rendirse.
+const Duration kAvatarNormalizeTimeout = Duration(seconds: 20);
 
 /// Deja una foto recién elegida en un JPEG pequeño que el recortador pueda
 /// abrir, o `null` si no hay manera.
@@ -46,6 +48,7 @@ Future<Uint8List?> normalizeForCrop(
   Uint8List bytes, {
   List<int> sides = kAvatarNormalizeSides,
   Duration timeout = kAvatarNormalizeTimeout,
+  void Function(Object error)? onAttemptFailed,
 }) async {
   for (final side in sides) {
     try {
@@ -54,12 +57,33 @@ Future<Uint8List?> normalizeForCrop(
         maxSide: side,
       ).timeout(timeout);
       if (normalized != null) return normalized;
-    } catch (_) {
+      onAttemptFailed?.call(StateError('sin imagen a $side px'));
+    } catch (error) {
       // Falló o tardó demasiado: siguiente intento, más pequeño.
+      onAttemptFailed?.call(error);
     }
+  }
+
+  // Último recurso: decodificar en Dart. Es más lento y entiende menos
+  // formatos, pero salva el caso de que `dart:ui` no pueda con este fichero.
+  try {
+    final fallback = await compute(
+      _resizeForCropIsolate,
+      bytes,
+    ).timeout(timeout);
+    if (fallback != null) return fallback;
+    onAttemptFailed?.call(StateError('el decodificador de Dart tampoco pudo'));
+  } catch (error) {
+    onAttemptFailed?.call(error);
   }
   return null;
 }
+
+Uint8List? _resizeForCropIsolate(Uint8List bytes) => resizeAndEncodeJpeg(
+  bytes,
+  maxSide: kAvatarNormalizeSides.first,
+  quality: 90,
+);
 
 /// Decodifica con la plataforma reescalando al vuelo y recodifica en JPEG.
 Future<Uint8List?> _decodeAndEncodeJpeg(
@@ -85,6 +109,7 @@ Future<Uint8List?> _decodeAndEncodeJpeg(
   final targetHeight = (descriptor.height * scale).round().clamp(1, maxSide);
 
   ui.Image? image;
+  ui.Image? scaled;
   try {
     final codec = await descriptor.instantiateCodec(
       targetWidth: targetWidth,
@@ -94,23 +119,52 @@ Future<Uint8List?> _decodeAndEncodeJpeg(
     image = frame.image;
     codec.dispose();
 
-    final rgba = await image.toByteData(format: ui.ImageByteFormat.rawRgba);
+    // `targetWidth`/`targetHeight` son una *petición*: no todos los códecs los
+    // respetan (en web depende del navegador). Si el códec los ignoró, aquí
+    // habría una imagen a tamaño completo, y leerla en RGBA serían decenas de
+    // MB que luego habría que recomprimir en Dart. Se vuelve a escalar con la
+    // GPU para que lo que sigue esté acotado pase lo que pase.
+    if (image.width != targetWidth || image.height != targetHeight) {
+      scaled = await _scaleImage(image, targetWidth, targetHeight);
+    }
+    final result = scaled ?? image;
+
+    final rgba = await result.toByteData(format: ui.ImageByteFormat.rawRgba);
     if (rgba == null) return null;
 
     // Nota: `rawRgba` viene con alfa premultiplicado. Da igual para una foto
     // (opaca), y el JPEG no tiene canal alfa de todos modos.
     final decoded = img.Image.fromBytes(
-      width: image.width,
-      height: image.height,
+      width: result.width,
+      height: result.height,
       bytes: rgba.buffer,
       numChannels: 4,
       order: img.ChannelOrder.rgba,
     );
     return img.encodeJpg(decoded, quality: 90);
   } finally {
+    scaled?.dispose();
     image?.dispose();
     descriptor.dispose();
     buffer.dispose();
+  }
+}
+
+/// Redibuja [source] en [width]x[height]. El escalado lo hace el motor de
+/// pintado, no Dart, así que no bloquea el hilo principal en web.
+Future<ui.Image> _scaleImage(ui.Image source, int width, int height) async {
+  final recorder = ui.PictureRecorder();
+  ui.Canvas(recorder).drawImageRect(
+    source,
+    ui.Rect.fromLTWH(0, 0, source.width.toDouble(), source.height.toDouble()),
+    ui.Rect.fromLTWH(0, 0, width.toDouble(), height.toDouble()),
+    ui.Paint()..filterQuality = ui.FilterQuality.medium,
+  );
+  final picture = recorder.endRecording();
+  try {
+    return await picture.toImage(width, height);
+  } finally {
+    picture.dispose();
   }
 }
 

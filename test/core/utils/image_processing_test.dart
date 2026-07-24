@@ -67,6 +67,30 @@ void main() {
       expect(result, isNull);
     });
 
+    test('informa del motivo de cada intento fallido', () async {
+      final failures = <Object>[];
+
+      await normalizeForCrop(
+        Uint8List.fromList([1, 2, 3, 4]),
+        sides: const [512, 256],
+        onAttemptFailed: failures.add,
+      );
+
+      // Un intento por lado más el último recurso en Dart.
+      expect(failures, hasLength(3));
+    });
+
+    test('recurre al decodificador de Dart si dart:ui no puede', () async {
+      // Ningún lado válido: solo puede salir bien por el último recurso.
+      final result = await normalizeForCrop(
+        _pngOf(width: 900, height: 900),
+        sides: const [0],
+      );
+
+      final decoded = img.decodeImage(result!)!;
+      expect(decoded.width, lessThanOrEqualTo(kAvatarNormalizeSides.first));
+    });
+
     test('la escalera baja hasta un tamaño usable para el avatar', () {
       // Aunque haga falta el último peldaño, sigue dando un avatar razonable.
       expect(kAvatarNormalizeSides.last, greaterThanOrEqualTo(256));

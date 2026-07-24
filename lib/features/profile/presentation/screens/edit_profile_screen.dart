@@ -149,11 +149,22 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     // Se normaliza ANTES de abrir el recortador: este decodifica en Dart y hay
     // formatos (HEIC, algunos WebP) y tamaños con los que se quedaría cargando
     // indefinidamente.
-    final forCrop = await normalizeForCrop(original);
+    Object? firstFailure;
+    final forCrop = await normalizeForCrop(
+      original,
+      onAttemptFailed: (error) => firstFailure ??= error,
+    );
     if (!mounted) return;
     if (forCrop == null) {
       setState(() => _uploadingAvatar = false);
-      _showAvatarError('No se pudo abrir esa foto. Prueba con otra imagen.');
+      // El motivo va en el propio mensaje: esto se prueba en el navegador de
+      // un móvil, donde no hay consola a mano para mirar qué ha fallado.
+      final kb = (original.lengthInBytes / 1024).round();
+      _showAvatarError(
+        'No se pudo abrir esa foto (${kb}KB, '
+        '${firstFailure?.runtimeType ?? 'motivo desconocido'}). '
+        'Prueba con otra imagen.',
+      );
       return;
     }
 

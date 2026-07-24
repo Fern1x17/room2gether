@@ -7,6 +7,7 @@ import '../../features/chat/presentation/screens/conversations_screen.dart';
 import '../../features/auth/presentation/screens/register_screen.dart';
 import '../../features/auth/presentation/screens/welcome_screen.dart';
 import '../../features/feed/presentation/screens/feed_screen.dart';
+import '../../features/feed/presentation/screens/home_selection_screen.dart'; // <--- Nueva pantalla añadida
 import '../../features/feed/presentation/screens/listing_detail_screen.dart';
 import '../../features/listing/presentation/screens/create_listing_screen.dart';
 import '../../features/listing/presentation/screens/edit_listing_screen.dart';
@@ -16,10 +17,11 @@ import '../supabase/supabase_client.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   // RF-13: supabase_flutter guarda la sesión en el dispositivo y la restaura
-  // en Supabase.initialize(); si existe, se entra directo al feed sin pasar
-  // por la pantalla de bienvenida. La sesión solo se destruye con signOut().
+  // en Supabase.initialize(); si existe, se entra directo a la pantalla de
+  // selección sin pasar por la pantalla de bienvenida.
   final hasSession = supabase.auth.currentSession != null;
-  return buildAppRouter(initialLocation: hasSession ? '/feed' : '/');
+  // Cambiamos la ruta inicial de '/feed' a '/home'
+  return buildAppRouter(initialLocation: hasSession ? '/home' : '/');
 });
 
 /// Construye el router. Separado del provider para poder crearlo en tests
@@ -59,14 +61,20 @@ GoRouter buildAppRouter({required String initialLocation}) {
           currentUri: state.uri,
         ),
         branches: [
-          // Buscar: el detalle vive en la rama para que en móvil conserve la
-          // barra inferior y en escritorio se muestre como panel junto a la
-          // lista (fase 3).
+          // Buscar: Nueva pantalla de selección como raíz de la rama.
           StatefulShellBranch(
             routes: [
               GoRoute(
+                path: '/home',
+                builder: (context, state) => const HomeSelectionScreen(),
+              ),
+              GoRoute(
                 path: '/feed',
-                builder: (context, state) => const FeedScreen(),
+                builder: (context, state) {
+                  // Recuperamos el parámetro que pasamos desde HomeSelectionScreen
+                  final isLookingForRoommate = state.extra as bool? ?? true;
+                  return FeedScreen(isLookingForRoommate: isLookingForRoommate);
+                },
               ),
               GoRoute(
                 path: '/listings/:id',
@@ -75,10 +83,7 @@ GoRouter buildAppRouter({required String initialLocation}) {
               ),
             ],
           ),
-          // Chats: la conversación individual vive en la rama (igual que el
-          // detalle de publicación en Buscar) para que en escritorio se muestre
-          // como panel junto a la lista de conversaciones, y en móvil comparta
-          // la barra inferior con el resto de la sección.
+          // Chats
           StatefulShellBranch(
             routes: [
               GoRoute(
@@ -92,6 +97,7 @@ GoRouter buildAppRouter({required String initialLocation}) {
               ),
             ],
           ),
+          // Perfil
           StatefulShellBranch(
             routes: [
               GoRoute(

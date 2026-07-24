@@ -743,13 +743,29 @@ nunca puede apuntar el borrado a la carpeta de otra persona.
   `null` si se cancela). Marco **fijo** 1:1 con máscara circular; la imagen se
   mueve y se amplía con dos dedos o con la rueda del ratón
   (`interactive: true`, `fixCropRect: true`), como en WhatsApp o Instagram.
-- `core/utils/image_processing.dart` — `resizeAndEncodeJpeg()` (función pura,
-  testeada) reduce el lado mayor a **512 px** y recodifica en **JPEG calidad
-  85**; `resizeAvatarBytes()` la lanza con `compute`. Un fichero corrupto
-  devuelve `null` en vez de propagar la excepción del decodificador.
+- `core/utils/image_processing.dart` — dos pasos:
+  - `normalizeForCrop()` prepara la foto **antes** de abrir el recortador.
+    Decodifica con `dart:ui` (el decodificador del navegador en web, Skia en
+    Android), reescala al vuelo a 1280 px y recodifica en JPEG. Si un tamaño
+    falla, reintenta con el siguiente de `kAvatarNormalizeSides`
+    (1280 → 1024 → 768 → 512) antes de rendirse.
+  - `resizeAndEncodeJpeg()` (función pura, testeada) deja el recorte final en
+    **512 px** y **JPEG calidad 85**; `resizeAvatarBytes()` la lanza con
+    `compute`. Un fichero corrupto devuelve `null` en vez de propagar la
+    excepción del decodificador.
+
+  **Por qué hace falta normalizar:** `crop_your_image` decodifica con el
+  paquete `image`, en Dart. Eso significa que (a) no entiende HEIC ni todos los
+  WebP, y una foto en esos formatos deja el recortador cargando
+  indefinidamente, y (b) en web **no hay isolates**, así que decodificar una
+  imagen grande congela el hilo principal. Delegar el decode en la plataforma
+  resuelve las dos cosas: abre todo lo que el sistema sabe abrir y entrega al
+  recortador un JPEG pequeño. Se detectó probando en el navegador del móvil,
+  donde con algunas fotos el recorte no llegaba a aparecer.
 - `edit_profile_screen.dart` — hoja inferior **Galería / Cámara** (antes solo
-  había galería) → `image_picker` (con `maxWidth/maxHeight` a 2048, para que el
-  recorte tenga resolución de sobra) → recorte → compresión → subida.
+  había galería) → `image_picker` (con `maxWidth/maxHeight` a
+  `kAvatarPickMaxSide`) → normalización → recorte → compresión → subida. Cada
+  paso que puede fallar muestra un SnackBar concreto en vez de no hacer nada.
 
 **Tamaño elegido (512 px):** el avatar se pinta con `radius: 48` (96 dp), que a
 3x de densidad son 288 px reales; 512 deja margen para una futura cabecera de
@@ -779,3 +795,13 @@ cámara. Es comportamiento del paquete, no una decisión de layout.
    foto nueva se ve sin forzar recarga del navegador.
 7. Salir del perfil sin pulsar "Guardar cambios" y volver a entrar → la foto
    sigue siendo la nueva (se persiste en el momento de subir).
+8. **En el navegador del móvil**, probar con varias fotos distintas de la
+   galería, incluidas capturas de pantalla y fotos recientes de la cámara: el
+   recorte debe abrirse en todas. Con una que no se pueda abrir debe salir
+   "No se pudo abrir esa foto", nunca quedarse cargando.
+
+> **Ojo al probar en web:** la app registra un *service worker*, así que un
+> navegador que ya había visitado room2gether.com sirve la versión cacheada en
+> esa visita y solo estrena la nueva en la siguiente. Si un cambio "no aparece"
+> en el móvil, recarga dos veces o prueba en una pestaña privada antes de
+> buscar el fallo en el código.

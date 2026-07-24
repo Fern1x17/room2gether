@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show Uint8List, kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -122,20 +122,44 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     final source = await _askImageSource();
     if (source == null || !mounted) return;
 
-    // Se pide holgada (2048) para que el recorte tenga resolución de sobra;
-    // el tamaño final lo fija resizeAvatarBytes.
+    // El límite lo fija kAvatarPickMaxSide: es lo que el recorte tendrá que
+    // decodificar, y en web eso ocurre en el hilo principal (ver la constante).
     final picked = await ImagePicker().pickImage(
       source: source,
-      maxWidth: 2048,
-      maxHeight: 2048,
+      maxWidth: kAvatarPickMaxSide.toDouble(),
+      maxHeight: kAvatarPickMaxSide.toDouble(),
       imageQuality: 90,
     );
     if (picked == null || !mounted) return;
 
-    final original = await picked.readAsBytes();
+    // Preparar la foto puede tardar (decodificar y recomprimir), así que el
+    // botón muestra su indicador desde ya.
+    setState(() => _uploadingAvatar = true);
+
+    final Uint8List original;
+    try {
+      original = await picked.readAsBytes();
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _uploadingAvatar = false);
+      _showAvatarError('No se pudo leer esa foto. Prueba con otra.');
+      return;
+    }
     if (!mounted) return;
 
-    final cropped = await showAvatarCropper(context, original);
+    // Se normaliza ANTES de abrir el recortador: este decodifica en Dart y hay
+    // formatos (HEIC, algunos WebP) y tamaños con los que se quedaría cargando
+    // indefinidamente.
+    final forCrop = await normalizeForCrop(original);
+    if (!mounted) return;
+    if (forCrop == null) {
+      setState(() => _uploadingAvatar = false);
+      _showAvatarError('No se pudo abrir esa foto. Prueba con otra imagen.');
+      return;
+    }
+
+    setState(() => _uploadingAvatar = false);
+    final cropped = await showAvatarCropper(context, forCrop);
     if (cropped == null || !mounted) return; // el usuario canceló
 
     setState(() => _uploadingAvatar = true);

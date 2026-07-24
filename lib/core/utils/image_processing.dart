@@ -1,3 +1,5 @@
+import 'dart:ui' as ui;
+
 import 'package:flutter/foundation.dart';
 import 'package:image/image.dart' as img;
 
@@ -11,6 +13,105 @@ const int kAvatarMaxSide = 512;
 
 /// Calidad JPEG de la foto de perfil.
 const int kAvatarJpegQuality = 85;
+
+/// Lado máximo (px) con el que se pide la foto al selector, es decir, lo que
+/// entra en el recorte.
+///
+/// `crop_your_image` decodifica en Dart puro y en web **no hay isolates**: todo
+/// ocurre en el hilo principal. A 2048 son 4,2 M de píxeles, que en un móvil
+/// dejan el recorte congelado varios segundos o se quedan sin memoria; a 1280
+/// son 1,6 M, 2,6 veces menos trabajo. Sigue sobrando resolución: hasta un
+/// recorte de un tercio del encuadre supera los [kAvatarMaxSide] finales, y el
+/// redimensionado de la galería/cámara lo hace la plataforma (canvas en web,
+/// nativo en Android), no nosotros.
+const int kAvatarPickMaxSide = 1280;
+
+/// Lados que [normalizeForCrop] intenta, de mayor a menor.
+///
+/// Si una foto no se puede preparar a 1280 px (memoria del navegador móvil),
+/// se reintenta más pequeña en vez de rendirse. 512 es el último recurso: sigue
+/// siendo suficiente para recortar un avatar de [kAvatarMaxSide].
+const List<int> kAvatarNormalizeSides = <int>[1280, 1024, 768, 512];
+
+/// Deja una foto recién elegida en un JPEG pequeño que el recortador pueda
+/// abrir, o `null` si no hay manera.
+///
+/// Existe porque `crop_your_image` decodifica con el paquete `image`, en Dart:
+/// no entiende HEIC ni todos los WebP (la foto se queda cargando para siempre)
+/// y en web trabaja en el hilo principal, donde una imagen grande congela la
+/// pantalla. Aquí la decodificación la hace **la plataforma** (`dart:ui`, que
+/// en web es el decodificador del navegador y en Android es Skia), que sí
+/// entiende todo lo que el sistema sabe abrir y además reescala al vuelo.
+///
+/// Si un tamaño falla —típicamente por memoria en un móvil— se reintenta con
+/// el siguiente de [kAvatarNormalizeSides], más pequeño.
+Future<Uint8List?> normalizeForCrop(
+  Uint8List bytes, {
+  List<int> sides = kAvatarNormalizeSides,
+}) async {
+  for (final side in sides) {
+    try {
+      final normalized = await _decodeAndEncodeJpeg(bytes, maxSide: side);
+      if (normalized != null) return normalized;
+    } catch (_) {
+      // Siguiente intento, más pequeño.
+    }
+  }
+  return null;
+}
+
+/// Decodifica con la plataforma reescalando al vuelo y recodifica en JPEG.
+Future<Uint8List?> _decodeAndEncodeJpeg(
+  Uint8List bytes, {
+  required int maxSide,
+}) async {
+  final buffer = await ui.ImmutableBuffer.fromUint8List(bytes);
+  final ui.ImageDescriptor descriptor;
+  try {
+    descriptor = await ui.ImageDescriptor.encoded(buffer);
+  } catch (_) {
+    buffer.dispose();
+    return null; // La plataforma tampoco sabe abrir este fichero.
+  }
+
+  // Ambas dimensiones explícitas: así el reescalado no depende de cómo trate
+  // `dart:ui` una dimensión omitida.
+  final longestSide = descriptor.width > descriptor.height
+      ? descriptor.width
+      : descriptor.height;
+  final scale = longestSide <= maxSide ? 1.0 : maxSide / longestSide;
+  final targetWidth = (descriptor.width * scale).round().clamp(1, maxSide);
+  final targetHeight = (descriptor.height * scale).round().clamp(1, maxSide);
+
+  ui.Image? image;
+  try {
+    final codec = await descriptor.instantiateCodec(
+      targetWidth: targetWidth,
+      targetHeight: targetHeight,
+    );
+    final frame = await codec.getNextFrame();
+    image = frame.image;
+    codec.dispose();
+
+    final rgba = await image.toByteData(format: ui.ImageByteFormat.rawRgba);
+    if (rgba == null) return null;
+
+    // Nota: `rawRgba` viene con alfa premultiplicado. Da igual para una foto
+    // (opaca), y el JPEG no tiene canal alfa de todos modos.
+    final decoded = img.Image.fromBytes(
+      width: image.width,
+      height: image.height,
+      bytes: rgba.buffer,
+      numChannels: 4,
+      order: img.ChannelOrder.rgba,
+    );
+    return img.encodeJpg(decoded, quality: 90);
+  } finally {
+    image?.dispose();
+    descriptor.dispose();
+    buffer.dispose();
+  }
+}
 
 /// Reduce [bytes] para que su lado mayor no supere [maxSide] y lo recodifica
 /// en JPEG con calidad [quality].

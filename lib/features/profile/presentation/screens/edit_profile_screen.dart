@@ -169,11 +169,14 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         'leídos:${kb}KB${declaredBytes != null ? '/declarados:${(declaredBytes / 1024).round()}KB' : ''} · '
         '${failure ?? 'sin error'}';
 
-    if (_isUnsupportedInBrowser(mimeType, extension) ||
-        realFormat.startsWith('ISOBMFF')) {
+    // HEIC ya no se rechaza de entrada: hay un decodificador que se descarga
+    // bajo demanda. Si aun así se llega aquí es que tampoco él ha podido, y
+    // entonces sí conviene decir el formato por su nombre.
+    if (isHeicContainer(realFormat) ||
+        _isUnsupportedInBrowser(mimeType, extension)) {
       _showAvatarError(
-        'Esta foto está en un formato que el navegador no sabe abrir '
-        '($realFormat). Guárdala como JPG o elige otra. [$diagnosis]',
+        'No se ha podido convertir esta foto ($realFormat). Si la tienes en '
+        'JPG, prueba con esa versión. [$diagnosis]',
         detailed: true,
       );
       return;

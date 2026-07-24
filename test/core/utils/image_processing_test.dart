@@ -123,6 +123,13 @@ void main() {
       expect(describeImageBytes(heic), 'ISOBMFF/heic');
     });
 
+    test('isHeicContainer distingue el contenedor de iPhone', () {
+      expect(isHeicContainer('ISOBMFF/heic'), isTrue);
+      expect(isHeicContainer('ISOBMFF/mif1'), isTrue);
+      expect(isHeicContainer('JPEG'), isFalse);
+      expect(isHeicContainer('desconocido(abababab)'), isFalse);
+    });
+
     test('avisa de un fichero truncado', () {
       expect(describeImageBytes(Uint8List(3)), startsWith('truncado'));
     });

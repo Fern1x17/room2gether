@@ -3,6 +3,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/foundation.dart';
 import 'package:image/image.dart' as img;
 
+import 'heic_decoder.dart';
 import 'image_downscaler.dart';
 
 /// Lado máximo (px) de la foto de perfil una vez recortada.
@@ -62,9 +63,26 @@ Future<Uint8List?> normalizeForCrop(
   Duration timeout = kAvatarNormalizeTimeout,
   void Function(Object error)? onAttemptFailed,
 }) async {
+  var source = bytes;
+
+  // Paso previo solo para HEIC (fotos de iPhone). Se decide por la cabecera
+  // real: al compartirlas, muchas apps las renombran a `.jpg` y las anuncian
+  // como `image/jpeg`, así que ni la extensión ni el MIME sirven. Fuera de web
+  // esto devuelve `null` al instante y no cuesta nada.
+  if (isHeicContainer(describeImageBytes(bytes))) {
+    final asJpeg = await decodeHeicToJpeg(bytes);
+    if (asJpeg != null) {
+      source = asJpeg;
+    } else {
+      onAttemptFailed?.call(
+        StateError('No se pudo convertir la foto HEIC a JPEG'),
+      );
+    }
+  }
+
   try {
     final viaPlatform = await downscaleWithPlatform(
-      bytes,
+      source,
       maxSide: sides.first,
     ).timeout(timeout);
     if (viaPlatform != null) return viaPlatform;
@@ -75,7 +93,7 @@ Future<Uint8List?> normalizeForCrop(
   for (final side in sides) {
     try {
       final normalized = await _decodeAndEncodeJpeg(
-        bytes,
+        source,
         maxSide: side,
       ).timeout(timeout);
       if (normalized != null) return normalized;
@@ -91,7 +109,7 @@ Future<Uint8List?> normalizeForCrop(
   try {
     final fallback = await compute(
       _resizeForCropIsolate,
-      bytes,
+      source,
     ).timeout(timeout);
     if (fallback != null) return fallback;
     onAttemptFailed?.call(StateError('el decodificador de Dart tampoco pudo'));
@@ -217,6 +235,11 @@ String describeImageBytes(Uint8List bytes) {
       .join();
   return 'desconocido($head)';
 }
+
+/// `true` si [describeImageBytes] identificó un contenedor ISO-BMFF (HEIC,
+/// HEIF o AVIF), que es lo que graba un iPhone y ningún navegador salvo Safari
+/// sabe abrir.
+bool isHeicContainer(String description) => description.startsWith('ISOBMFF');
 
 /// Recorta [bytes] a un cuadrado centrado y lo deja en [maxSide] px, JPEG.
 ///

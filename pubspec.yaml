@@ -37,6 +37,9 @@ dependencies:
   # funcionan igual en Android y en web sin código nativo ni scripts externos.
   crop_your_image: ^2.0.0
   image: ^4.5.4
+  # Solo para core/utils/image_downscaler_web.dart (import condicional): en web
+  # la foto la decodifica el navegador, no el heap de WebAssembly.
+  web: ^1.1.1
 
 dev_dependencies:
   flutter_test:

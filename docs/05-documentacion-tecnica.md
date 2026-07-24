@@ -743,7 +743,32 @@ nunca puede apuntar el borrado a la carpeta de otra persona.
   `null` si se cancela). Marco **fijo** 1:1 con máscara circular; la imagen se
   mueve y se amplía con dos dedos o con la rueda del ratón
   (`interactive: true`, `fixCropRect: true`), como en WhatsApp o Instagram.
+
+  **Salida garantizada:** si a los 12 s el recortador no ha llegado a
+  `CropStatus.ready` (o el recorte falla, o tampoco vuelve tras confirmar),
+  aparece un `MaterialBanner` con "Usar recortada al centro", que resuelve el
+  recorte con `cropSquareCenterAndEncodeJpeg()` — tubería propia, sin pasar por
+  `crop_your_image`. El requisito es que el usuario pueda usar **cualquier**
+  foto de su dispositivo; el recorte a mano es lo deseable, no lo obligatorio.
 - `core/utils/image_processing.dart` — dos pasos:
+  - `core/utils/image_downscaler.dart` (+ `_stub` / `_web`) — import
+    condicional, mismo patrón que `link_opener`. En web reduce la foto con el
+    **pipeline del propio navegador** (`<img>` + `canvas` + `toDataURL`); fuera
+    de web devuelve `null` y no se usa.
+
+    **Por qué existe:** en web `dart:ui` decodifica dentro del heap de
+    WebAssembly, y una foto de móvil (12 MP, varios MB) puede no caber. El
+    síntoma es "no se puede abrir esta imagen" **a cualquier tamaño de
+    destino**, porque el coste está en decodificar el original, no en producir
+    el resultado. Por eso la escalera de tamaños no arreglaba este caso: cada
+    peldaño repetía la misma decodificación cara. El navegador, en cambio,
+    decodifica imágenes grandes en su pipeline nativo sin ese techo.
+
+    Usa `toDataURL` y no `toBlob` deliberadamente: `toBlob` entrega por
+    callback y el navegador le pasa `null` cuando no puede producir el
+    resultado, dejando colgado a quien lo espere — es exactamente el fallo de
+    `image_picker_for_web` descrito más abajo.
+
   - `normalizeForCrop()` prepara la foto **antes** de abrir el recortador.
     Decodifica con `dart:ui` (el decodificador del navegador en web, Skia en
     Android), reescala al vuelo y recodifica en JPEG. Si un tamaño falla **o

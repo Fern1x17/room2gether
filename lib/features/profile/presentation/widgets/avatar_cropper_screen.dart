@@ -1,7 +1,10 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:crop_your_image/crop_your_image.dart';
 import 'package:flutter/material.dart';
+
+import '../../../../core/utils/image_processing.dart';
 
 /// Abre el recorte a pantalla completa y devuelve los bytes recortados, o
 /// `null` si el usuario cancela.
@@ -32,13 +35,69 @@ class AvatarCropperScreen extends StatefulWidget {
   State<AvatarCropperScreen> createState() => _AvatarCropperScreenState();
 }
 
+/// Tras esta espera se ofrece el recorte automático: o el recortador no ha
+/// conseguido abrir la foto, o va tan lento que da igual.
+const Duration _kCropperStuckAfter = Duration(seconds: 12);
+
 class _AvatarCropperScreenState extends State<AvatarCropperScreen> {
   final _controller = CropController();
   bool _cropping = false;
+  bool _ready = false;
+  bool _stuck = false;
+  Timer? _stuckTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _armStuckTimer();
+  }
+
+  @override
+  void dispose() {
+    _stuckTimer?.cancel();
+    super.dispose();
+  }
+
+  /// El recortador decodifica en Dart y puede no volver nunca con según qué
+  /// foto. Sin esto, la pantalla se queda cargando para siempre y la única
+  /// salida es cancelar.
+  void _armStuckTimer() {
+    _stuckTimer?.cancel();
+    _stuckTimer = Timer(_kCropperStuckAfter, () {
+      if (mounted && !_ready) setState(() => _stuck = true);
+    });
+  }
+
+  void _onStatusChanged(CropStatus status) {
+    if (status == CropStatus.ready && !_ready) {
+      _stuckTimer?.cancel();
+      setState(() {
+        _ready = true;
+        _stuck = false;
+      });
+    }
+  }
 
   void _confirm() {
     setState(() => _cropping = true);
+    // Si el recorte tampoco vuelve, se vuelve a ofrecer la salida automática.
+    _stuckTimer = Timer(_kCropperStuckAfter, () {
+      if (mounted) setState(() => _stuck = true);
+    });
     _controller.crop();
+  }
+
+  /// Salida garantizada: recorte cuadrado al centro con nuestra propia
+  /// tubería, sin pasar por el recortador.
+  void _useWithoutCropping() {
+    final bytes = cropSquareCenterAndEncodeJpeg(widget.imageBytes);
+    if (bytes == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No se pudo usar esta foto.')),
+      );
+      return;
+    }
+    Navigator.of(context).pop(bytes);
   }
 
   void _onCropped(CropResult result) {
@@ -47,12 +106,11 @@ class _AvatarCropperScreenState extends State<AvatarCropperScreen> {
       case CropSuccess(:final croppedImage):
         Navigator.of(context).pop(croppedImage);
       case CropFailure():
-        setState(() => _cropping = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('No se pudo recortar la foto. Inténtalo de nuevo.'),
-          ),
-        );
+        _stuckTimer?.cancel();
+        setState(() {
+          _cropping = false;
+          _stuck = true;
+        });
     }
   }
 
@@ -72,11 +130,26 @@ class _AvatarCropperScreenState extends State<AvatarCropperScreen> {
       body: SafeArea(
         child: Column(
           children: [
+            if (_stuck)
+              MaterialBanner(
+                content: const Text(
+                  'Esta foto está tardando demasiado en abrirse para '
+                  'recortarla a mano.',
+                ),
+                leading: const Icon(Icons.info_outline),
+                actions: [
+                  TextButton(
+                    onPressed: _useWithoutCropping,
+                    child: const Text('Usar recortada al centro'),
+                  ),
+                ],
+              ),
             Expanded(
               child: Crop(
                 image: widget.imageBytes,
                 controller: _controller,
                 onCropped: _onCropped,
+                onStatusChanged: _onStatusChanged,
                 aspectRatio: 1,
                 withCircleUi: true,
                 // Marco fijo + imagen movible: el gesto es el que espera

@@ -105,6 +105,35 @@ void main() {
     });
   });
 
+  group('cropSquareCenterAndEncodeJpeg', () {
+    test('deja un cuadrado aunque la foto sea apaisada', () {
+      final result = cropSquareCenterAndEncodeJpeg(
+        _pngOf(width: 1200, height: 600),
+      );
+
+      final decoded = img.decodeImage(result!)!;
+      expect(decoded.width, decoded.height);
+      expect(decoded.width, lessThanOrEqualTo(kAvatarMaxSide));
+    });
+
+    test('deja un cuadrado aunque la foto sea vertical', () {
+      final result = cropSquareCenterAndEncodeJpeg(
+        _pngOf(width: 400, height: 1000),
+      );
+
+      final decoded = img.decodeImage(result!)!;
+      expect(decoded.width, decoded.height);
+      expect(decoded.width, 400); // el lado corto, sin ampliar
+    });
+
+    test('devuelve null si los bytes no son una imagen', () {
+      expect(
+        cropSquareCenterAndEncodeJpeg(Uint8List.fromList([1, 2, 3, 4])),
+        isNull,
+      );
+    });
+  });
+
   group('resizeAndEncodeJpeg', () {
     test('reduce el lado mayor hasta el máximo y mantiene la proporción', () {
       final result = resizeAndEncodeJpeg(_pngOf(width: 2048, height: 1024));

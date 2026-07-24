@@ -3,6 +3,8 @@ import 'dart:ui' as ui;
 import 'package:flutter/foundation.dart';
 import 'package:image/image.dart' as img;
 
+import 'image_downscaler.dart';
+
 /// Lado máximo (px) de la foto de perfil una vez recortada.
 ///
 /// El avatar se pinta con `radius: 48` (96 dp); a 3x de densidad son 288 px
@@ -42,14 +44,34 @@ const Duration kAvatarNormalizeTimeout = Duration(seconds: 20);
 /// en web es el decodificador del navegador y en Android es Skia), que sí
 /// entiende todo lo que el sistema sabe abrir y además reescala al vuelo.
 ///
-/// Si un tamaño falla —típicamente por memoria en un móvil— se reintenta con
-/// el siguiente de [kAvatarNormalizeSides], más pequeño.
+/// Orden de los intentos:
+///
+/// 1. **El navegador** ([downscaleWithPlatform], solo en web). Va primero
+///    porque es el único que puede con una foto que `dart:ui` no logra ni
+///    abrir: decodifica fuera del heap de WebAssembly. Fuera de web devuelve
+///    `null` al instante y no cuesta nada.
+/// 2. **`dart:ui`**, bajando por [kAvatarNormalizeSides].
+/// 3. **El paquete `image`**, en Dart, como último recurso.
+///
+/// Ojo con la escalera del punto 2: bajar el tamaño **pedido** no abarata
+/// decodificar el original, que es donde está el coste. Sirve para fallos de
+/// memoria al construir el resultado, no para "esta foto no se puede abrir".
 Future<Uint8List?> normalizeForCrop(
   Uint8List bytes, {
   List<int> sides = kAvatarNormalizeSides,
   Duration timeout = kAvatarNormalizeTimeout,
   void Function(Object error)? onAttemptFailed,
 }) async {
+  try {
+    final viaPlatform = await downscaleWithPlatform(
+      bytes,
+      maxSide: sides.first,
+    ).timeout(timeout);
+    if (viaPlatform != null) return viaPlatform;
+  } catch (error) {
+    onAttemptFailed?.call(error);
+  }
+
   for (final side in sides) {
     try {
       final normalized = await _decodeAndEncodeJpeg(
@@ -166,6 +188,44 @@ Future<ui.Image> _scaleImage(ui.Image source, int width, int height) async {
   } finally {
     picture.dispose();
   }
+}
+
+/// Recorta [bytes] a un cuadrado centrado y lo deja en [maxSide] px, JPEG.
+///
+/// Es la salida de emergencia del recorte manual: si el recortador no consigue
+/// abrir una foto, el usuario no se queda sin poder usarla. Trabaja sobre lo
+/// que devuelve [normalizeForCrop], así que la imagen de entrada ya es pequeña
+/// y decodificable.
+Uint8List? cropSquareCenterAndEncodeJpeg(
+  Uint8List bytes, {
+  int maxSide = kAvatarMaxSide,
+  int quality = kAvatarJpegQuality,
+}) {
+  final img.Image? decoded;
+  try {
+    decoded = img.decodeImage(bytes);
+  } catch (_) {
+    return null;
+  }
+  if (decoded == null) return null;
+
+  final side = decoded.width < decoded.height ? decoded.width : decoded.height;
+  final square = img.copyCrop(
+    decoded,
+    x: (decoded.width - side) ~/ 2,
+    y: (decoded.height - side) ~/ 2,
+    width: side,
+    height: side,
+  );
+  final resized = side <= maxSide
+      ? square
+      : img.copyResize(
+          square,
+          width: maxSide,
+          height: maxSide,
+          interpolation: img.Interpolation.average,
+        );
+  return img.encodeJpg(resized, quality: quality);
 }
 
 /// Reduce [bytes] para que su lado mayor no supere [maxSide] y lo recodifica

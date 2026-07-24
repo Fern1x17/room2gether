@@ -855,6 +855,27 @@ cámara. Es comportamiento del paquete, no una decisión de layout.
    recorte debe abrirse en todas. Con una que no se pueda abrir debe salir
    "No se pudo abrir esa foto", nunca quedarse cargando.
 
+### HEIC en web: limitación conocida (confirmada 2026-07-24)
+
+Las fotos hechas con un iPhone son **HEIC**, y **ningún navegador de Android ni
+de escritorio sabe decodificarlas** (solo Safari). Tampoco CanvasKit ni el
+paquete `image`. Al compartirlas, algunas apps las renombran a `.jpg` y las
+anuncian como `image/jpeg`, así que **la extensión y el MIME mienten**: el
+único dato fiable es la cabecera del fichero, que es lo que lee
+`describeImageBytes()` (`ISOBMFF/heic`).
+
+Diagnóstico real de un caso: `jpg · image/jpeg · real:ISOBMFF/heic ·
+leídos:86KB/declarados:86KB`. Fíjate en el tamaño: 86 KB. **No es un problema
+de peso**, y perseguirlo como tal costó varios intentos — la escalera de
+tamaños de `normalizeForCrop` no sirve para este caso y no hay que confundirla
+con él.
+
+**Solo afecta a la web.** En la app Android, `dart:ui` decodifica con Skia, que
+sí entiende HEIC desde Android 8. Hoy la app lo detecta y lo dice con claridad
+("Guárdala como JPG o elige otra") en vez de fallar en silencio. Convertirlas
+requiere o un decodificador HEIC en el cliente o conversión en el servidor;
+pendiente de decidir.
+
 > **Ojo al probar en web:** la app registra un *service worker*, así que un
 > navegador que ya había visitado room2gether.com sirve la versión cacheada en
 > esa visita y solo estrena la nueva en la siguiente. Si un cambio "no aparece"

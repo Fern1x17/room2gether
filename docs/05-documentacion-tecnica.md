@@ -871,10 +871,28 @@ tamaños de `normalizeForCrop` no sirve para este caso y no hay que confundirla
 con él.
 
 **Solo afecta a la web.** En la app Android, `dart:ui` decodifica con Skia, que
-sí entiende HEIC desde Android 8. Hoy la app lo detecta y lo dice con claridad
-("Guárdala como JPG o elige otra") en vez de fallar en silencio. Convertirlas
-requiere o un decodificador HEIC en el cliente o conversión en el servidor;
-pendiente de decidir.
+sí entiende HEIC desde Android 8.
+
+**Solución (decidida 2026-07-24): decodificador bajo demanda.**
+`core/utils/heic_decoder.dart` (+ `_stub` / `_web`, import condicional) inyecta
+`web/heic/heic2any.min.js` —~1,3 MB, versionado en el repo, servido desde el
+propio sitio— **la primera vez que alguien elige una foto HEIC**, y convierte a
+JPEG antes de que arranque la tubería normal. Descartadas: conversión en el
+servidor (añade una Edge Function que mantener) y dejarlo sin resolver (el
+requisito es que se pueda usar cualquier foto del dispositivo).
+
+Detalles que importan:
+
+- **La decisión se toma por la cabecera** (`isHeicContainer`), nunca por la
+  extensión ni el MIME. En el caso real, el fichero se llamaba `.jpg` y se
+  anunciaba como `image/jpeg` siendo HEIC.
+- **No se precarga.** El `CORE` del service worker generado solo incluye
+  `main.dart.js`, `index.html`, `flutter_bootstrap.js` y dos manifiestos; el
+  decodificador queda en `RESOURCES`, que se cachea al pedirlo. Quien suba un
+  JPEG no descarga nada de esto. Si se añade al `CORE`, se pierde la única
+  razón por la que este montaje merece la pena.
+- **Degrada bien.** Si el fichero falta o su carga falla, `decodeHeicToJpeg`
+  devuelve `null` y la app se comporta como antes, con su mensaje de error.
 
 > **Ojo al probar en web:** la app registra un *service worker*, así que un
 > navegador que ya había visitado room2gether.com sirve la versión cacheada en

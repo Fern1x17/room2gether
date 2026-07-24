@@ -121,70 +121,49 @@ lo que el usuario esté escribiendo si el provider se reconstruye.
 
 ---
 
-## Feed (CU-09 Explorar y filtrar el feed)
+## Feed y Selección Inicial (CU-09 Explorar y filtrar el feed)
 
 **Carpeta:** `lib/features/feed/`
 
 - `domain/models/listing.dart` — modelo `Listing` (mapea con la tabla `listings`).
 - `domain/models/listing_filter.dart` — criterios de búsqueda: `city`,
   `neighborhood`, `maxPrice`, `type`. Son exactamente los tres que fija RF-06
-  ("zona, precio, tipo"); ver nota sobre "estado" más abajo.
+  ("zona, precio, tipo").
 - `data/feed_repository.dart` — `FeedRepository`: `fetchListings(filter)` (solo
   `status = 'active'`, con los filtros aplicados como condiciones adicionales)
   y `fetchListingById(id)` para el detalle.
 - `data/recent_searches_repository.dart` — búsquedas recientes guardadas SOLO
-  en el dispositivo con `shared_preferences` (decisión ya acordada), como lista
-  de hasta 10 filtros, sin duplicados, más reciente primero.
+  en el dispositivo con `shared_preferences`.
 - `presentation/controllers/feed_controller.dart` — `AsyncNotifier<List<Listing>>`;
-  `build()` carga publicaciones de la ciudad del propio perfil (comentario de
-  CU-09: "en la pantalla principal aparecerán publicaciones de la ciudad que
-  haya seleccionado"); `search(filter)` aplica un filtro nuevo y lo guarda en
-  recientes.
+  carga publicaciones y aplica filtros de búsqueda dinámica.
 - `presentation/controllers/listing_detail_controller.dart` — `FutureProvider.family`
   para cargar una publicación por id.
-- `presentation/screens/feed_screen.dart` — pantalla principal: lista de
-  publicaciones, icono de buscar (abre `FiltersSheet`) e icono para ir al
-  perfil.
+- `presentation/screens/home_selection_screen.dart` — **Nueva pantalla de inicio**. 
+  Actúa como raíz de la rama Buscar en el router. Muestra dos tarjetas grandes 
+  ("Busco compañero" / "Busco piso") para capturar la intención de búsqueda del usuario antes de cargar la lista.
+- `presentation/screens/feed_screen.dart` — pantalla principal de la lista de
+  publicaciones. Se refactorizó a `ConsumerStatefulWidget` para inyectar dinámicamente 
+  el filtro de tipo (`isLookingForRoommate`) recibido por parámetro. Incluye icono de buscar (abre `FiltersSheet`).
 - `presentation/screens/listing_detail_screen.dart` — vista mínima de detalle
-  (tipo, título, ubicación, precio, descripción). Se añade ahora, aunque CU-09
-  no la pide explícitamente, porque CU-10 (Contactar por chat) exige poder
-  "seleccionar una publicación de la feed" para llegar a ella — es la plomería
-  mínima que ese caso de uso necesitará; **no** incluye ningún botón de
-  contactar/enviar mensaje todavía, eso es trabajo de CU-10.
+  (tipo, título, ubicación, precio, descripción). 
 - `presentation/widgets/{listing_card,filters_sheet}.dart`.
 
-**Nota sobre "estado" en CU-09:** el texto del caso de uso dice "ciudad, barrio,
-precio, estado..." pero RF-06 (la fuente más específica) dice "zona, precio,
-tipo". Se ha interpretado "estado" como el tipo de publicación (busco/ofrezco),
-no como `listings.status` (activa/cerrada) — filtrar por publicaciones cerradas
-no tendría sentido en un feed público, y RLS ya solo expone las activas a
-usuarios no propietarios.
+**Decisión técnica clave — Enrutado de inicio y paso de parámetros:** 
+Se sustituyó `/feed` por `/home` (`HomeSelectionScreen`) como la ruta inicial de la primera rama del `AdaptiveShell` tras iniciar sesión (o al recuperar sesión activa por `supabase_flutter`). La navegación de `/home` a `/feed` **no** se hace instanciando el widget directamente, sino delegando en `go_router` (`context.push('/feed', extra: true/false)`). Esto mantiene la limpieza del árbol de navegación, preserva la barra inferior (BottomNavigationBar) en ambas pantallas y permite volver atrás nativamente.
 
 **Decisión pendiente resuelta — acceso sin sesión:** la precondición de CU-09 es
 "N/A" (a diferencia del resto de casos de uso), lo que sugiere que se podría
 explorar sin cuenta. Sin embargo hoy las políticas RLS de `listings` solo
 permiten `SELECT` al rol `authenticated`. Se decidió **no** tocar RLS por ahora
-y exigir sesión igual que el resto de la app; si más adelante se quiere permitir
-exploración sin cuenta, hace falta una política RLS nueva para el rol `anon`
-(cambio de base de datos que requiere decisión aparte).
-
-**Navegación:** tras iniciar sesión (CU-02) ahora se llega a `/feed` en vez de
-a `/onboarding` — el feed es "la pantalla principal" según los propios
-comentarios de CU-09. El registro (CU-01) sigue llevando a `/onboarding`
-(completar perfil) tal como pide su postcondición. Cada pantalla tiene un
-icono para ir a la otra.
+y exigir sesión igual que el resto de la app.
 
 **Cómo probarlo a mano:**
-1. Insertar un par de filas de prueba en `listings` (no hay UI para crear
-   publicaciones todavía — eso es CU-06) y comprobar que aparecen en `/feed`.
-2. Pulsar el icono de buscar, aplicar un filtro de ciudad/precio/tipo → la
+1. Iniciar sesión o abrir la app con sesión activa → aparece la pantalla de selección `HomeSelectionScreen` ("¿Qué estás buscando?").
+2. Tocar "Busco compañero" → navega al feed mostrando solo publicaciones de gente que busca habitación (filtro automático).
+3. Deslizar hacia atrás (o botón back) → vuelve a la selección fluida sin perder la barra de navegación.
+4. Pulsar el icono de buscar dentro del feed, aplicar un filtro de ciudad/precio/tipo → la
    lista se actualiza y la búsqueda queda guardada como "reciente".
-3. Reabrir el panel de filtros → la búsqueda anterior aparece como chip en
-   "Búsquedas recientes"; tocarla la vuelve a aplicar.
-4. Tocar una publicación → se abre el detalle con sus datos.
-5. Con el feed vacío (sin filas de prueba) se muestra el mensaje "No hay
-   publicaciones que coincidan con tu búsqueda." en vez de una lista vacía sin
-   explicación.
+5. Tocar una publicación → se abre el detalle con sus datos.
 
 ---
 

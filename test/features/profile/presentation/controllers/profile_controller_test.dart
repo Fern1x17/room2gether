@@ -89,7 +89,7 @@ void main() {
       await container.read(profileControllerProvider.future);
       final url = await container
           .read(profileControllerProvider.notifier)
-          .uploadAvatar(bytes: Uint8List(0), fileExtension: 'jpg');
+          .uploadAvatar(bytes: Uint8List(0));
 
       expect(url, 'https://example.com/foto.jpg');
     });
@@ -111,7 +111,7 @@ void main() {
         await container.read(profileControllerProvider.future);
         await container
             .read(profileControllerProvider.notifier)
-            .uploadAvatar(bytes: Uint8List(0), fileExtension: 'jpg');
+            .uploadAvatar(bytes: Uint8List(0));
 
         // La URL queda escrita en la BD (updateProfile) y en el estado, de modo
         // que sobrevive a cerrar sesión o salir de la app sin pulsar guardar.
@@ -123,6 +123,41 @@ void main() {
           container.read(profileControllerProvider).value?.avatarUrl,
           'https://example.com/foto.jpg',
         );
+      },
+    );
+
+    // Regresión del bug de refresco: la ruta de subida era fija por usuario,
+    // así que la URL pública no cambiaba y las cachés seguían mostrando la
+    // foto anterior. Ahora cada subida estrena URL y la anterior se pasa al
+    // repositorio para borrarla del bucket.
+    test(
+      'uploadAvatar() estrena URL y entrega la anterior para borrarla',
+      () async {
+        final fakeRepo = FakeProfileRepository(
+          profile: fakeProfile(
+            avatarUrl: 'https://example.com/user-1/anterior.jpg',
+          ),
+        );
+        final container = ProviderContainer(
+          overrides: [
+            currentUserIdProvider.overrideWithValue('user-1'),
+            profileRepositoryProvider.overrideWithValue(fakeRepo),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        await container.read(profileControllerProvider.future);
+        final url = await container
+            .read(profileControllerProvider.notifier)
+            .uploadAvatar(bytes: Uint8List(0));
+
+        expect(url, isNotNull);
+        expect(url, isNot('https://example.com/user-1/anterior.jpg'));
+        expect(
+          fakeRepo.lastPreviousAvatarUrl,
+          'https://example.com/user-1/anterior.jpg',
+        );
+        expect(container.read(profileControllerProvider).value?.avatarUrl, url);
       },
     );
 
@@ -142,7 +177,7 @@ void main() {
       await container.read(profileControllerProvider.future);
       final url = await container
           .read(profileControllerProvider.notifier)
-          .uploadAvatar(bytes: Uint8List(0), fileExtension: 'jpg');
+          .uploadAvatar(bytes: Uint8List(0));
 
       expect(url, isNull);
     });

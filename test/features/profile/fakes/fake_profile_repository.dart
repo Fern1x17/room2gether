@@ -8,11 +8,13 @@ Profile fakeProfile({
   String displayName = 'Fernando',
   DateTime? birthdate,
   String role = 'user',
+  String? avatarUrl,
 }) {
   return Profile(
     id: id,
     displayName: displayName,
     birthdate: birthdate ?? DateTime(2000, 1, 1),
+    avatarUrl: avatarUrl,
     isSmoker: false,
     hasPets: false,
     isVerified: false,
@@ -34,6 +36,11 @@ class FakeProfileRepository implements ProfileRepository {
   final String? uploadAvatarUrl;
   Profile? lastSavedProfile;
 
+  /// URL que se pasó como foto anterior en la última subida, para comprobar
+  /// que el repositorio real podría borrarla.
+  String? lastPreviousAvatarUrl;
+  int uploadAvatarCalls = 0;
+
   @override
   Future<Profile> fetchMyProfile() async {
     if (fetchError != null) throw fetchError!;
@@ -51,9 +58,13 @@ class FakeProfileRepository implements ProfileRepository {
   Future<String> uploadAvatar({
     required String userId,
     required Uint8List bytes,
-    required String fileExtension,
+    String? previousAvatarUrl,
   }) async {
+    lastPreviousAvatarUrl = previousAvatarUrl;
+    uploadAvatarCalls++;
+    // Sin URL fija, cada subida devuelve una distinta: es justo la propiedad
+    // que arregla el bug de refresco.
     return uploadAvatarUrl ??
-        'https://example.com/$userId/avatar.$fileExtension';
+        'https://example.com/$userId/$uploadAvatarCalls.jpg';
   }
 }

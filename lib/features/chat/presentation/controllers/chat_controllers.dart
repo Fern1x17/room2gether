@@ -124,10 +124,9 @@ class MessageActionsController extends AsyncNotifier<void> {
     if (trimmed.isEmpty) return false;
     state = const AsyncLoading();
     try {
-      await ref.read(chatRepositoryProvider).updateMessage(
-            messageId: messageId,
-            newContent: trimmed,
-          );
+      await ref
+          .read(chatRepositoryProvider)
+          .updateMessage(messageId: messageId, newContent: trimmed);
       state = const AsyncData(null);
       return true;
     } catch (error, stackTrace) {
@@ -139,5 +138,5 @@ class MessageActionsController extends AsyncNotifier<void> {
 
 final messageActionsControllerProvider =
     AsyncNotifierProvider<MessageActionsController, void>(
-  MessageActionsController.new,
-);
+      MessageActionsController.new,
+    );

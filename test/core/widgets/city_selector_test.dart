@@ -90,7 +90,10 @@ void main() {
       );
       await typeAndWait(tester, 'coru');
 
-      expect(find.text('No se pudieron cargar las sugerencias.'), findsOneWidget);
+      expect(
+        find.text('No se pudieron cargar las sugerencias.'),
+        findsOneWidget,
+      );
     });
   });
 }

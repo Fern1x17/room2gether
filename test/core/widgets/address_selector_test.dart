@@ -12,7 +12,10 @@ void main() {
     late bool cleared;
     late FakePlacesService places;
 
-    Widget wrap({FakePlacesService? placesService, bool neighborhoodsOnly = false}) {
+    Widget wrap({
+      FakePlacesService? placesService,
+      bool neighborhoodsOnly = false,
+    }) {
       selected = null;
       cleared = false;
       places = placesService ?? FakePlacesService();

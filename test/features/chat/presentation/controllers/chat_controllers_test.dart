@@ -134,7 +134,10 @@ void main() {
 
       expect(deleted, isTrue);
       expect(fakeRepo.deletedMessageIds.single, 'msg-1');
-      expect(container.read(messageActionsControllerProvider).hasError, isFalse);
+      expect(
+        container.read(messageActionsControllerProvider).hasError,
+        isFalse,
+      );
     });
 
     test('deja estado de error si falla el borrado', () async {

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../../../core/utils/image_processing.dart';
 import '../../../../core/utils/link_opener.dart';
 import '../../../../core/widgets/city_selector.dart';
 // 1. Añadimos la importación del controlador del tema
@@ -13,6 +14,7 @@ import '../../../listing/presentation/widgets/my_listings_section.dart';
 import '../../domain/models/profile.dart';
 import '../../domain/validators/profile_validators.dart';
 import '../controllers/profile_controller.dart';
+import '../widgets/avatar_cropper_screen.dart';
 
 class EditProfileScreen extends ConsumerStatefulWidget {
   const EditProfileScreen({super.key});
@@ -84,23 +86,70 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     _avatarUrl = profile.avatarUrl;
   }
 
-  Future<void> _pickAvatar() async {
-    final picker = ImagePicker();
-    final picked = await picker.pickImage(
-      source: ImageSource.gallery,
-      maxWidth: 1024,
-      imageQuality: 85,
+  /// Elige de dónde sale la foto. En navegadores de escritorio la cámara no
+  /// existe y `image_picker` abre el selector de archivos; es comportamiento
+  /// del propio paquete, no una decisión de layout nuestra.
+  Future<ImageSource?> _askImageSource() {
+    return showModalBottomSheet<ImageSource>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined),
+              title: const Text('Elegir de la galería'),
+              onTap: () => Navigator.of(context).pop(ImageSource.gallery),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_camera_outlined),
+              title: const Text('Hacer una foto'),
+              onTap: () => Navigator.of(context).pop(ImageSource.camera),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showAvatarError(String message) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Future<void> _changeAvatar() async {
+    final source = await _askImageSource();
+    if (source == null || !mounted) return;
+
+    // Se pide holgada (2048) para que el recorte tenga resolución de sobra;
+    // el tamaño final lo fija resizeAvatarBytes.
+    final picked = await ImagePicker().pickImage(
+      source: source,
+      maxWidth: 2048,
+      maxHeight: 2048,
+      imageQuality: 90,
     );
     if (picked == null || !mounted) return;
 
+    final original = await picked.readAsBytes();
+    if (!mounted) return;
+
+    final cropped = await showAvatarCropper(context, original);
+    if (cropped == null || !mounted) return; // el usuario canceló
+
     setState(() => _uploadingAvatar = true);
-    final bytes = await picked.readAsBytes();
-    final extension = picked.path.contains('.')
-        ? picked.path.split('.').last
-        : 'jpg';
+    final processed = await resizeAvatarBytes(cropped);
+    if (!mounted) return;
+    if (processed == null) {
+      setState(() => _uploadingAvatar = false);
+      _showAvatarError('No se pudo procesar la foto. Prueba con otra imagen.');
+      return;
+    }
+
     final url = await ref
         .read(profileControllerProvider.notifier)
-        .uploadAvatar(bytes: bytes, fileExtension: extension);
+        .uploadAvatar(bytes: processed);
 
     if (!mounted) return;
     setState(() {
@@ -109,11 +158,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     });
 
     if (url == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('No se pudo subir la foto. Inténtalo de nuevo.'),
-        ),
-      );
+      _showAvatarError('No se pudo subir la foto. Inténtalo de nuevo.');
     }
   }
 
@@ -259,7 +304,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                             right: 0,
                             bottom: 0,
                             child: IconButton.filled(
-                              onPressed: _uploadingAvatar ? null : _pickAvatar,
+                              onPressed: _uploadingAvatar
+                                  ? null
+                                  : _changeAvatar,
                               icon: _uploadingAvatar
                                   ? const SizedBox(
                                       width: 16,

@@ -33,6 +33,11 @@ dependencies:
   shared_preferences: ^2.5.5
   diacritic: ^0.1.6
 
+  # Recorte y compresión del avatar (CU-04). Ambos son Dart/Flutter puro:
+  # funcionan igual en Android y en web sin código nativo ni scripts externos.
+  crop_your_image: ^2.0.0
+  image: ^4.5.4
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

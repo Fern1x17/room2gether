@@ -23,7 +23,8 @@ class Room2getherApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(appRouterProvider);
-    final themeMode = ref.watch(themeControllerProvider).value ?? ThemeMode.system;
+    final themeMode =
+        ref.watch(themeControllerProvider).value ?? ThemeMode.system;
 
     return MaterialApp.router(
       title: 'Room2gether',

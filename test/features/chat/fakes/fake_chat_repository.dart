@@ -93,7 +93,7 @@ class FakeChatRepository implements ChatRepository {
   Stream<List<Message>> watchMessages(String conversationId) {
     return messagesController.stream;
   }
-  
+
   @override
   Future<void> deleteMessage(String messageId) async {
     if (deleteError != null) throw deleteError!;

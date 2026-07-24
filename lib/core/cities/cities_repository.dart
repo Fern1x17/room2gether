@@ -21,14 +21,16 @@ class SupabaseCitiesRepository implements CitiesRepository {
     required String placeId,
     required String name,
   }) async {
-    final row = await _client.rpc(
-      'get_or_create_city',
-      params: {
-        'p_place_id': placeId,
-        'p_name': name,
-        'p_normalized_name': normalizeText(name),
-      },
-    ).single();
+    final row = await _client
+        .rpc(
+          'get_or_create_city',
+          params: {
+            'p_place_id': placeId,
+            'p_name': name,
+            'p_normalized_name': normalizeText(name),
+          },
+        )
+        .single();
     return City.fromMap(row);
   }
 }

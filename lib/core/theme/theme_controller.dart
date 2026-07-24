@@ -25,6 +25,5 @@ class ThemeController extends AsyncNotifier<ThemeMode> {
   }
 }
 
-final themeControllerProvider = AsyncNotifierProvider<ThemeController, ThemeMode>(
-  ThemeController.new,
-);
+final themeControllerProvider =
+    AsyncNotifierProvider<ThemeController, ThemeMode>(ThemeController.new);

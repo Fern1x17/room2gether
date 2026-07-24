@@ -698,4 +698,84 @@ fila de dirección y no da error (se muestra el barrio).
     - Activar/Desactivar el interruptor → La interfaz debe cambiar su esquema de colores (fondo y texto) de forma instantánea.
 
     - Cerrar la aplicación por completo (eliminar de la multitarea) y volver a abrirla → La aplicación debe recordar y aplicar automáticamente la última preferencia elegida (persistencia).
-   
+
+---
+
+## Foto de perfil: refresco y recorte (CU-04, revisión)
+
+Dos cosas en un mismo flujo: arreglar que la foto nueva no se viera y añadir el
+recorte previo. **Sin cambios de BD ni de políticas de Storage.**
+
+### El bug de refresco
+
+`SupabaseProfileRepository.uploadAvatar` subía siempre a la **misma ruta**,
+`{userId}/avatar.{ext}` con `upsert: true`. Al sobrescribir el fichero,
+`getPublicUrl()` devolvía una URL idéntica, así que:
+
+1. el `ImageCache` de Flutter, que indexa por URL, seguía sirviendo los bytes
+   viejos a `NetworkImage`;
+2. en web, además, la respuesta anterior estaba en la caché HTTP del navegador
+   (Storage sirve `cache-control: max-age=3600`);
+3. y el `setState` de la pantalla asignaba la misma cadena, así que ni siquiera
+   cambiaba la identidad del widget de imagen.
+
+El estado de Riverpod **sí** se actualizaba: `ProfileController.uploadAvatar` ya
+hacía `state = AsyncData(updated)`. El fallo era de identidad de URL, no de
+gestión de estado. Por eso "funcionaba" al cambiar de `.jpg` a `.png`.
+
+**Arreglo:** ruta única por subida,
+`{userId}/{microsegundos}.jpg`, igual que ya hacía `uploadPhotos` con las fotos
+de publicación. URL nueva ⇒ no hay caché que invalidar, ni la propia ni la de
+los demás usuarios que ven tu avatar en la lista de chats. Se descartó evictar
+del `ImageCache`: arregla Flutter pero no el navegador ni los otros clientes.
+
+La foto anterior se borra del bucket (política `avatars_delete_own`, ya
+existente) en modo *best effort*: si el borrado falla, la subida sigue siendo
+válida. `avatarStoragePathFromUrl()` deriva la ruta a borrar desde la URL
+guardada y devuelve `null` si esa URL no es del bucket `avatars` o no está
+dentro de la carpeta del propio usuario, de modo que un `avatar_url` inesperado
+nunca puede apuntar el borrado a la carpeta de otra persona.
+
+### El recorte
+
+- `features/profile/presentation/widgets/avatar_cropper_screen.dart` — pantalla
+  de recorte a pantalla completa (`showAvatarCropper()` devuelve los bytes o
+  `null` si se cancela). Marco **fijo** 1:1 con máscara circular; la imagen se
+  mueve y se amplía con dos dedos o con la rueda del ratón
+  (`interactive: true`, `fixCropRect: true`), como en WhatsApp o Instagram.
+- `core/utils/image_processing.dart` — `resizeAndEncodeJpeg()` (función pura,
+  testeada) reduce el lado mayor a **512 px** y recodifica en **JPEG calidad
+  85**; `resizeAvatarBytes()` la lanza con `compute`. Un fichero corrupto
+  devuelve `null` en vez de propagar la excepción del decodificador.
+- `edit_profile_screen.dart` — hoja inferior **Galería / Cámara** (antes solo
+  había galería) → `image_picker` (con `maxWidth/maxHeight` a 2048, para que el
+  recorte tenga resolución de sobra) → recorte → compresión → subida.
+
+**Tamaño elegido (512 px):** el avatar se pinta con `radius: 48` (96 dp), que a
+3x de densidad son 288 px reales; 512 deja margen para una futura cabecera de
+perfil más grande y pesa ~40–70 KB, frente a los ~250 KB que se subían antes.
+
+**Dependencias nuevas:** `crop_your_image` (UI de recorte) e `image`
+(redimensionado y codificación JPEG; ya era dependencia transitiva). Se eligieron
+por ser **Dart/Flutter puro**: el mismo código vale para Android y para web sin
+condicionales de plataforma. La alternativa habitual, `image_cropper`, exige
+actividad nativa en Android *y* cargar `cropperjs` por `<script>` en
+`web/index.html`: dos implementaciones distintas más una dependencia externa.
+
+**Nota sobre la cámara en web:** en navegador de escritorio no hay cámara y
+`image_picker` abre el selector de archivos; en navegador móvil sí abre la
+cámara. Es comportamiento del paquete, no una decisión de layout.
+
+**Cómo probarlo a mano:**
+1. Perfil → icono de cámara sobre el avatar → "Elegir de la galería".
+2. Ampliar con dos dedos (o rueda) y arrastrar para encuadrar → "Cancelar" no
+   cambia nada; "Confirmar" sube la foto.
+3. **La foto nueva debe verse inmediatamente**, sin reiniciar la app. Repetir el
+   cambio 2–3 seguidas: cada una debe verse al instante.
+4. En Supabase → Storage → `avatars` → carpeta del usuario: debe quedar **un
+   solo fichero**, el último (los anteriores se borran).
+5. Repetir el punto 1 con "Hacer una foto" en Android.
+6. En web (`flutter run -d chrome`), repetir 1–3: mismo comportamiento, y la
+   foto nueva se ve sin forzar recarga del navegador.
+7. Salir del perfil sin pulsar "Guardar cambios" y volver a entrar → la foto
+   sigue siendo la nueva (se persiste en el momento de subir).

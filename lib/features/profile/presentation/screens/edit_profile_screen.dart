@@ -112,10 +112,26 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     );
   }
 
-  void _showAvatarError(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+  void _showAvatarError(String message, {bool detailed = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        // Los mensajes con datos técnicos se leen y se copian a mano desde el
+        // móvil; los cuatro segundos por defecto no dan tiempo.
+        duration: detailed
+            ? const Duration(seconds: 12)
+            : const Duration(seconds: 4),
+      ),
+    );
+  }
+
+  /// Formatos que ningún navegador de escritorio ni Chrome en Android saben
+  /// decodificar. Los iPhone graban en HEIC por defecto, así que las fotos que
+  /// llegan desde uno son las que más se topan con esto.
+  static bool _isUnsupportedInBrowser(String mimeType, String extension) {
+    const unsupported = {'heic', 'heif', 'avif', 'dng', 'tif', 'tiff'};
+    return unsupported.contains(extension) ||
+        unsupported.any(mimeType.toLowerCase().contains);
   }
 
   Future<void> _changeAvatar() async {
@@ -160,11 +176,25 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       // El motivo va en el propio mensaje: esto se prueba en el navegador de
       // un móvil, donde no hay consola a mano para mirar qué ha fallado.
       final kb = (original.lengthInBytes / 1024).round();
-      _showAvatarError(
-        'No se pudo abrir esa foto (${kb}KB, '
-        '${firstFailure?.runtimeType ?? 'motivo desconocido'}). '
-        'Prueba con otra imagen.',
-      );
+      final mimeType = picked.mimeType ?? 'sin tipo';
+      final extension = picked.name.contains('.')
+          ? picked.name.split('.').last.toLowerCase()
+          : 'sin extensión';
+
+      if (_isUnsupportedInBrowser(mimeType, extension)) {
+        _showAvatarError(
+          'Esta foto está en formato ${extension.toUpperCase()}, que el '
+          'navegador no sabe abrir. Guárdala como JPG o elige otra.',
+          detailed: true,
+        );
+      } else {
+        _showAvatarError(
+          'No se pudo abrir esa foto ($extension · $mimeType · ${kb}KB · '
+          '${firstFailure?.runtimeType ?? 'motivo desconocido'}). '
+          'Prueba con otra imagen.',
+          detailed: true,
+        );
+      }
       return;
     }
 

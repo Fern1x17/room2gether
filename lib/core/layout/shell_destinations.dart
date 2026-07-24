@@ -9,11 +9,16 @@ class ShellDestination {
     required this.icon,
     required this.selectedIcon,
     required this.label,
+    this.showsUnreadBadge = false,
   });
 
   final IconData icon;
   final IconData selectedIcon;
   final String label;
+
+  /// Si la sección lleva el contador de mensajes sin leer encima del icono.
+  /// Lo pinta `ShellDestinationIcon`, común a la barra y al rail.
+  final bool showsUnreadBadge;
 }
 
 const shellDestinations = <ShellDestination>[
@@ -26,6 +31,7 @@ const shellDestinations = <ShellDestination>[
     icon: Icons.chat_bubble_outline,
     selectedIcon: Icons.chat_bubble,
     label: 'Chats',
+    showsUnreadBadge: true,
   ),
   ShellDestination(
     icon: Icons.person_outline,

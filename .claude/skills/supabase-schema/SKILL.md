@@ -63,9 +63,21 @@ que lee `birthdate` de los metadatos de `signUp()`).
 - `conversation_id` (uuid, FK → conversations.id)
 - `sender_id` (uuid, FK → profiles.id)
 - `content` (text)
-- `read_at` (timestamptz, nullable)
-- RLS: solo participantes de la conversación.
-- Realtime: suscripción a INSERT para el chat en vivo.
+- `read_at` (timestamptz, nullable) — se escribe al abrir la conversación;
+  "sin leer" es `read_at is null and sender_id <> auth.uid()`. Índice parcial
+  `messages_unread_idx (conversation_id) where read_at is null`.
+- RLS: SELECT/INSERT solo participantes. **UPDATE solo el remitente**
+  (`messages_update_own`): la política antigua dejaba a cualquiera de los dos
+  editar el `content` del otro. DELETE solo el remitente.
+- Realtime: suscripción a INSERT para el chat en vivo, y a INSERT/UPDATE (canal
+  `inbox:<uid>`) para el contador de no leídos.
+- RPC `mark_conversation_read(p_conversation_id)` — security definer, execute
+  solo para authenticated. Pone `read_at = now()` en los mensajes **recibidos**
+  de una conversación en la que participas. Existe porque la política de UPDATE
+  ya no permite tocar mensajes ajenos y RLS no distingue columnas.
+- RPC `unread_counts()` — security invoker (RLS aplica), devuelve
+  `(conversation_id, unread)` por conversación. Excluye a los usuarios
+  bloqueados: si has bloqueado a alguien, sus mensajes no hacen sonar el badge.
 
 ### reports (moderación)
 - `id` (uuid, PK)

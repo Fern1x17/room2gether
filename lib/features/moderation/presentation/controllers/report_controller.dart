@@ -5,11 +5,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/supabase/current_user_provider.dart';
 import '../../data/moderation_repository.dart';
 
+/// Bloqueados por el usuario actual y cuándo se bloqueó a cada uno.
+final myBlocksProvider = FutureProvider<Map<String, DateTime>>((ref) {
+  ref.watch(currentUserIdProvider); // caché por usuario: se tira al cambiar
+  return ref.read(moderationRepositoryProvider).fetchMyBlocks();
+});
+
 /// Usuarios bloqueados por el usuario actual. El feed y el chat lo usan para
 /// aplicar los efectos del bloqueo (no ver publicaciones, no chatear).
-final blockedUserIdsProvider = FutureProvider<Set<String>>((ref) {
-  ref.watch(currentUserIdProvider); // caché por usuario: se tira al cambiar
-  return ref.read(moderationRepositoryProvider).fetchMyBlockedIds();
+///
+/// Derivado de [myBlocksProvider] para no repetir la consulta: quien solo
+/// necesita saber "¿está bloqueado?" usa este.
+final blockedUserIdsProvider = FutureProvider<Set<String>>((ref) async {
+  final blocks = await ref.watch(myBlocksProvider.future);
+  return blocks.keys.toSet();
 });
 
 class ReportUserController extends AsyncNotifier<void> {
@@ -32,7 +41,7 @@ class ReportUserController extends AsyncNotifier<void> {
             reportedListingId: reportedListingId,
             reasons: reasons,
           );
-      ref.invalidate(blockedUserIdsProvider);
+      ref.invalidate(myBlocksProvider);
       state = const AsyncData(null);
       return true;
     } catch (error, stackTrace) {

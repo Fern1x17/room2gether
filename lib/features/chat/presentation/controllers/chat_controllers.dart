@@ -30,6 +30,62 @@ final messagesStreamProvider = StreamProvider.family<List<Message>, String>((
   return ref.read(chatRepositoryProvider).watchMessages(conversationId);
 });
 
+/// Tope del badge: por encima se muestra "99+".
+const int kUnreadBadgeMax = 99;
+
+/// Número del badge, con tope: por encima de [kUnreadBadgeMax] no cabe y no
+/// aporta ("99+" dice lo mismo que "347" y no rompe el diseño).
+String formatUnreadCount(int unread) {
+  return unread > kUnreadBadgeMax ? '$kUnreadBadgeMax+' : '$unread';
+}
+
+/// Mensajes sin leer por conversación, en vivo.
+///
+/// Emite el conteo inicial y lo recalcula con cada cambio que llegue por
+/// Realtime. El canal solo trae la señal; el número sale de una consulta
+/// agregada, para no descargar todos los mensajes solo para contarlos.
+final unreadCountsProvider = StreamProvider<Map<String, int>>((ref) async* {
+  ref.watch(currentUserIdProvider); // caché por usuario: se tira al cambiar
+  final repository = ref.read(chatRepositoryProvider);
+
+  yield await repository.fetchUnreadCounts();
+  await for (final _ in repository.watchInboxChanges()) {
+    yield await repository.fetchUnreadCounts();
+  }
+});
+
+/// Total de mensajes sin leer, para el badge de la navegación.
+///
+/// Mientras el conteo carga o falla vale 0: un badge es información
+/// secundaria y no debe pintar nada hasta tener un número de verdad.
+final totalUnreadProvider = Provider<int>((ref) {
+  final counts = ref.watch(unreadCountsProvider).value;
+  if (counts == null) return 0;
+  return counts.values.fold(0, (total, count) => total + count);
+});
+
+/// Marca como leída la conversación abierta y refresca el contador.
+class MarkConversationReadController extends AsyncNotifier<void> {
+  @override
+  FutureOr<void> build() {}
+
+  Future<void> markRead(String conversationId) async {
+    try {
+      await ref
+          .read(chatRepositoryProvider)
+          .markConversationRead(conversationId);
+    } catch (_) {
+      // Marcar como leído es un efecto secundario: si falla, el usuario sigue
+      // pudiendo leer y escribir. El badge se corregirá al siguiente cambio.
+    }
+  }
+}
+
+final markConversationReadControllerProvider =
+    AsyncNotifierProvider<MarkConversationReadController, void>(
+      MarkConversationReadController.new,
+    );
+
 /// Abre (o crea) la conversación con el dueño de una publicación (CU-10).
 class OpenConversationController extends AsyncNotifier<void> {
   @override

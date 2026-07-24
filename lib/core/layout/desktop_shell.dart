@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../features/chat/presentation/widgets/conversations_pane.dart';
 import '../../features/feed/presentation/widgets/feed_desktop_panes.dart';
 import '../widgets/app_logo.dart';
+import 'shell_destination_icon.dart';
 import 'shell_destinations.dart';
 
 /// Forma de escritorio (solo web ancha): cabecera con logo y acción de
@@ -72,8 +73,14 @@ class DesktopShell extends StatelessWidget {
                   destinations: [
                     for (final destination in shellDestinations)
                       NavigationRailDestination(
-                        icon: Icon(destination.icon),
-                        selectedIcon: Icon(destination.selectedIcon),
+                        icon: ShellDestinationIcon(
+                          destination: destination,
+                          selected: false,
+                        ),
+                        selectedIcon: ShellDestinationIcon(
+                          destination: destination,
+                          selected: true,
+                        ),
                         label: Text(destination.label),
                       ),
                   ],

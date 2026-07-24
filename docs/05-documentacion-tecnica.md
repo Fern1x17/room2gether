@@ -701,6 +701,100 @@ fila de dirección y no da error (se muestra el barrio).
 
 ---
 
+## Mensajes sin leer: badge en la navegación (CU-10, ampliación)
+
+**Migración:** `supabase/migrations/20260724000019_messages_unread.sql`.
+
+**Sin esquema nuevo.** `messages.read_at` ya existía desde la migración
+original pero **nadie lo escribía nunca**: el modelo `Message` lo leía y siempre
+valía `null`. "Sin leer" es `read_at is null and sender_id <> auth.uid()` dentro
+de mis conversaciones. La migración solo añade un índice parcial, dos funciones
+y el endurecimiento de una política.
+
+### Endurecimiento de RLS (deuda que estaba anotada aquí)
+
+`messages_update_participants` dejaba a **cualquiera de los dos** participantes
+actualizar **cualquier columna** de **cualquier mensaje** del hilo, incluido el
+`content` del otro. Existía así porque marcar `read_at` obliga a tocar los
+mensajes recibidos y RLS no distingue columnas; lo único que lo frenaba era el
+filtro `.eq('sender_id', ...)` del cliente, que es una cortesía, no una
+garantía. Ahora:
+
+- `messages_update_own` — UPDATE solo si `sender_id = auth.uid()`. Cubre editar
+  y el borrado lógico, que ya filtraban por remitente en el cliente.
+- `mark_conversation_read(uuid)` — `security definer`, valida que quien llama
+  participa y solo escribe `read_at` en los mensajes recibidos.
+
+### Contador
+
+- `unread_counts()` — `security invoker`, así que RLS sigue aplicando y solo
+  cuenta lo de mis conversaciones. **Excluye a los bloqueados**: si has
+  bloqueado a alguien, sus mensajes no te hacen sonar el badge, coherente con
+  el resto de efectos de CU-11. Que el filtro esté en SQL no cambia la decisión
+  de aplicar el bloqueo en la app: esto es una consulta nuestra, no una
+  política.
+- `ChatRepository.watchInboxChanges()` — canal Realtime de **señal**, no un
+  `stream()` de mensajes. Suscribirse a todos mis mensajes para contarlos
+  significaría descargarlos y mantenerlos en memoria mientras la app esté
+  abierta; aquí solo llega el aviso (INSERT y UPDATE) y el número sale de la
+  consulta agregada.
+- `unreadCountsProvider` (StreamProvider) emite el conteo inicial y lo recalcula
+  con cada señal; `totalUnreadProvider` suma. Mientras carga o falla vale 0: un
+  badge es información secundaria y no debe pintar nada sin un número real.
+
+### Badge, una sola vez para las dos formas
+
+`ShellDestination` gana `showsUnreadBadge` (solo Chats) y
+`core/layout/shell_destination_icon.dart` pinta el icono con su `Badge`.
+`MobileShell` y `DesktopShell` usan ese widget en vez de `Icon`, así que la
+barra y el rail comparten la lógica: no hay dos implementaciones que puedan
+divergir. El número exacto llega hasta `kUnreadBadgeMax` (99) y por encima se
+corta en "99+".
+
+En la lista de chats, cada conversación muestra su propio contador y el nombre
+en negrita. Ambos badges llevan `Semantics` con "N mensajes sin leer": el número
+suelto no dice nada a un lector de pantalla.
+
+### Marcar como leído
+
+`ChatScreen` llama a `markConversationRead` al entrar, al cambiar de
+conversación en el panel de escritorio (`didUpdateWidget`, porque ahí la
+pantalla se reutiliza sin reconstruirse) y cada vez que llega un mensaje con el
+chat abierto — si no, el badge subiría mientras lo estás mirando. El UPDATE
+viaja por el mismo canal, así que el contador se recalcula solo, sin
+`invalidate` manual. Si falla, se ignora: es un efecto secundario y el usuario
+puede seguir leyendo y escribiendo.
+
+### Bloqueo y mensajes
+
+`visibleMessages()` (`features/chat/domain/message_visibility.dart`, función
+pura y testeada) oculta lo que un usuario bloqueado escriba **a partir del
+bloqueo**. Se filtra por fecha, no de golpe: la conversación anterior sigue
+teniendo sentido, y así desbloquear no tiene que restaurar nada, solo deja de
+filtrar. Los mensajes propios nunca se ocultan. Para esto hacía falta la fecha
+del bloqueo, así que `ModerationRepository` gana `fetchMyBlocks()`
+(id → `created_at`) y `blockedUserIdsProvider` pasa a derivarse de
+`myBlocksProvider`, sin consultas extra.
+
+**Cómo probarlo a mano** (2 cuentas):
+1. Con B, escribir a A. En A, el icono de Chats debe estrenar badge **sin
+   recargar** (Realtime), y la conversación debe aparecer en negrita con su
+   número.
+2. En A, abrir esa conversación → el badge desaparece. Cerrarla y volver: sigue
+   sin badge.
+3. Con el chat abierto en A, escribir desde B → el mensaje aparece y el badge
+   **no** sube.
+4. Enviar 100+ mensajes desde B sin abrir → el badge muestra "99+".
+5. En escritorio (web ancha), lo mismo: el badge sale en el rail y cambiar de
+   conversación en el panel marca como leída la nueva.
+6. Bloquear a B desde el chat → sus mensajes anteriores siguen visibles, los
+   nuevos no aparecen y no suben el badge.
+7. En Supabase, `select * from messages where read_at is not null` tras abrir
+   una conversación; y comprobar que un participante **no** puede editar el
+   `content` de un mensaje ajeno (la política ya no lo permite).
+
+---
+
 ## Foto de perfil: refresco y recorte (CU-04, revisión)
 
 Dos cosas en un mismo flujo: arreglar que la foto nueva no se viera y añadir el

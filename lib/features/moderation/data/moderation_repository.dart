@@ -13,6 +13,10 @@ abstract class ModerationRepository {
 
   /// Ids de los usuarios bloqueados por el usuario actual.
   Future<Set<String>> fetchMyBlockedIds();
+
+  /// Bloqueados y **cuándo** se bloqueó a cada uno. La fecha hace falta para
+  /// ocultar solo lo que llegó después del bloqueo, no la conversación previa.
+  Future<Map<String, DateTime>> fetchMyBlocks();
 }
 
 class SupabaseModerationRepository implements ModerationRepository {
@@ -46,9 +50,19 @@ class SupabaseModerationRepository implements ModerationRepository {
 
   @override
   Future<Set<String>> fetchMyBlockedIds() async {
+    return (await fetchMyBlocks()).keys.toSet();
+  }
+
+  @override
+  Future<Map<String, DateTime>> fetchMyBlocks() async {
     // RLS ya limita las filas a las del propio usuario (blocks_select_own).
-    final rows = await _client.from('blocks').select('blocked_id');
-    return rows.map((row) => row['blocked_id'] as String).toSet();
+    final rows = await _client.from('blocks').select('blocked_id, created_at');
+    return {
+      for (final row in rows)
+        row['blocked_id'] as String: DateTime.parse(
+          row['created_at'] as String,
+        ),
+    };
   }
 }
 

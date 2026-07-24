@@ -28,6 +28,8 @@ class ConversationsListView extends ConsumerWidget {
     // hizo el reporte.
     final blockedIds =
         ref.watch(blockedUserIdsProvider).value ?? const <String>{};
+    final unreadCounts =
+        ref.watch(unreadCountsProvider).value ?? const <String, int>{};
 
     return conversationsAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -65,6 +67,7 @@ class ConversationsListView extends ConsumerWidget {
           itemBuilder: (context, index) {
             final conversation = conversations[index];
             final other = conversation.otherUser;
+            final unread = unreadCounts[conversation.id] ?? 0;
             return ListTile(
               selected: conversation.id == selectedConversationId,
               selectedTileColor: Theme.of(
@@ -78,11 +81,26 @@ class ConversationsListView extends ConsumerWidget {
                     ? const Icon(Icons.person)
                     : null,
               ),
-              title: Text(other.displayName),
+              title: Text(
+                other.displayName,
+                style: unread > 0
+                    ? const TextStyle(fontWeight: FontWeight.bold)
+                    : null,
+              ),
               trailing: blockedIds.contains(other.id)
                   ? const Chip(
                       label: Text('Bloqueado'),
                       visualDensity: VisualDensity.compact,
+                    )
+                  : unread > 0
+                  // El número suelto no dice nada a un lector de pantalla.
+                  ? Semantics(
+                      label: unread == 1
+                          ? '1 mensaje sin leer'
+                          : '$unread mensajes sin leer',
+                      child: ExcludeSemantics(
+                        child: Badge(label: Text(formatUnreadCount(unread))),
+                      ),
                     )
                   : const Icon(Icons.chevron_right),
               onTap: () => onConversationTap(conversation),

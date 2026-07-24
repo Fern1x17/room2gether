@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import 'shell_destination_icon.dart';
 import 'shell_destinations.dart';
 
 /// Forma móvil: barra de navegación inferior con las secciones principales.
@@ -22,11 +23,19 @@ class MobileShell extends StatelessWidget {
           initialLocation: index == navigationShell.currentIndex,
         ),
         destinations: [
-          for (final destination in shellDestinations)
+          for (final (index, destination) in shellDestinations.indexed)
             NavigationDestination(
-              icon: Icon(destination.icon),
-              selectedIcon: Icon(destination.selectedIcon),
+              icon: ShellDestinationIcon(
+                destination: destination,
+                selected: false,
+              ),
+              selectedIcon: ShellDestinationIcon(
+                destination: destination,
+                selected: true,
+              ),
               label: destination.label,
+              tooltip: destination.label,
+              key: ValueKey('shell-destination-$index'),
             ),
         ],
       ),

@@ -27,6 +27,7 @@ Widget _wrapApp({
   bool desktopSupported = false,
   List<Conversation> conversations = const [],
   String listingOwnerId = 'user-1',
+  Map<String, int> unreadCounts = const {},
 }) {
   return ProviderScope(
     overrides: [
@@ -43,7 +44,8 @@ Widget _wrapApp({
       ),
       listingRepositoryProvider.overrideWithValue(FakeListingRepository()),
       chatRepositoryProvider.overrideWithValue(
-        FakeChatRepository(conversations: [...conversations]),
+        FakeChatRepository(conversations: [...conversations])
+          ..unreadCounts = unreadCounts,
       ),
       profileRepositoryProvider.overrideWithValue(FakeProfileRepository()),
       recentSearchesRepositoryProvider.overrideWithValue(
@@ -222,6 +224,75 @@ void main() {
         expect(find.byType(NavigationRail), findsOneWidget);
       },
     );
+
+    // El badge se define una sola vez (ShellDestinationIcon) y lo usan la barra
+    // y el rail: estos dos tests fijan que aparece en ambas formas.
+    testWidgets('el badge de no leídos aparece en la barra inferior', (
+      tester,
+    ) async {
+      _setViewSize(tester, const Size(400, 800));
+      await tester.pumpWidget(
+        _wrapApp(unreadCounts: const {'conv-1': 3, 'conv-2': 4}),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(NavigationBar), findsOneWidget);
+      expect(find.text('7'), findsOneWidget);
+    });
+
+    testWidgets('el badge de no leídos aparece en el rail de escritorio', (
+      tester,
+    ) async {
+      _setViewSize(tester, const Size(1280, 800));
+      await tester.pumpWidget(
+        _wrapApp(
+          desktopSupported: true,
+          unreadCounts: const {'conv-1': 3, 'conv-2': 4},
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(NavigationRail), findsOneWidget);
+      expect(find.text('7'), findsOneWidget);
+    });
+
+    testWidgets('sin mensajes sin leer no se pinta ningún badge', (
+      tester,
+    ) async {
+      _setViewSize(tester, const Size(400, 800));
+      await tester.pumpWidget(_wrapApp());
+      await tester.pumpAndSettle();
+
+      expect(find.text('0'), findsNothing);
+    });
+
+    testWidgets('el contador se corta en 99+', (tester) async {
+      _setViewSize(tester, const Size(400, 800));
+      await tester.pumpWidget(_wrapApp(unreadCounts: const {'conv-1': 250}));
+      await tester.pumpAndSettle();
+
+      expect(find.text('99+'), findsOneWidget);
+    });
+
+    testWidgets('la lista de chats muestra el contador de su conversación', (
+      tester,
+    ) async {
+      _setViewSize(tester, const Size(400, 800));
+      await tester.pumpWidget(
+        _wrapApp(
+          conversations: [fakeConversation(otherName: 'Ana')],
+          unreadCounts: const {'conv-1': 3},
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Chats'));
+      await tester.pumpAndSettle();
+
+      // El 3 de la conversación y el 3 del badge de la barra.
+      expect(find.text('Ana'), findsOneWidget);
+      expect(find.text('3'), findsNWidgets(2));
+    });
 
     testWidgets(
       'en web ancha, "Enviar mensaje" desde una publicación abre el chat en '

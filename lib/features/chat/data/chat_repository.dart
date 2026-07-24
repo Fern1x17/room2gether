@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -32,6 +34,17 @@ abstract class ChatRepository {
   });
 
   Future<void> deleteMessage(String messageId);
+
+  /// Mensajes sin leer por conversación (los recibidos, no los propios, y sin
+  /// contar los de usuarios bloqueados). Las conversaciones al día no aparecen.
+  Future<Map<String, int>> fetchUnreadCounts();
+
+  /// Emite cada vez que algo cambia en mis mensajes. No lleva datos: es una
+  /// señal para volver a pedir el contador.
+  Stream<void> watchInboxChanges();
+
+  /// Marca como leídos los mensajes recibidos de una conversación.
+  Future<void> markConversationRead(String conversationId);
 }
 
 class SupabaseChatRepository implements ChatRepository {
@@ -131,6 +144,63 @@ class SupabaseChatRepository implements ChatRepository {
         .update({'content': '🚫 Este mensaje ha sido eliminado'})
         .eq('id', messageId)
         .eq('sender_id', _myId);
+  }
+
+  @override
+  Future<Map<String, int>> fetchUnreadCounts() async {
+    // La cuenta y el filtro de bloqueados los hace la función SQL
+    // `unread_counts` (security invoker: RLS sigue aplicando).
+    final rows = await _client.rpc<List<dynamic>>('unread_counts');
+    return {
+      for (final row in rows.cast<Map<String, dynamic>>())
+        row['conversation_id'] as String: row['unread'] as int,
+    };
+  }
+
+  @override
+  Stream<void> watchInboxChanges() {
+    // Un canal de señal, no un `stream()` de mensajes: suscribirse a todos mis
+    // mensajes para contarlos significaría descargarlos y mantenerlos en
+    // memoria mientras la app esté abierta. Aquí solo llega el aviso y el
+    // contador se recalcula con una consulta agregada.
+    final controller = StreamController<void>.broadcast();
+    final channel = _client.channel('inbox:$_myId');
+
+    void notify(PostgresChangePayload _) {
+      if (!controller.isClosed) controller.add(null);
+    }
+
+    channel
+        .onPostgresChanges(
+          event: PostgresChangeEvent.insert,
+          schema: 'public',
+          table: 'messages',
+          callback: notify,
+        )
+        // También UPDATE: al marcar como leído baja el contador, y así el
+        // badge se actualiza en las demás pestañas o dispositivos.
+        .onPostgresChanges(
+          event: PostgresChangeEvent.update,
+          schema: 'public',
+          table: 'messages',
+          callback: notify,
+        )
+        .subscribe();
+
+    controller.onCancel = () async {
+      await _client.removeChannel(channel);
+    };
+    return controller.stream;
+  }
+
+  @override
+  Future<void> markConversationRead(String conversationId) async {
+    // Vía RPC: la política de UPDATE solo deja al remitente tocar sus propios
+    // mensajes, así que marcar los recibidos pasa por `security definer`.
+    await _client.rpc<void>(
+      'mark_conversation_read',
+      params: {'p_conversation_id': conversationId},
+    );
   }
 }
 

@@ -5,6 +5,7 @@ import '../../../../core/supabase/current_user_provider.dart';
 import '../../../feed/presentation/controllers/feed_controller.dart';
 import '../../../moderation/presentation/controllers/report_controller.dart';
 import '../../../moderation/presentation/widgets/report_dialog.dart';
+import '../../domain/message_visibility.dart';
 import '../../domain/models/message.dart';
 import '../controllers/chat_controllers.dart';
 
@@ -19,6 +20,30 @@ class ChatScreen extends ConsumerStatefulWidget {
 
 class _ChatScreenState extends ConsumerState<ChatScreen> {
   final _messageController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _markRead();
+  }
+
+  @override
+  void didUpdateWidget(ChatScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // En escritorio el panel de detalle reutiliza la pantalla al cambiar de
+    // conversación, sin volver a construirla.
+    if (oldWidget.conversationId != widget.conversationId) {
+      _markRead();
+    }
+  }
+
+  /// Con el chat abierto, lo que llega ya está leído. Se llama al entrar y con
+  /// cada mensaje nuevo, para que el badge no suba mientras estás mirándolo.
+  void _markRead() {
+    ref
+        .read(markConversationReadControllerProvider.notifier)
+        .markRead(widget.conversationId);
+  }
 
   @override
   void dispose() {
@@ -193,10 +218,19 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       }
     });
 
+    // Con el chat abierto, lo que llegue se marca leído en el momento: si no,
+    // el badge subiría mientras lo estás mirando.
+    ref.listen(messagesStreamProvider(widget.conversationId), (previous, next) {
+      final before = previous?.value?.length ?? 0;
+      final now = next.value?.length ?? 0;
+      if (now > before) _markRead();
+    });
+
     final otherUser = conversationAsync.value?.otherUser;
-    final blockedIds =
-        ref.watch(blockedUserIdsProvider).value ?? const <String>{};
-    final isBlocked = otherUser != null && blockedIds.contains(otherUser.id);
+    final blocks =
+        ref.watch(myBlocksProvider).value ?? const <String, DateTime>{};
+    final blockedAt = otherUser == null ? null : blocks[otherUser.id];
+    final isBlocked = blockedAt != null;
 
     return Scaffold(
       appBar: AppBar(
@@ -226,7 +260,15 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 error: (error, stackTrace) => const Center(
                   child: Text('No se pudieron cargar los mensajes.'),
                 ),
-                data: (messages) {
+                data: (allMessages) {
+                  // Efecto del bloqueo (CU-11): si te sigue escribiendo, no lo
+                  // ves. La regla vive en el dominio, no aquí.
+                  final messages = visibleMessages(
+                    allMessages,
+                    currentUserId: currentUserId,
+                    blockedAt: blockedAt,
+                  );
+
                   if (messages.isEmpty) {
                     return Center(
                       child: Text(

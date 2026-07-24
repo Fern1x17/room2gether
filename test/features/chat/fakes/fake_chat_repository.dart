@@ -52,6 +52,13 @@ class FakeChatRepository implements ChatRepository {
   final messagesController = StreamController<List<Message>>.broadcast();
   int createdConversations = 0;
 
+  /// Contadores que devuelve [fetchUnreadCounts]. Se puede cambiar entre
+  /// emisiones de [inboxController] para simular que llega un mensaje.
+  Map<String, int> unreadCounts = const {};
+  final inboxController = StreamController<void>.broadcast();
+  final List<String> readConversationIds = [];
+  int unreadFetches = 0;
+
   @override
   Future<Conversation> openConversation({
     required String otherUserId,
@@ -107,5 +114,20 @@ class FakeChatRepository implements ChatRepository {
   }) async {
     if (updateError != null) throw updateError!;
     updatedMessages.add((messageId: messageId, newContent: newContent));
+  }
+
+  @override
+  Future<Map<String, int>> fetchUnreadCounts() async {
+    unreadFetches++;
+    return unreadCounts;
+  }
+
+  @override
+  Stream<void> watchInboxChanges() => inboxController.stream;
+
+  @override
+  Future<void> markConversationRead(String conversationId) async {
+    readConversationIds.add(conversationId);
+    unreadCounts = {...unreadCounts}..remove(conversationId);
   }
 }

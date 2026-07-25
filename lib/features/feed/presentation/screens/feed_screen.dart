@@ -8,35 +8,10 @@ import '../controllers/feed_controller.dart';
 import '../widgets/filters_sheet.dart';
 import '../widgets/listing_list_view.dart';
 
-class FeedScreen extends ConsumerStatefulWidget {
-  final bool isLookingForRoommate;
+class FeedScreen extends ConsumerWidget {
+  const FeedScreen({super.key});
 
-  const FeedScreen({
-    super.key,
-    required this.isLookingForRoommate,
-  });
-
-  @override
-  ConsumerState<FeedScreen> createState() => _FeedScreenState();
-}
-
-class _FeedScreenState extends ConsumerState<FeedScreen> {
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final controller = ref.read(feedControllerProvider.notifier);
-      final currentFilter = controller.currentFilter;
-
-      controller.search(
-        currentFilter.copyWith(
-          type: widget.isLookingForRoommate ? 'offering' : 'seeking',
-        ),
-      );
-    });
-  }
-
-  void _openFilters(BuildContext context) {
+  void _openFilters(BuildContext context, WidgetRef ref) {
     final controller = ref.read(feedControllerProvider.notifier);
     showModalBottomSheet(
       context: context,
@@ -49,11 +24,14 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    // En escritorio los filtros y la lista los pinta el DesktopShell como
+    // columnas persistentes; la página /feed queda como el panel de detalle
+    // sin selección. Misma regla de ancho que el AdaptiveShell.
     final desktopSupported = ref.watch(desktopLayoutSupportedProvider);
     final isDesktopLayout =
-        desktopSupported && MediaQuery.sizeOf(context).width >= kDesktopMinWidth;
-
+        desktopSupported &&
+        MediaQuery.sizeOf(context).width >= kDesktopMinWidth;
     if (isDesktopLayout) {
       return const _ListingDetailPlaceholder();
     }
@@ -65,13 +43,13 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
         label: const Text('Crear publicación'),
       ),
       appBar: AppBar(
-        title: Text(widget.isLookingForRoommate
-            ? 'Buscando Compañero'
-            : 'Buscando Piso'),
+        title: const Text('Room2gether'),
+        // Chats y Perfil viven ahora en la barra de navegación inferior.
         actions: [
           IconButton(
-            onPressed: () => _openFilters(context),
+            onPressed: () => _openFilters(context, ref),
             icon: const Icon(Icons.search),
+            tooltip: 'Buscar',
           ),
         ],
       ),
@@ -82,6 +60,7 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
   }
 }
 
+/// Estado vacío del panel de detalle en escritorio.
 class _ListingDetailPlaceholder extends StatelessWidget {
   const _ListingDetailPlaceholder();
 

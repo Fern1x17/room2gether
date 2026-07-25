@@ -26,19 +26,40 @@ Session fakeSession({User? user}) {
 /// [signUpError]/[signInError] para simular un fallo, o
 /// [signUpWithoutSession] para simular el caso de confirmación de email
 /// pendiente (signUp sin sesión).
+///
+/// Para el polling de auto-login (CU-01): [signInUnconfirmedTimes] hace que las
+/// primeras N llamadas a [signIn] lancen `email_not_confirmed` y la siguiente
+/// ya devuelva sesión, simulando que el usuario confirma el email a mitad del
+/// polling. Para el callback PKCE: [exchangeError] fuerza un fallo del canje, e
+/// [initialSession] fija la sesión previa que devuelve [currentSession].
 class FakeAuthRepository implements AuthRepository {
   FakeAuthRepository({
     this.signUpError,
     this.signInError,
     this.signOutError,
     this.signUpWithoutSession = false,
-  });
+    this.signInUnconfirmedTimes = 0,
+    this.resendError,
+    this.exchangeError,
+    Session? initialSession,
+  }) : _currentSession = initialSession;
 
   final Object? signUpError;
   final Object? signInError;
   final Object? signOutError;
   final bool signUpWithoutSession;
+
+  /// Número de llamadas iniciales a [signIn] que fallan con `email_not_confirmed`
+  /// antes de empezar a devolver sesión.
+  final int signInUnconfirmedTimes;
+  final Object? resendError;
+  final Object? exchangeError;
+
+  Session? _currentSession;
   bool signedOut = false;
+  int signInCallCount = 0;
+  int resendCallCount = 0;
+  int exchangeCallCount = 0;
 
   @override
   Future<AuthResponse> signUp({
@@ -60,15 +81,41 @@ class FakeAuthRepository implements AuthRepository {
     required String email,
     required String password,
   }) async {
+    signInCallCount++;
     if (signInError != null) throw signInError!;
-    return AuthResponse(
-      session: fakeSession(user: fakeUser(email: email)),
-    );
+    if (signInCallCount <= signInUnconfirmedTimes) {
+      throw const AuthException(
+        'Email not confirmed',
+        code: 'email_not_confirmed',
+      );
+    }
+    final session = fakeSession(user: fakeUser(email: email));
+    _currentSession = session;
+    return AuthResponse(session: session);
   }
 
   @override
   Future<void> signOut() async {
     if (signOutError != null) throw signOutError!;
     signedOut = true;
+    _currentSession = null;
   }
+
+  @override
+  Future<void> resendSignupConfirmation({required String email}) async {
+    resendCallCount++;
+    if (resendError != null) throw resendError!;
+  }
+
+  @override
+  Future<Session> exchangeCode(String code) async {
+    exchangeCallCount++;
+    if (exchangeError != null) throw exchangeError!;
+    final session = fakeSession();
+    _currentSession = session;
+    return session;
+  }
+
+  @override
+  Session? get currentSession => _currentSession;
 }

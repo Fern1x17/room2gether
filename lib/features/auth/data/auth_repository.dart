@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/supabase/supabase_client.dart';
+import 'auth_redirect.dart';
 
 abstract class AuthRepository {
   Future<AuthResponse> signUp({
@@ -16,6 +17,17 @@ abstract class AuthRepository {
   });
 
   Future<void> signOut();
+
+  /// Reenvía el correo de confirmación de registro (CU-01, RF-13).
+  Future<void> resendSignupConfirmation({required String email});
+
+  /// Canjea el código PKCE del enlace de confirmación por una sesión. La
+  /// sesión resultante pertenece a la cuenta del token, sobrescribiendo
+  /// cualquier sesión previa en este navegador.
+  Future<Session> exchangeCode(String code);
+
+  /// Sesión actualmente activa en el dispositivo, o `null` si no hay ninguna.
+  Session? get currentSession;
 }
 
 class SupabaseAuthRepository implements AuthRepository {
@@ -33,6 +45,7 @@ class SupabaseAuthRepository implements AuthRepository {
     return _client.auth.signUp(
       email: email,
       password: password,
+      emailRedirectTo: emailConfirmRedirectUrl(),
       data: {'birthdate': birthdate.toIso8601String().substring(0, 10)},
     );
   }
@@ -49,6 +62,24 @@ class SupabaseAuthRepository implements AuthRepository {
   Future<void> signOut() {
     return _client.auth.signOut();
   }
+
+  @override
+  Future<void> resendSignupConfirmation({required String email}) {
+    return _client.auth.resend(
+      type: OtpType.signup,
+      email: email,
+      emailRedirectTo: emailConfirmRedirectUrl(),
+    );
+  }
+
+  @override
+  Future<Session> exchangeCode(String code) async {
+    final response = await _client.auth.exchangeCodeForSession(code);
+    return response.session;
+  }
+
+  @override
+  Session? get currentSession => _client.auth.currentSession;
 }
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {

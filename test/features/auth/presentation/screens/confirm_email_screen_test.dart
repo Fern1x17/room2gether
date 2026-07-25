@@ -44,7 +44,10 @@ void main() {
       await tester.pumpWidget(_wrap(FakeAuthRepository()));
       await tester.pump();
 
-      expect(find.text('Revisa tu correo y confirma tu cuenta.'), findsOneWidget);
+      expect(
+        find.text('Revisa tu correo y confirma tu cuenta.'),
+        findsOneWidget,
+      );
       expect(find.text('Esperando confirmación…'), findsOneWidget);
       // El polling arranca a los 4 s; en el primer frame aún no ha entrado.
       expect(find.text('ONBOARDING'), findsNothing);
@@ -91,9 +94,7 @@ void main() {
       );
       // El botón queda deshabilitado con cuenta atrás.
       expect(find.textContaining('Reenviar correo ('), findsOneWidget);
-      final button = tester.widget<OutlinedButton>(
-        find.byType(OutlinedButton),
-      );
+      final button = tester.widget<OutlinedButton>(find.byType(OutlinedButton));
       expect(button.onPressed, isNull);
     });
 
@@ -113,10 +114,7 @@ void main() {
       await tester.pump();
       await tester.pump();
 
-      expect(
-        find.textContaining('demasiados correos'),
-        findsOneWidget,
-      );
+      expect(find.textContaining('demasiados correos'), findsOneWidget);
     });
 
     testWidgets('cancelar detiene el polling y va a login', (tester) async {

@@ -172,7 +172,8 @@ class ListingDetailScreen extends ConsumerWidget {
           return Hero(
             tag: 'listing_card_${listing.id}',
             child: Material(
-              color: theme.scaffoldBackgroundColor, // Mantiene el fondo limpio en la transición
+              color: theme
+                  .scaffoldBackgroundColor, // Mantiene el fondo limpio en la transición
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(24),
                 child: Column(
@@ -228,7 +229,8 @@ class ListingDetailScreen extends ConsumerWidget {
                               : () async {
                                   final conversation = await ref
                                       .read(
-                                        openConversationControllerProvider.notifier,
+                                        openConversationControllerProvider
+                                            .notifier,
                                       )
                                       .open(
                                         otherUserId: listing.ownerId,
@@ -246,7 +248,9 @@ class ListingDetailScreen extends ConsumerWidget {
                               ? const SizedBox(
                                   width: 20,
                                   height: 20,
-                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
                                 )
                               : const Icon(Icons.chat_bubble_outline),
                           label: const Text('Enviar mensaje'),
@@ -278,7 +282,9 @@ class ListingDetailScreen extends ConsumerWidget {
                               ? const SizedBox(
                                   width: 20,
                                   height: 20,
-                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
                                 )
                               : const Icon(Icons.delete_outline),
                           label: const Text('Eliminar publicación'),

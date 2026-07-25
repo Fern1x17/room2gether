@@ -151,7 +151,7 @@ Funcionalidad mínima imprescindible. Construir en este orden:
 - [x] Feed
 - [x] Publicación (crear CU-06, eliminar CU-07, modificar CU-08)
 - [x] Chat (CU-10)
-- [x] Reporte/bloqueo (CU-11)
+- [x] Reporte/bloqueo (CU-11) + desbloqueo (lista de bloqueados en ajustes)
 - [x] Layout adaptativo: móvil (Android + web estrecha, barra inferior) y
       escritorio (solo web ancha, rail + master-detail en **Buscar** y
       **Chats**). Breakpoint único de 840 dp en

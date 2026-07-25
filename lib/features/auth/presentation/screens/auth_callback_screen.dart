@@ -64,9 +64,7 @@ class _AuthCallbackScreenState extends ConsumerState<AuthCallbackScreen> {
             padding: const EdgeInsets.all(24),
             child: CenteredFormFrame(
               child: _failed
-                  ? _CallbackError(
-                      onGoToLogin: () => context.go('/login'),
-                    )
+                  ? _CallbackError(onGoToLogin: () => context.go('/login'))
                   : const Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -94,11 +92,7 @@ class _CallbackError extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(
-          Icons.error_outline,
-          size: 56,
-          color: theme.colorScheme.error,
-        ),
+        Icon(Icons.error_outline, size: 56, color: theme.colorScheme.error),
         const SizedBox(height: 16),
         Text(
           'No hemos podido confirmar tu cuenta. El enlace puede haber caducado '

@@ -23,8 +23,7 @@ GoRouter _router(String initialLocation) {
       ),
       GoRoute(
         path: '/onboarding',
-        builder: (context, state) =>
-            const Scaffold(body: Text('ONBOARDING')),
+        builder: (context, state) => const Scaffold(body: Text('ONBOARDING')),
       ),
       GoRoute(
         path: '/login',
@@ -63,7 +62,9 @@ void main() {
 
       expect(find.textContaining('No hemos podido confirmar'), findsOneWidget);
 
-      await tester.tap(find.widgetWithText(FilledButton, 'Ir a iniciar sesión'));
+      await tester.tap(
+        find.widgetWithText(FilledButton, 'Ir a iniciar sesión'),
+      );
       await tester.pumpAndSettle();
       expect(find.text('LOGIN'), findsOneWidget);
     });

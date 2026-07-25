@@ -680,6 +680,60 @@ fila de dirección y no da error (se muestra el barrio).
 
 ---
 
+## Desbloquear usuarios (CU-11, ampliación)
+
+**Sin migración.** El bloqueo ya lo permitía todo: la tabla `blocks` y su
+política `blocks_delete_own` (`blocker_id = auth.uid()`, migración `...006`) ya
+dejaban a cada usuario borrar **solo** sus propios bloqueos. Desbloquear es
+borrar la fila.
+
+- `domain/models/blocked_user.dart` — id, nombre, avatar y fecha de bloqueo.
+- `data/moderation_repository.dart`:
+  - `fetchBlockedUsers()` — `blocks` con el perfil embebido
+    (`profiles!blocks_blocked_id_fkey`), orden por `created_at` desc.
+  - `unblockUser(id)` — `delete().eq('blocker_id', me).eq('blocked_id', id)`.
+    RLS ya bastaría; el filtro por `blocker_id` es defensa en profundidad, igual
+    que en el chat.
+- `presentation/controllers/report_controller.dart` — `blockedUsersProvider` y
+  `UnblockUserController`. El controlador **solo** invalida los providers de
+  moderación (`myBlocksProvider`, `blockedUsersProvider`); los efectos en feed
+  y chat los refresca la pantalla, mismo patrón que el reporte en `ChatScreen`,
+  para no acoplar moderación a otras features.
+- `presentation/screens/blocked_users_screen.dart` — lista con estados
+  carga/error/**vacío** ("No has bloqueado a nadie"), avatar, nombre y
+  "Bloqueado el D de MES de AAAA", botón Desbloquear con diálogo de confirmación
+  y snackbar. Al desbloquear con éxito invalida `feedControllerProvider`,
+  `conversationsProvider` y `unreadCountsProvider`.
+- Ruta `/profile/blocked`, **subruta de `/profile`** dentro de la rama Perfil:
+  conserva barra inferior en móvil y rail en escritorio. Entrada desde
+  `EditProfileScreen`, sección nueva "Cuenta y privacidad".
+
+**Qué se restaura al desbloquear** (todos los efectos de CU-11, en orden
+inverso): sus publicaciones vuelven al feed, se le puede volver a escribir y
+abrir chat nuevo, sus mensajes dejan de ocultarse (`visibleMessages` ya no
+filtra sin `blockedAt`) y vuelven a contar en el badge, y desaparece el chip
+"Bloqueado" de la lista de chats.
+
+**Qué NO se toca:** las conversaciones y mensajes previos nunca se borraron con
+el bloqueo (solo se ocultaban los posteriores), así que reaparecen intactos —
+no hay nada que "restaurar". Y **el reporte (`reports`) no se revierte**:
+bloquear y reportar son la misma acción en la UI (CU-11 paso 3), pero el reporte
+es material de moderación (`status = 'pending'`, RF-14) y desbloquear es una
+decisión personal; borrar la denuncia sería perder señal de moderación. El
+bloqueo es unidireccional, así que en la cuenta del otro no hay nada que
+cambiar.
+
+**Cómo probarlo a mano** (2 cuentas):
+1. Con A, bloquear a B (reportar desde una publicación o chat de B).
+2. Perfil → "Cuenta y privacidad" → "Usuarios bloqueados": aparece B con su
+   foto, nombre y fecha.
+3. "Desbloquear" → confirmar → snackbar y B desaparece de la lista.
+4. El feed vuelve a mostrar las publicaciones de B; el chat con B permite
+   escribir de nuevo y sus mensajes reaparecen; el chip "Bloqueado" desaparece.
+5. En Supabase, la fila de `blocks` (A, B) ya no está; la de `reports` sigue.
+
+---
+
 ## Mensajes sin leer: badge en la navegación (CU-10, ampliación)
 
 **Migración:** `supabase/migrations/20260724000019_messages_unread.sql`.

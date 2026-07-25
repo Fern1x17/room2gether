@@ -12,6 +12,7 @@ import '../../features/feed/presentation/screens/feed_screen.dart';
 import '../../features/feed/presentation/screens/listing_detail_screen.dart';
 import '../../features/listing/presentation/screens/create_listing_screen.dart';
 import '../../features/listing/presentation/screens/edit_listing_screen.dart';
+import '../../features/moderation/presentation/screens/blocked_users_screen.dart';
 import '../../features/profile/presentation/screens/edit_profile_screen.dart';
 import '../layout/adaptive_shell.dart';
 import '../supabase/supabase_client.dart';
@@ -45,10 +46,7 @@ GoRouter buildAppRouter({required String initialLocation}) {
         builder: (context, state) {
           final args = state.extra as ({String email, String password})?;
           if (args == null) return const LoginScreen();
-          return ConfirmEmailScreen(
-            email: args.email,
-            password: args.password,
-          );
+          return ConfirmEmailScreen(email: args.email, password: args.password);
         },
       ),
       // Callback del enlace de confirmación de email (flujo PKCE). Con hash URL
@@ -121,6 +119,14 @@ GoRouter buildAppRouter({required String initialLocation}) {
               GoRoute(
                 path: '/profile',
                 builder: (context, state) => const EditProfileScreen(),
+                routes: [
+                  // Subpágina dentro de la rama Perfil: conserva la barra
+                  // inferior en móvil y el rail en escritorio.
+                  GoRoute(
+                    path: 'blocked',
+                    builder: (context, state) => const BlockedUsersScreen(),
+                  ),
+                ],
               ),
             ],
           ),

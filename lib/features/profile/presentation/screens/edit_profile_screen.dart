@@ -617,6 +617,20 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
                     const Divider(),
                     Text(
+                      'Cuenta y privacidad',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    ListTile(
+                      leading: const Icon(Icons.block_outlined),
+                      title: const Text('Usuarios bloqueados'),
+                      trailing: const Icon(Icons.chevron_right),
+                      contentPadding: EdgeInsets.zero,
+                      onTap: () => context.go('/profile/blocked'),
+                    ),
+                    const SizedBox(height: 8),
+
+                    const Divider(),
+                    Text(
                       'Legal',
                       style: Theme.of(context).textTheme.titleMedium,
                     ),

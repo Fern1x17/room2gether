@@ -202,10 +202,7 @@ class _ConfirmEmailScreenState extends ConsumerState<ConfirmEmailScreen> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                TextButton(
-                  onPressed: _cancel,
-                  child: const Text('Cancelar'),
-                ),
+                TextButton(onPressed: _cancel, child: const Text('Cancelar')),
               ],
             ),
           ),

@@ -30,12 +30,19 @@ class ListingCard extends StatelessWidget {
       tag: 'listing_card_${listing.id}',
       // 3. Este flightShuttleBuilder evita que el texto se vea con
       // dobles líneas amarillas feas durante la animación de vuelo.
-      flightShuttleBuilder: (flightContext, animation, flightDirection, fromHeroContext, toHeroContext) {
-        return Material(
-          color: Colors.transparent,
-          child: toHeroContext.widget,
-        );
-      },
+      flightShuttleBuilder:
+          (
+            flightContext,
+            animation,
+            flightDirection,
+            fromHeroContext,
+            toHeroContext,
+          ) {
+            return Material(
+              color: Colors.transparent,
+              child: toHeroContext.widget,
+            );
+          },
       child: Card(
         shape: selected
             ? RoundedRectangleBorder(

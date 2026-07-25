@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/auth/presentation/screens/auth_callback_screen.dart';
+import '../../features/auth/presentation/screens/confirm_email_screen.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/chat/presentation/screens/chat_screen.dart';
 import '../../features/chat/presentation/screens/conversations_screen.dart';
@@ -35,6 +37,30 @@ GoRouter buildAppRouter({required String initialLocation}) {
         path: '/register',
         builder: (context, state) => const RegisterScreen(),
       ),
+      // Espera de confirmación con auto-login por polling (CU-01). Las
+      // credenciales llegan por `extra` (en memoria, nunca en la URL). Si se
+      // recarga la página se pierde el `extra`: en ese caso caemos a login.
+      GoRoute(
+        path: '/confirm-email',
+        builder: (context, state) {
+          final args = state.extra as ({String email, String password})?;
+          if (args == null) return const LoginScreen();
+          return ConfirmEmailScreen(
+            email: args.email,
+            password: args.password,
+          );
+        },
+      ),
+      // Callback del enlace de confirmación de email (flujo PKCE). Con hash URL
+      // strategy el `code` llega en el fragmento y go_router lo expone aquí como
+      // query. Fuera del shell: pantalla completa sin barra ni rail.
+      GoRoute(
+        path: '/auth/callback',
+        builder: (context, state) => AuthCallbackScreen(
+          code: state.uri.queryParameters['code'],
+          errorDescription: state.uri.queryParameters['error_description'],
+        ),
+      ),
       // Alta tras el registro; la misma pantalla vive también en la pestaña
       // Perfil (/profile), dentro del shell.
       GoRoute(
@@ -61,7 +87,7 @@ GoRouter buildAppRouter({required String initialLocation}) {
         branches: [
           // Buscar: el detalle vive en la rama para que en móvil conserve la
           // barra inferior y en escritorio se muestre como panel junto a la
-          // lista (fase 3).
+          // lista.
           StatefulShellBranch(
             routes: [
               GoRoute(
@@ -75,10 +101,7 @@ GoRouter buildAppRouter({required String initialLocation}) {
               ),
             ],
           ),
-          // Chats: la conversación individual vive en la rama (igual que el
-          // detalle de publicación en Buscar) para que en escritorio se muestre
-          // como panel junto a la lista de conversaciones, y en móvil comparta
-          // la barra inferior con el resto de la sección.
+          // Chats
           StatefulShellBranch(
             routes: [
               GoRoute(
@@ -92,6 +115,7 @@ GoRouter buildAppRouter({required String initialLocation}) {
               ),
             ],
           ),
+          // Perfil
           StatefulShellBranch(
             routes: [
               GoRoute(

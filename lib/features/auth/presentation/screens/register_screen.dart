@@ -89,12 +89,16 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     if (response.session != null) {
       context.go('/onboarding');
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Cuenta creada. Revisa tu email para confirmarla.'),
+      // Falta confirmar el email: pasamos a la pantalla de espera con las
+      // credenciales en memoria (vía extra, nunca en la URL) para el
+      // auto-login por polling.
+      context.go(
+        '/confirm-email',
+        extra: (
+          email: _emailController.text.trim(),
+          password: _passwordController.text,
         ),
       );
-      context.go('/login');
     }
   }
 

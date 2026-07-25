@@ -13,6 +13,15 @@ Future<void> main() async {
   await Supabase.initialize(
     url: dotenv.env['SUPABASE_URL']!,
     publishableKey: dotenv.env['SUPABASE_ANON_KEY']!,
+    // PKCE explícito (confirmación de email por código). detectSessionInUri en
+    // false porque el canje del código lo hace nuestra página /auth/callback,
+    // no el observador automático (que además, con hash URL strategy, no
+    // reconoce el código incrustado en el fragmento). Así solo un actor
+    // consume el código, que solo puede usarse una vez.
+    authOptions: const FlutterAuthClientOptions(
+      authFlowType: AuthFlowType.pkce,
+      detectSessionInUri: false,
+    ),
   );
   runApp(const ProviderScope(child: Room2getherApp()));
 }

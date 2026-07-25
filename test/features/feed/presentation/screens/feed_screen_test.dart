@@ -69,7 +69,7 @@ void main() {
       await tester.pumpWidget(_wrap());
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byTooltip('Buscar'));
+      await tester.tap(find.byIcon(Icons.search));
       await tester.pumpAndSettle();
 
       expect(find.text('Filtrar publicaciones'), findsOneWidget);

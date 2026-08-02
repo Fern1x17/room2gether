@@ -41,6 +41,7 @@ class FakeAuthRepository implements AuthRepository {
     this.signInUnconfirmedTimes = 0,
     this.resendError,
     this.exchangeError,
+    this.verifyError,
     Session? initialSession,
   }) : _currentSession = initialSession;
 
@@ -54,12 +55,18 @@ class FakeAuthRepository implements AuthRepository {
   final int signInUnconfirmedTimes;
   final Object? resendError;
   final Object? exchangeError;
+  final Object? verifyError;
 
   Session? _currentSession;
   bool signedOut = false;
   int signInCallCount = 0;
   int resendCallCount = 0;
   int exchangeCallCount = 0;
+  int verifyCallCount = 0;
+
+  /// Último `token_hash` y `type` recibidos en [verifyEmailToken].
+  String? lastTokenHash;
+  String? lastTokenType;
 
   @override
   Future<AuthResponse> signUp({
@@ -111,6 +118,20 @@ class FakeAuthRepository implements AuthRepository {
   Future<Session> exchangeCode(String code) async {
     exchangeCallCount++;
     if (exchangeError != null) throw exchangeError!;
+    final session = fakeSession();
+    _currentSession = session;
+    return session;
+  }
+
+  @override
+  Future<Session> verifyEmailToken({
+    required String tokenHash,
+    String? type,
+  }) async {
+    verifyCallCount++;
+    lastTokenHash = tokenHash;
+    lastTokenType = type;
+    if (verifyError != null) throw verifyError!;
     final session = fakeSession();
     _currentSession = session;
     return session;

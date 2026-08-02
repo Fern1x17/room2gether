@@ -26,6 +26,17 @@ abstract class AuthRepository {
   /// cualquier sesión previa en este navegador.
   Future<Session> exchangeCode(String code);
 
+  /// Confirma el registro con el `token_hash` del enlace del correo.
+  ///
+  /// A diferencia de [exchangeCode], no necesita el `code_verifier` que PKCE
+  /// guarda en el navegador donde se hizo el registro: el token se valida
+  /// contra el servidor. Por eso el enlace funciona aunque se abra en otro
+  /// dispositivo o navegador (p. ej. registrarse en el ordenador y confirmar
+  /// desde el móvil).
+  ///
+  /// [type] es el valor que viaja en el enlace (`signup`, `recovery`…).
+  Future<Session> verifyEmailToken({required String tokenHash, String? type});
+
   /// Sesión actualmente activa en el dispositivo, o `null` si no hay ninguna.
   Session? get currentSession;
 }
@@ -79,9 +90,47 @@ class SupabaseAuthRepository implements AuthRepository {
   }
 
   @override
+  Future<Session> verifyEmailToken({
+    required String tokenHash,
+    String? type,
+  }) async {
+    final response = await _client.auth.verifyOTP(
+      tokenHash: tokenHash,
+      type: parseOtpType(type),
+    );
+    // verifyOTP lanza AuthException si la verificación no produce sesión, así
+    // que llegados aquí nunca es null.
+    return response.session!;
+  }
+
+  @override
   Session? get currentSession => _client.auth.currentSession;
 }
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
   return SupabaseAuthRepository(supabase);
 });
+
+/// Traduce el parámetro `type` del enlace del correo al enum de gotrue.
+///
+/// El único enlace que la app envía hoy es el de confirmación de registro
+/// (`type=signup`), así que un valor ausente o desconocido se trata como
+/// `signup`: si el servidor no lo acepta, responde con un error que ya se
+/// traduce al español, en vez de romper el canje por adelantado.
+OtpType parseOtpType(String? type) {
+  switch (type) {
+    case 'email':
+      return OtpType.email;
+    case 'magiclink':
+      return OtpType.magiclink;
+    case 'recovery':
+      return OtpType.recovery;
+    case 'invite':
+      return OtpType.invite;
+    case 'email_change':
+      return OtpType.emailChange;
+    case 'signup':
+    default:
+      return OtpType.signup;
+  }
+}

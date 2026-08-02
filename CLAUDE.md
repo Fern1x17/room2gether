@@ -147,6 +147,20 @@ Funcionalidad mínima imprescindible. Construir en este orden:
 - [ ] Estructura base del proyecto Flutter creada
 - [ ] Supabase configurado (proyecto + tablas + RLS)
 - [x] Auth
+      - Confirmación de email: la plantilla de correo de Supabase apunta a
+        `room2gether.com/#/auth/callback?token_hash={{ .TokenHash }}&type=signup`.
+        Se usa `token_hash` (se valida contra el servidor) en vez del flujo
+        PKCE, para que el enlace funcione aunque se abra en otro dispositivo;
+        el canje por `code` se mantiene como respaldo. Los parámetros se leen
+        de la URL real del navegador, no solo de lo que ve go_router: con hash
+        URL strategy Supabase los deja en el query string, delante del `#`
+        (ver `features/auth/data/auth_redirect.dart`).
+      - `EmailConfirmationScreen` es exclusiva del enlace del correo: el router
+        manda al inicio a quien abra la URL sin token, y la ruta no existe
+        fuera de la web. **Segundo uso aprobado de `kIsWeb`** (2026-08-02),
+        además del de `desktopLayoutSupportedProvider`: aquí no decide layout,
+        decide si una ruta existe en la plataforma. Es el parámetro `isWeb` de
+        `buildAppRouter`, para poder probarlo.
 - [x] Perfil
 - [x] Feed
 - [x] Publicación (crear CU-06, eliminar CU-07, modificar CU-08)

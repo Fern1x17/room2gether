@@ -1,8 +1,9 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../features/auth/presentation/screens/auth_callback_screen.dart';
-import '../../features/auth/presentation/screens/confirm_email_screen.dart';
+import '../../features/auth/data/auth_redirect.dart';
+import '../../features/auth/presentation/screens/email_confirmation_screen.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/chat/presentation/screens/chat_screen.dart';
 import '../../features/chat/presentation/screens/conversations_screen.dart';
@@ -22,42 +23,93 @@ final appRouterProvider = Provider<GoRouter>((ref) {
   // en Supabase.initialize(); si existe, se entra directo al feed sin pasar
   // por la pantalla de bienvenida. La sesión solo se destruye con signOut().
   final hasSession = supabase.auth.currentSession != null;
-  return buildAppRouter(initialLocation: hasSession ? '/feed' : '/');
+  return buildAppRouter(
+    initialLocation: hasSession ? '/feed' : '/',
+    launchParams: authCallbackParamsFromLaunchUrl(),
+  );
 });
 
 /// Construye el router. Separado del provider para poder crearlo en tests
 /// sin inicializar Supabase.
-GoRouter buildAppRouter({required String initialLocation}) {
+///
+/// [launchParams] son los parámetros del enlace de confirmación de email
+/// leídos de la URL real del navegador. Si vienen, mandan sobre el resto: la
+/// app arranca en `/auth/callback` para confirmar la cuenta, llegue la URL en
+/// la forma que llegue (ver `auth_redirect.dart`).
+/// [isWeb] existe para poder probar la pantalla de confirmación, que solo vive
+/// en la web. No decide layout (eso sigue siendo cosa del ancho): decide si una
+/// ruta existe en esta plataforma.
+GoRouter buildAppRouter({
+  required String initialLocation,
+  AuthCallbackParams launchParams = const AuthCallbackParams(),
+  bool isWeb = kIsWeb,
+}) {
+  /// Parámetros del enlace: los de la ruta si go_router los ve, y si no los de
+  /// la URL de lanzamiento, que es donde acaban con hash URL strategy.
+  AuthCallbackParams confirmationParams(GoRouterState state) {
+    final routeParams = state.uri.queryParameters;
+    return AuthCallbackParams(
+      code: routeParams['code'] ?? launchParams.code,
+      tokenHash: routeParams['token_hash'] ?? launchParams.tokenHash,
+      type: routeParams['type'] ?? launchParams.type,
+      errorDescription:
+          routeParams['error_description'] ?? launchParams.errorDescription,
+    );
+  }
+
   return GoRouter(
-    initialLocation: initialLocation,
+    initialLocation: launchParams.isNotEmpty
+        ? '/auth/callback'
+        : initialLocation,
+    // Cuando los parámetros llegan en el fragmento (`#error=...`) la ubicación
+    // no corresponde a ninguna ruta; en vez de la pantalla de error genérica de
+    // go_router, atendemos el callback. Sin parámetros se deja el
+    // comportamiento por defecto.
+    errorBuilder: launchParams.isEmpty
+        ? null
+        : (context, state) => EmailConfirmationScreen(
+            code: launchParams.code,
+            tokenHash: launchParams.tokenHash,
+            type: launchParams.type,
+            errorDescription: launchParams.errorDescription,
+          ),
     routes: [
       // --- Fuera del shell: pantalla completa, sin barra ni rail. ---
       GoRoute(path: '/', builder: (context, state) => const WelcomeScreen()),
-      GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
+      // `confirm=pending` llega desde el callback cuando el enlace ya no vale:
+      // el login muestra el aviso con el botón de reenviar.
+      GoRoute(
+        path: '/login',
+        builder: (context, state) => LoginScreen(
+          emailNotConfirmed: state.uri.queryParameters['confirm'] == 'pending',
+        ),
+      ),
       GoRoute(
         path: '/register',
         builder: (context, state) => const RegisterScreen(),
       ),
-      // Espera de confirmación con auto-login por polling (CU-01). Las
-      // credenciales llegan por `extra` (en memoria, nunca en la URL). Si se
-      // recarga la página se pierde el `extra`: en ese caso caemos a login.
-      GoRoute(
-        path: '/confirm-email',
-        builder: (context, state) {
-          final args = state.extra as ({String email, String password})?;
-          if (args == null) return const LoginScreen();
-          return ConfirmEmailScreen(email: args.email, password: args.password);
-        },
-      ),
-      // Callback del enlace de confirmación de email (flujo PKCE). Con hash URL
-      // strategy el `code` llega en el fragmento y go_router lo expone aquí como
-      // query. Fuera del shell: pantalla completa sin barra ni rail.
+      // Destino del enlace de confirmación de email, y solo de él. Fuera del
+      // shell: pantalla completa sin barra ni rail.
+      //
+      // Existe únicamente en la web (un enlace de correo siempre abre un
+      // navegador) y solo se puede llegar con un enlace: quien abra la URL a
+      // mano, sin token ni error, acaba en el inicio como si la ruta no
+      // existiera.
       GoRoute(
         path: '/auth/callback',
-        builder: (context, state) => AuthCallbackScreen(
-          code: state.uri.queryParameters['code'],
-          errorDescription: state.uri.queryParameters['error_description'],
-        ),
+        redirect: (context, state) {
+          if (!isWeb) return '/';
+          return confirmationParams(state).isEmpty ? '/' : null;
+        },
+        builder: (context, state) {
+          final params = confirmationParams(state);
+          return EmailConfirmationScreen(
+            code: params.code,
+            tokenHash: params.tokenHash,
+            type: params.type,
+            errorDescription: params.errorDescription,
+          );
+        },
       ),
       // Alta tras el registro; la misma pantalla vive también en la pestaña
       // Perfil (/profile), dentro del shell.

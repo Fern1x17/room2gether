@@ -3,43 +3,44 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:room2gether/features/auth/data/auth_repository.dart';
-import 'package:room2gether/features/auth/presentation/screens/confirm_email_screen.dart';
+import 'package:room2gether/features/auth/presentation/widgets/confirm_email_panel.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../fakes/fake_auth_repository.dart';
 
-GoRouter _router() {
+/// Router mínimo: el panel vive en una pantalla cualquiera y navega a
+/// `/onboarding` cuando el auto-login entra.
+GoRouter _router(VoidCallback onEdit) {
   return GoRouter(
-    initialLocation: '/confirm-email',
+    initialLocation: '/register',
     routes: [
       GoRoute(
-        path: '/confirm-email',
-        builder: (context, state) => const ConfirmEmailScreen(
-          email: 'nuevo@example.com',
-          password: 'password123',
+        path: '/register',
+        builder: (context, state) => Scaffold(
+          body: ConfirmEmailPanel(
+            email: 'nuevo@example.com',
+            password: 'password123',
+            onEdit: onEdit,
+          ),
         ),
       ),
       GoRoute(
         path: '/onboarding',
         builder: (context, state) => const Scaffold(body: Text('ONBOARDING')),
       ),
-      GoRoute(
-        path: '/login',
-        builder: (context, state) => const Scaffold(body: Text('LOGIN')),
-      ),
     ],
   );
 }
 
-Widget _wrap(FakeAuthRepository repository) {
+Widget _wrap(FakeAuthRepository repository, {VoidCallback? onEdit}) {
   return ProviderScope(
     overrides: [authRepositoryProvider.overrideWithValue(repository)],
-    child: MaterialApp.router(routerConfig: _router()),
+    child: MaterialApp.router(routerConfig: _router(onEdit ?? () {})),
   );
 }
 
 void main() {
-  group('ConfirmEmailScreen', () {
+  group('ConfirmEmailPanel', () {
     testWidgets('muestra el estado de espera', (tester) async {
       await tester.pumpWidget(_wrap(FakeAuthRepository()));
       await tester.pump();
@@ -117,15 +118,17 @@ void main() {
       expect(find.textContaining('demasiados correos'), findsOneWidget);
     });
 
-    testWidgets('cancelar detiene el polling y va a login', (tester) async {
-      final repository = FakeAuthRepository();
-      await tester.pumpWidget(_wrap(repository));
+    testWidgets('"Cambiar el email" avisa al padre', (tester) async {
+      var edited = false;
+      await tester.pumpWidget(
+        _wrap(FakeAuthRepository(), onEdit: () => edited = true),
+      );
       await tester.pump();
 
-      await tester.tap(find.widgetWithText(TextButton, 'Cancelar'));
-      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(TextButton, 'Cambiar el email'));
+      await tester.pump();
 
-      expect(find.text('LOGIN'), findsOneWidget);
+      expect(edited, isTrue);
     });
   });
 }

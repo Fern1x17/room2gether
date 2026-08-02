@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../features/chat/presentation/widgets/conversations_pane.dart';
 import '../../features/feed/presentation/widgets/feed_desktop_panes.dart';
 import '../widgets/app_logo.dart';
+import 'breakpoints.dart';
 import 'shell_destination_icon.dart';
 import 'shell_destinations.dart';
 
@@ -139,7 +140,7 @@ class DesktopShell extends StatelessWidget {
                         // En Perfil, sección de contenido único, se limita para
                         // que el formulario no se estire de borde a borde.
                         maxWidth: navigationShell.currentIndex == 2
-                            ? 840
+                            ? kProfileContentMaxWidth
                             : double.infinity,
                       ),
                       child: navigationShell,

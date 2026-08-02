@@ -152,3 +152,20 @@ limita a `kAuthContentMaxWidth`; por debajo devuelve el hijo intacto (móvil sin
 cambios). La decisión es **100 % por ancho** (sin `kIsWeb`): no hay master-detail
 que romper en Android, un formulario centrado es deseable en cualquier pantalla
 ancha. Reutiliza el formulario existente; no dupliques campos ni validación.
+
+Hay **dos encuadres**, según qué envuelvas:
+
+- `CenteredFormFrame` — el contenido **dentro** del `body` de una pantalla que
+  ya tiene su `Scaffold` (bienvenida, login, registro). Ancho
+  `kAuthContentMaxWidth`.
+- `CenteredPageFrame` — una **pantalla entera**, con su `Scaffold` y su
+  `AppBar`, cuando es ruta raíz y no pasa por el shell. Añade un `Scaffold`
+  exterior que pinta el fondo alrededor. Lo usa `/onboarding`, que es el mismo
+  formulario de perfil de la pestaña Perfil, con `kProfileContentMaxWidth`
+  (840) para que se vea idéntico en los dos sitios. Esa constante la comparten
+  la ruta y `DesktopShell`: si cambia el ancho del perfil, cambia en un único
+  sitio.
+
+Los dos devuelven el hijo intacto por debajo de `kDesktopMinWidth`. Si creas
+otra ruta raíz a pantalla completa (`/listings/new`, `/listings/:id/edit`…),
+encuádrala con `CenteredPageFrame` o se estirará en escritorio.

@@ -16,7 +16,9 @@ import '../../features/listing/presentation/screens/edit_listing_screen.dart';
 import '../../features/moderation/presentation/screens/blocked_users_screen.dart';
 import '../../features/profile/presentation/screens/edit_profile_screen.dart';
 import '../layout/adaptive_shell.dart';
+import '../layout/breakpoints.dart';
 import '../supabase/supabase_client.dart';
+import '../widgets/centered_page_frame.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   // RF-13: supabase_flutter guarda la sesión en el dispositivo y la restaura
@@ -112,10 +114,16 @@ GoRouter buildAppRouter({
         },
       ),
       // Alta tras el registro; la misma pantalla vive también en la pestaña
-      // Perfil (/profile), dentro del shell.
+      // Perfil (/profile), dentro del shell. Como aquí es ruta raíz y no pasa
+      // por el shell, se encuadra a mano con el mismo ancho que le da
+      // `DesktopShell` a la sección Perfil, para que no se estire en pantalla
+      // ancha.
       GoRoute(
         path: '/onboarding',
-        builder: (context, state) => const EditProfileScreen(),
+        builder: (context, state) => const CenteredPageFrame(
+          maxWidth: kProfileContentMaxWidth,
+          child: EditProfileScreen(),
+        ),
       ),
       // Debe ir antes de '/listings/:id' para que 'new' no se capture como id.
       GoRoute(

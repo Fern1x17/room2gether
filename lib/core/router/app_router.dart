@@ -121,14 +121,19 @@ GoRouter buildAppRouter({
       GoRoute(
         path: '/onboarding',
         builder: (context, state) => const CenteredPageFrame(
-          maxWidth: kProfileContentMaxWidth,
+          maxWidth: kContentPageMaxWidth,
           child: EditProfileScreen(),
         ),
       ),
       // Debe ir antes de '/listings/:id' para que 'new' no se capture como id.
+      // Encuadrada por lo mismo que `/onboarding`: es un formulario largo en
+      // una ruta raíz, sin shell que lo limite.
       GoRoute(
         path: '/listings/new',
-        builder: (context, state) => const CreateListingScreen(),
+        builder: (context, state) => const CenteredPageFrame(
+          maxWidth: kContentPageMaxWidth,
+          child: CreateListingScreen(),
+        ),
       ),
       GoRoute(
         path: '/listings/:id/edit',

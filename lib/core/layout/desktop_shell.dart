@@ -140,7 +140,7 @@ class DesktopShell extends StatelessWidget {
                         // En Perfil, sección de contenido único, se limita para
                         // que el formulario no se estire de borde a borde.
                         maxWidth: navigationShell.currentIndex == 2
-                            ? kProfileContentMaxWidth
+                            ? kContentPageMaxWidth
                             : double.infinity,
                       ),
                       child: navigationShell,

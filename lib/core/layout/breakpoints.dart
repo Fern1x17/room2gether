@@ -14,15 +14,15 @@ library;
 /// reciben el layout móvil (el master-detail de tres columnas no cabe ahí).
 const double kDesktopMinWidth = 840;
 
-/// Ancho máximo (dp) del formulario de perfil en escritorio.
+/// Ancho máximo (dp) en escritorio de las pantallas de contenido único: los
+/// formularios largos que ocupan toda el área de contenido, sin master-detail.
 ///
-/// Lo usan los dos sitios donde aparece ese formulario, para que se vea igual
-/// en ambos: la sección Perfil del [kDesktopMinWidth] en adelante (encuadrada
-/// por `DesktopShell`) y la ruta `/onboarding`, que vive fuera del shell y se
-/// encuadra con `CenteredPageFrame`. Es más ancho que
-/// [kAuthContentMaxWidth] porque el formulario tiene campos en pareja
-/// (presupuesto mínimo/máximo) y una lista de publicaciones.
-const double kProfileContentMaxWidth = 840;
+/// Lo comparten la sección Perfil (encuadrada por `DesktopShell`) y las rutas
+/// raíz que hacen lo propio con `CenteredPageFrame` —`/onboarding` y
+/// `/listings/new`—, para que el mismo formulario se vea igual esté donde
+/// esté. Es más ancho que [kAuthContentMaxWidth] porque estos formularios
+/// tienen campos en pareja (presupuesto mínimo/máximo), fotos y listas.
+const double kContentPageMaxWidth = 840;
 
 /// Ancho máximo (dp) del contenido de las pantallas sin navegación principal
 /// (bienvenida, login, registro) cuando se encuadran en escritorio.

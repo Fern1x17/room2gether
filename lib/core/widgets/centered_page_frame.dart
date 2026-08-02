@@ -28,7 +28,7 @@ class CenteredPageFrame extends StatelessWidget {
   final Widget child;
 
   /// Ancho máximo del contenido en escritorio (p. ej.
-  /// [kProfileContentMaxWidth]).
+  /// [kContentPageMaxWidth]).
   final double maxWidth;
 
   @override

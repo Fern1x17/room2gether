@@ -14,7 +14,7 @@ void _setSize(WidgetTester tester, Size size) {
 
 Widget _wrap() {
   return const MaterialApp(
-    home: CenteredPageFrame(maxWidth: kProfileContentMaxWidth, child: _child),
+    home: CenteredPageFrame(maxWidth: kContentPageMaxWidth, child: _child),
   );
 }
 
@@ -32,7 +32,7 @@ void main() {
       await tester.pumpWidget(_wrap());
       await tester.pumpAndSettle();
 
-      expect(_childWidth(tester), kProfileContentMaxWidth);
+      expect(_childWidth(tester), kContentPageMaxWidth);
 
       // Centrado: los márgenes a izquierda y derecha son iguales.
       final box = tester.getRect(find.byWidget(_child));

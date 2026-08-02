@@ -161,7 +161,7 @@ Hay **dos encuadres**, según qué envuelvas:
 - `CenteredPageFrame` — una **pantalla entera**, con su `Scaffold` y su
   `AppBar`, cuando es ruta raíz y no pasa por el shell. Añade un `Scaffold`
   exterior que pinta el fondo alrededor. Lo usa `/onboarding`, que es el mismo
-  formulario de perfil de la pestaña Perfil, con `kProfileContentMaxWidth`
+  formulario de perfil de la pestaña Perfil, con `kContentPageMaxWidth`
   (840) para que se vea idéntico en los dos sitios. Esa constante la comparten
   la ruta y `DesktopShell`: si cambia el ancho del perfil, cambia en un único
   sitio.

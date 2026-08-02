@@ -58,6 +58,11 @@ class FakeAuthRepository implements AuthRepository {
   final Object? verifyError;
 
   Session? _currentSession;
+
+  /// Nombre con el que se llamó a [signUp], para comprobar que el formulario
+  /// lo envía a los metadatos del registro.
+  String? lastDisplayName;
+
   bool signedOut = false;
   int signInCallCount = 0;
   int resendCallCount = 0;
@@ -72,8 +77,10 @@ class FakeAuthRepository implements AuthRepository {
   Future<AuthResponse> signUp({
     required String email,
     required String password,
+    required String displayName,
     required DateTime birthdate,
   }) async {
+    lastDisplayName = displayName;
     if (signUpError != null) throw signUpError!;
     if (signUpWithoutSession) {
       return AuthResponse(user: fakeUser(email: email));

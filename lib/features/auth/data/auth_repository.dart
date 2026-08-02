@@ -8,6 +8,7 @@ abstract class AuthRepository {
   Future<AuthResponse> signUp({
     required String email,
     required String password,
+    required String displayName,
     required DateTime birthdate,
   });
 
@@ -50,14 +51,21 @@ class SupabaseAuthRepository implements AuthRepository {
   Future<AuthResponse> signUp({
     required String email,
     required String password,
+    required String displayName,
     required DateTime birthdate,
   }) {
-    // El trigger handle_new_user lee 'birthdate' (yyyy-MM-dd) de los metadatos.
+    // El trigger handle_new_user lee de los metadatos 'birthdate' (yyyy-MM-dd)
+    // y 'display_name'. Si no le llegara nombre usaría la parte local del
+    // email como respaldo, pero el formulario lo exige, así que el perfil nace
+    // siempre con el nombre que eligió el usuario.
     return _client.auth.signUp(
       email: email,
       password: password,
       emailRedirectTo: emailConfirmRedirectUrl(),
-      data: {'birthdate': birthdate.toIso8601String().substring(0, 10)},
+      data: {
+        'display_name': displayName,
+        'birthdate': birthdate.toIso8601String().substring(0, 10),
+      },
     );
   }
 

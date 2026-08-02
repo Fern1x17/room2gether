@@ -23,6 +23,7 @@ void main() {
             .register(
               email: 'test@example.com',
               password: 'password123',
+              displayName: 'Ana',
               birthdate: DateTime(2000, 1, 1),
             );
 
@@ -51,6 +52,7 @@ void main() {
             .register(
               email: 'test@example.com',
               password: 'password123',
+              displayName: 'Ana',
               birthdate: DateTime(2000, 1, 1),
             );
 
@@ -76,6 +78,7 @@ void main() {
           .register(
             email: 'test@example.com',
             password: 'password123',
+            displayName: 'Ana',
             birthdate: DateTime(2000, 1, 1),
           );
 

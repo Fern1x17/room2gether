@@ -24,8 +24,8 @@ GoRouter _router(String initialLocation) {
         ),
       ),
       GoRoute(
-        path: '/onboarding',
-        builder: (context, state) => const Scaffold(body: Text('ONBOARDING')),
+        path: '/profile',
+        builder: (context, state) => const Scaffold(body: Text('PERFIL')),
       ),
       GoRoute(
         path: '/login',
@@ -61,10 +61,12 @@ void main() {
 
       expect(find.text('¡Cuenta confirmada!'), findsOneWidget);
       // Es una pantalla final: no navega sola a ningún sitio.
-      expect(find.text('ONBOARDING'), findsNothing);
+      expect(find.text('PERFIL'), findsNothing);
     });
 
-    testWidgets('"Entrar" lleva al alta de perfil', (tester) async {
+    testWidgets('"Entrar" lleva a la pestaña Perfil, dentro del shell', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _wrap(
           FakeAuthRepository(),
@@ -76,7 +78,7 @@ void main() {
       await tester.tap(find.widgetWithText(FilledButton, 'Entrar'));
       await tester.pumpAndSettle();
 
-      expect(find.text('ONBOARDING'), findsOneWidget);
+      expect(find.text('PERFIL'), findsOneWidget);
     });
 
     testWidgets('con token_hash caducado ofrece pedir un enlace nuevo', (

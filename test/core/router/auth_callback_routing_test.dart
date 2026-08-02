@@ -9,7 +9,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../features/auth/fakes/fake_auth_repository.dart';
 
 /// El canje se fuerza a fallar para que la pantalla de callback no navegue a
-/// `/onboarding` (que necesita medio Supabase montado). Lo que se comprueba
+/// la pestaña Perfil (que necesita medio Supabase montado). Lo que se comprueba
 /// aquí es el enrutado: que el código de la URL de lanzamiento llega hasta el
 /// repositorio.
 Widget _app(

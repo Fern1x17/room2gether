@@ -73,7 +73,7 @@ class _ConfirmEmailPanelState extends ConsumerState<ConfirmEmailPanel> {
       if (!mounted) return;
       _navigated = true;
       _pollTimer?.cancel();
-      context.go('/onboarding');
+      context.go('/profile');
     } catch (_) {
       // email_not_confirmed (aún sin confirmar) o un error transitorio de red:
       // en ambos casos seguimos esperando y reintentamos en la próxima vuelta.

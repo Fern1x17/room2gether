@@ -18,10 +18,10 @@ const double kDesktopMinWidth = 840;
 /// formularios largos que ocupan toda el área de contenido, sin master-detail.
 ///
 /// Lo comparten la sección Perfil (encuadrada por `DesktopShell`) y las rutas
-/// raíz que hacen lo propio con `CenteredPageFrame` —`/onboarding` y
-/// `/listings/new`—, para que el mismo formulario se vea igual esté donde
-/// esté. Es más ancho que [kAuthContentMaxWidth] porque estos formularios
-/// tienen campos en pareja (presupuesto mínimo/máximo), fotos y listas.
+/// raíz que hacen lo propio con `CenteredPageFrame`, como `/listings/new`,
+/// para que un formulario largo se vea igual esté donde esté. Es más ancho que
+/// [kAuthContentMaxWidth] porque estos formularios tienen campos en pareja
+/// (presupuesto mínimo/máximo), fotos y listas.
 const double kContentPageMaxWidth = 840;
 
 /// Ancho máximo (dp) del contenido de las pantallas sin navegación principal

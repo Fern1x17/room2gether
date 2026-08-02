@@ -113,21 +113,9 @@ GoRouter buildAppRouter({
           );
         },
       ),
-      // Alta tras el registro; la misma pantalla vive también en la pestaña
-      // Perfil (/profile), dentro del shell. Como aquí es ruta raíz y no pasa
-      // por el shell, se encuadra a mano con el mismo ancho que le da
-      // `DesktopShell` a la sección Perfil, para que no se estire en pantalla
-      // ancha.
-      GoRoute(
-        path: '/onboarding',
-        builder: (context, state) => const CenteredPageFrame(
-          maxWidth: kContentPageMaxWidth,
-          child: EditProfileScreen(),
-        ),
-      ),
       // Debe ir antes de '/listings/:id' para que 'new' no se capture como id.
-      // Encuadrada por lo mismo que `/onboarding`: es un formulario largo en
-      // una ruta raíz, sin shell que lo limite.
+      // Es un formulario largo en una ruta raíz, sin shell que lo limite, así
+      // que se encuadra a mano para que no se estire en pantalla ancha.
       GoRoute(
         path: '/listings/new',
         builder: (context, state) => const CenteredPageFrame(

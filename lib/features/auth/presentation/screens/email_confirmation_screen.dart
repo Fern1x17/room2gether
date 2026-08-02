@@ -111,8 +111,10 @@ class _EmailConfirmationScreenState
                 _Status.verifying => const _Verifying(),
                 _Status.confirmed => _Confirmed(
                   // La sesión ya está creada en este navegador, así que se
-                  // entra directo al alta de perfil.
-                  onEnter: () => context.go('/onboarding'),
+                  // entra directo a la pestaña Perfil, que es la misma pantalla
+                  // de alta pero dentro del shell: así llega con la barra de
+                  // navegación, igual que en el uso normal de la app.
+                  onEnter: () => context.go('/profile'),
                 ),
                 // Con `confirm=pending` el login ofrece reenviar el correo,
                 // para que un enlace caducado no sea un callejón sin salida.

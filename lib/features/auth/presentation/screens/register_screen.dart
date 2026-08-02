@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/utils/link_opener.dart';
 import '../../../../core/widgets/app_logo.dart';
 import '../../../../core/widgets/centered_form_frame.dart';
+import '../../../profile/domain/validators/profile_validators.dart';
 import '../../domain/validators/auth_validators.dart';
 import '../controllers/register_controller.dart';
 import '../widgets/auth_text_field.dart';
@@ -20,6 +21,7 @@ class RegisterScreen extends ConsumerStatefulWidget {
 
 class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _displayNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _birthdateController = TextEditingController();
@@ -38,6 +40,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
   @override
   void dispose() {
+    _displayNameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _birthdateController.dispose();
@@ -85,6 +88,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         .register(
           email: _emailController.text.trim(),
           password: _passwordController.text,
+          displayName: _displayNameController.text.trim(),
           birthdate: _birthdate!,
         );
 
@@ -93,7 +97,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     }
 
     if (response.session != null) {
-      context.go('/onboarding');
+      context.go('/profile');
     } else {
       // Falta confirmar el email: nos quedamos en esta misma pantalla y
       // cambiamos el formulario por el aviso, que se encarga del reenvío y del
@@ -146,6 +150,16 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           const SizedBox(height: 8),
           const Center(child: AppLogo()),
           const SizedBox(height: 24),
+          // Obligatorio: es el nombre con el que aparecerá el usuario en sus
+          // publicaciones y en el chat.
+          AuthTextField(
+            controller: _displayNameController,
+            label: 'Nombre',
+            keyboardType: TextInputType.name,
+            autofillHints: const [AutofillHints.name],
+            validator: validateDisplayName,
+          ),
+          const SizedBox(height: 16),
           AuthTextField(
             controller: _emailController,
             label: 'Email',

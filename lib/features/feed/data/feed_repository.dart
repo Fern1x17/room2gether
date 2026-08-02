@@ -22,11 +22,15 @@ class SupabaseFeedRepository implements FeedRepository {
       'address:listing_addresses(google_place_id, formatted_address, '
       'latitude, longitude, is_public)';
 
+  /// Nombre público del autor. La RLS de `profiles` permite lectura a
+  /// cualquier usuario autenticado, así que el join no necesita política nueva.
+  static const _ownerJoin = 'owner:profiles(display_name)';
+
   @override
   Future<List<Listing>> fetchListings(ListingFilter filter) async {
     var query = _client
         .from('listings')
-        .select('*, city:cities(name), $_addressJoin')
+        .select('*, city:cities(name), $_ownerJoin, $_addressJoin')
         .eq('status', 'active');
 
     if (filter.cityId != null) {
@@ -54,7 +58,7 @@ class SupabaseFeedRepository implements FeedRepository {
   Future<Listing> fetchListingById(String id) async {
     final row = await _client
         .from('listings')
-        .select('*, city:cities(name), $_addressJoin')
+        .select('*, city:cities(name), $_ownerJoin, $_addressJoin')
         .eq('id', id)
         .single();
     return Listing.fromMap(row);

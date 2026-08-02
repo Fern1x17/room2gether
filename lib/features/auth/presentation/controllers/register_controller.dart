@@ -16,6 +16,7 @@ class RegisterController extends AsyncNotifier<void> {
   Future<AuthResponse?> register({
     required String email,
     required String password,
+    required String displayName,
     required DateTime birthdate,
   }) async {
     state = const AsyncLoading();
@@ -24,6 +25,7 @@ class RegisterController extends AsyncNotifier<void> {
       final response = await repository.signUp(
         email: email,
         password: password,
+        displayName: displayName,
         birthdate: birthdate,
       );
       state = const AsyncData(null);

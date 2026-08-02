@@ -10,7 +10,6 @@ import 'package:room2gether/features/auth/data/auth_repository.dart';
 import 'package:room2gether/features/listing/data/listing_repository.dart';
 import 'package:room2gether/features/listing/presentation/screens/create_listing_screen.dart';
 import 'package:room2gether/features/profile/data/profile_repository.dart';
-import 'package:room2gether/features/profile/presentation/screens/edit_profile_screen.dart';
 
 import '../../features/auth/fakes/fake_auth_repository.dart';
 import '../../features/listing/fakes/fake_listing_repository.dart';
@@ -18,9 +17,9 @@ import '../../features/profile/fakes/fake_profile_repository.dart';
 import '../cities/fake_cities.dart';
 import '../places/fake_places.dart';
 
-/// Las rutas raíz (`/onboarding`, `/listings/new`) son pantallas completas que
-/// no pasan por el shell, así que el encuadre de escritorio tiene que ponerlo
-/// la propia ruta o el formulario se estira de borde a borde.
+/// `/listings/new` es una pantalla completa en una ruta raíz: no pasa por el
+/// shell, así que el encuadre de escritorio tiene que ponerlo la propia ruta o
+/// el formulario se estira de borde a borde.
 Widget _app(String initialLocation) {
   return ProviderScope(
     overrides: [
@@ -46,32 +45,6 @@ void _setSize(WidgetTester tester, Size size) {
 }
 
 void main() {
-  group('encuadre de /onboarding', () {
-    testWidgets(
-      'en escritorio no se estira: mismo ancho que la pestaña Perfil',
-      (tester) async {
-        _setSize(tester, const Size(1400, 900));
-        await tester.pumpWidget(_app('/onboarding'));
-        await tester.pumpAndSettle();
-
-        expect(
-          tester.getSize(find.byType(EditProfileScreen)).width,
-          kContentPageMaxWidth,
-        );
-      },
-    );
-
-    testWidgets('en la web desde el móvil ocupa todo el ancho, como antes', (
-      tester,
-    ) async {
-      _setSize(tester, const Size(400, 800));
-      await tester.pumpWidget(_app('/onboarding'));
-      await tester.pumpAndSettle();
-
-      expect(tester.getSize(find.byType(EditProfileScreen)).width, 400);
-    });
-  });
-
   group('encuadre de /listings/new', () {
     testWidgets('en escritorio no se estira', (tester) async {
       _setSize(tester, const Size(1400, 900));

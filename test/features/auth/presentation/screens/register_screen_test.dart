@@ -17,8 +17,17 @@ Widget _wrap([FakeAuthRepository? repository]) {
   );
 }
 
+/// El formulario no cabe entero en el alto del test (800x600): hay que
+/// acercar el widget antes de pulsarlo o el toque cae fuera de pantalla.
+Future<void> _tap(WidgetTester tester, Finder finder) async {
+  await tester.ensureVisible(finder);
+  await tester.pumpAndSettle();
+  await tester.tap(finder);
+}
+
 /// Rellena el formulario con datos válidos (mayor de edad) y lo envía.
 Future<void> _submitValidForm(WidgetTester tester) async {
+  await tester.enterText(find.widgetWithText(TextFormField, 'Nombre'), 'Ana');
   await tester.enterText(
     find.widgetWithText(TextFormField, 'Email'),
     'nuevo@example.com',
@@ -29,15 +38,15 @@ Future<void> _submitValidForm(WidgetTester tester) async {
   );
 
   // El selector se abre con "hoy menos 18 años", que ya es una fecha válida.
-  await tester.tap(find.widgetWithText(TextFormField, 'Fecha de nacimiento'));
+  await _tap(tester, find.widgetWithText(TextFormField, 'Fecha de nacimiento'));
   await tester.pumpAndSettle();
   await tester.tap(find.text('OK'));
   await tester.pumpAndSettle();
 
-  await tester.tap(find.byType(Checkbox));
+  await _tap(tester, find.byType(Checkbox));
   await tester.pump();
 
-  await tester.tap(find.widgetWithText(FilledButton, 'Crear cuenta'));
+  await _tap(tester, find.widgetWithText(FilledButton, 'Crear cuenta'));
   await tester.pump(); // arranca el signUp
   await tester.pump(); // completa el Future
 }
@@ -49,9 +58,10 @@ void main() {
     ) async {
       await tester.pumpWidget(_wrap());
 
-      await tester.tap(find.widgetWithText(FilledButton, 'Crear cuenta'));
+      await _tap(tester, find.widgetWithText(FilledButton, 'Crear cuenta'));
       await tester.pump();
 
+      expect(find.text('Introduce un nombre.'), findsOneWidget);
       expect(find.text('Introduce tu email.'), findsOneWidget);
       expect(find.text('Introduce una contraseña.'), findsOneWidget);
       expect(find.text('Introduce tu fecha de nacimiento.'), findsOneWidget);
@@ -90,13 +100,22 @@ void main() {
         'password123',
       );
 
-      await tester.tap(find.widgetWithText(FilledButton, 'Crear cuenta'));
+      await _tap(tester, find.widgetWithText(FilledButton, 'Crear cuenta'));
       await tester.pump();
 
       expect(
         find.text('Debes aceptar la política de privacidad para continuar.'),
         findsOneWidget,
       );
+    });
+
+    testWidgets('el nombre es obligatorio y viaja al registro', (tester) async {
+      final repository = FakeAuthRepository(signUpWithoutSession: true);
+      await tester.pumpWidget(_wrap(repository));
+
+      await _submitValidForm(tester);
+
+      expect(repository.lastDisplayName, 'Ana');
     });
 
     testWidgets(

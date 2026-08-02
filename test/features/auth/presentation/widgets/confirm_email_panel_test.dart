@@ -9,7 +9,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../fakes/fake_auth_repository.dart';
 
 /// Router mínimo: el panel vive en una pantalla cualquiera y navega a
-/// `/onboarding` cuando el auto-login entra.
+/// `/profile` cuando el auto-login entra.
 GoRouter _router(VoidCallback onEdit) {
   return GoRouter(
     initialLocation: '/register',
@@ -25,8 +25,8 @@ GoRouter _router(VoidCallback onEdit) {
         ),
       ),
       GoRoute(
-        path: '/onboarding',
-        builder: (context, state) => const Scaffold(body: Text('ONBOARDING')),
+        path: '/profile',
+        builder: (context, state) => const Scaffold(body: Text('PERFIL')),
       ),
     ],
   );
@@ -51,7 +51,7 @@ void main() {
       );
       expect(find.text('Esperando confirmación…'), findsOneWidget);
       // El polling arranca a los 4 s; en el primer frame aún no ha entrado.
-      expect(find.text('ONBOARDING'), findsNothing);
+      expect(find.text('PERFIL'), findsNothing);
     });
 
     testWidgets(
@@ -66,14 +66,14 @@ void main() {
         await tester.pump(const Duration(seconds: 4));
         await tester.pump();
         expect(repository.signInCallCount, 1);
-        expect(find.text('ONBOARDING'), findsNothing);
+        expect(find.text('PERFIL'), findsNothing);
 
         // 2ª vuelta (otros 4 s): ya confirmado → auto-login y navegación.
         await tester.pump(const Duration(seconds: 4));
         await tester.pump();
         await tester.pumpAndSettle();
         expect(repository.signInCallCount, 2);
-        expect(find.text('ONBOARDING'), findsOneWidget);
+        expect(find.text('PERFIL'), findsOneWidget);
       },
     );
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/widgets/app_logo.dart';
 import '../../../../core/widgets/centered_form_frame.dart';
 
 class WelcomeScreen extends StatelessWidget {
@@ -16,11 +17,7 @@ class WelcomeScreen extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
-                  Icons.home_work_outlined,
-                  size: 80,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
+                const AppLogo(),
                 const SizedBox(height: 16),
                 Text(
                   'Room2gether',

@@ -28,6 +28,7 @@ Widget _wrapApp({
   List<Conversation> conversations = const [],
   String listingOwnerId = 'user-1',
   Map<String, int> unreadCounts = const {},
+  String initialLocation = '/feed',
 }) {
   return ProviderScope(
     overrides: [
@@ -61,7 +62,7 @@ Widget _wrapApp({
         desktopLayoutSupportedProvider.overrideWithValue(true),
     ],
     child: MaterialApp.router(
-      routerConfig: buildAppRouter(initialLocation: '/feed'),
+      routerConfig: buildAppRouter(initialLocation: initialLocation),
     ),
   );
 }
@@ -82,6 +83,31 @@ void main() {
       expect(find.byType(NavigationBar), findsOneWidget);
       expect(find.byType(NavigationRail), findsNothing);
       expect(find.text('Habitación en el centro'), findsOneWidget);
+    });
+
+    // El perfil es el destino al que se llega tras confirmar el correo. Antes
+    // se entraba por una ruta raíz (`/onboarding`) que quedaba fuera del shell
+    // y por tanto sin barra de navegación.
+    testWidgets('el perfil también lleva barra inferior en móvil', (
+      tester,
+    ) async {
+      _setViewSize(tester, const Size(400, 800));
+      await tester.pumpWidget(_wrapApp(initialLocation: '/profile'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(NavigationBar), findsOneWidget);
+      expect(find.text('Tu perfil'), findsOneWidget);
+    });
+
+    testWidgets('el perfil en web ancha lleva rail, no barra', (tester) async {
+      _setViewSize(tester, const Size(1400, 900));
+      await tester.pumpWidget(
+        _wrapApp(desktopSupported: true, initialLocation: '/profile'),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(NavigationRail), findsOneWidget);
+      expect(find.byType(NavigationBar), findsNothing);
     });
 
     testWidgets(

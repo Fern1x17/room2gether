@@ -202,6 +202,23 @@ class ListingDetailScreen extends ConsumerWidget {
                     const SizedBox(height: 16),
                     Text(listing.title, style: theme.textTheme.headlineSmall),
                     const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.person_outline,
+                          size: 18,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          listing.ownerNameLabel,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
                     if (location.isNotEmpty)
                       Text(location, style: theme.textTheme.bodyLarge),
                     const SizedBox(height: 8),

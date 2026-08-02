@@ -2,6 +2,7 @@ class Listing {
   const Listing({
     required this.id,
     required this.ownerId,
+    this.ownerName,
     required this.type,
     required this.title,
     this.description,
@@ -24,6 +25,12 @@ class Listing {
 
   final String id;
   final String ownerId;
+
+  /// Nombre público de quien publicó (join con `profiles.display_name`). Es
+  /// nullable porque el join puede no pedirse; para mostrarlo usa
+  /// [ownerNameLabel].
+  final String? ownerName;
+
   final String type; // 'seeking' | 'offering'
   final String title;
   final String? description;
@@ -49,6 +56,14 @@ class Listing {
 
   bool get isOffering => type == 'offering';
 
+  /// Nombre de quien publicó, listo para pintar. Desde el registro el nombre es
+  /// obligatorio y el trigger `handle_new_user` siempre escribe uno, así que
+  /// este respaldo solo aparecería en cuentas anteriores a esa regla.
+  String get ownerNameLabel {
+    final name = ownerName?.trim() ?? '';
+    return name.isEmpty ? 'Usuario' : name;
+  }
+
   /// Texto de precio para mostrar: precio mensual (offering) o rango de
   /// presupuesto (seeking).
   String get priceLabel => isOffering
@@ -60,6 +75,8 @@ class Listing {
     return Listing(
       id: map['id'] as String,
       ownerId: map['owner_id'] as String,
+      ownerName:
+          (map['owner'] as Map<String, dynamic>?)?['display_name'] as String?,
       type: map['type'] as String,
       title: map['title'] as String,
       description: map['description'] as String?,

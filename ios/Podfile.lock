@@ -1,0 +1,29 @@
+PODS:
+  - Flutter (1.0.0)
+  - flutter_google_places_sdk_ios (0.0.3):
+    - Flutter
+    - GooglePlaces (~> 8.5.0)
+  - GooglePlaces (8.5.0)
+
+DEPENDENCIES:
+  - Flutter (from `Flutter`)
+  - flutter_google_places_sdk_ios (from `.symlinks/plugins/flutter_google_places_sdk_ios/ios`)
+
+SPEC REPOS:
+  trunk:
+    - GooglePlaces
+
+EXTERNAL SOURCES:
+  Flutter:
+    :path: Flutter
+  flutter_google_places_sdk_ios:
+    :path: ".symlinks/plugins/flutter_google_places_sdk_ios/ios"
+
+SPEC CHECKSUMS:
+  Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
+  flutter_google_places_sdk_ios: c2236643eea32395f32d1667651d796f4377996a
+  GooglePlaces: 426efb69051e7b460e16300ba63598687d10fa1a
+
+PODFILE CHECKSUM: ba6925de7941ced3720fe627aea6f04777f30017
+
+COCOAPODS: 1.17.0

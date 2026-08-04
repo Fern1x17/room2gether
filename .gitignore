@@ -17,6 +17,9 @@ build/
 .idea/deviceManager.xml
 .idea/libraries/Dart_Packages.xml
 .idea/libraries/Flutter_Plugins.xml
+# Contiene la ruta absoluta al SDK de Dart, distinta en cada máquina (y entre
+# Windows y macOS). El plugin de Dart lo regenera solo al abrir el proyecto.
+.idea/libraries/Dart_SDK.xml
 .vscode/*.log
 *.swp
 

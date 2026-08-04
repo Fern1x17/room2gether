@@ -12,6 +12,7 @@ import '../../../../core/theme/theme_controller.dart';
 import '../../../auth/presentation/controllers/sign_out_controller.dart';
 import '../../../listing/presentation/widgets/my_listings_section.dart';
 import '../../domain/models/profile.dart';
+import '../../domain/profile_labels.dart';
 import '../../domain/validators/profile_validators.dart';
 import '../controllers/profile_controller.dart';
 import '../widgets/avatar_cropper_screen.dart';
@@ -22,11 +23,6 @@ class EditProfileScreen extends ConsumerStatefulWidget {
   @override
   ConsumerState<EditProfileScreen> createState() => _EditProfileScreenState();
 }
-
-const Map<String, String> _scheduleLabels = {
-  'early_riser': 'Madrugador',
-  'night_owl': 'Noctámbulo',
-};
 
 class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   final _formKey = GlobalKey<FormState>();
@@ -381,8 +377,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     final isSaving = profileAsync.isLoading && _initialized;
 
     // 2. Leemos el estado del tema para saber qué mostrar en el interruptor
+    // `valueOrNull` y no `value`: mismo motivo que en main.dart, este último
+    // relanzaría el error de leer la preferencia y se llevaría la pantalla.
     final themeMode =
-        ref.watch(themeControllerProvider).value ?? ThemeMode.system;
+        ref.watch(themeControllerProvider).valueOrNull ?? ThemeMode.system;
     final isDarkMode =
         themeMode == ThemeMode.dark ||
         (themeMode == ThemeMode.system &&
@@ -562,7 +560,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                           selected: _schedule == null,
                           onSelected: (_) => setState(() => _schedule = null),
                         ),
-                        for (final entry in _scheduleLabels.entries)
+                        for (final entry in kScheduleLabels.entries)
                           ChoiceChip(
                             label: Text(entry.value),
                             selected: _schedule == entry.key,

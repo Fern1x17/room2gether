@@ -35,7 +35,32 @@ que lee `birthdate` de los metadatos de `signUp()`).
 - Preferencias de convivencia: `is_smoker` (bool), `has_pets` (bool),
   `cleanliness_level` (int 1–5), `schedule` (text: madrugador/noctámbulo), etc.
 - `is_verified` (bool)
-- RLS: cada usuario solo edita SU perfil; lectura pública de campos no sensibles.
+- RLS: cada usuario solo edita SU perfil. **Lectura: `profiles_select_authenticated`
+  es `using (true)`** — cualquier usuario con sesión lee TODAS las columnas de
+  TODOS los perfiles, `birthdate` incluida. RLS es por fila, no por columna, así
+  que "campos no sensibles" no está garantizado por la política: lo que decide
+  qué se enseña son las RPC de abajo, no el cliente. Si alguna vez hace falta
+  recortar de verdad, tendrá que ser con una vista o cambiando la política.
+- RPC `search_profiles(p_query, p_limit, p_offset)` (CU-20, RF-19) — buscador de
+  usuarios por `display_name`. **security definer**, y no para ver más sino para
+  ver menos: necesita leer `blocks` en LOS DOS SENTIDOS (`blocks_select_own` solo
+  deja ver los propios, así que el cliente no puede saber quién le ha bloqueado a
+  él). Excluye bloqueados en ambos sentidos y al propio usuario; devuelve solo id,
+  nombre, avatar y ciudad. Mínimo 2 caracteres; `limit` acotado dentro a 50.
+  Escapa `%` y `_` del texto de búsqueda (si no, escribir `%` devuelve a todo el
+  mundo). Execute solo para authenticated.
+- RPC `get_public_profile(p_user_id)` (CU-19, RF-20) — perfil público: los campos
+  que su dueño edita en la pestaña Perfil. **security definer**, por el mismo
+  bloqueo inverso. Con bloqueo en cualquiera de los dos sentidos devuelve la fila
+  con todos los campos a `null` y solo las banderas `is_visible` /
+  `is_blocked_by_me`. Execute solo para authenticated.
+- Índice `profiles_display_name_trgm_idx` — GIN de trigramas (`pg_trgm`) sobre
+  `immutable_unaccent(display_name)`. Un B-tree no sirve para `ilike '%texto%'`.
+  El índice va sobre la MISMA expresión que usa la consulta; si no coincide
+  exactamente, el planificador no lo usa.
+- Función `immutable_unaccent(text)` — envoltorio de `unaccent()` (extensión
+  `unaccent`), que se declara `STABLE` y por eso no es indexable. Existe solo
+  para poder crear el índice de arriba.
 
 ### listings (publicaciones)
 - `id` (uuid, PK)
@@ -90,6 +115,11 @@ que lee `birthdate` de los metadatos de `signUp()`).
 ### blocks (bloqueo entre usuarios)
 - `blocker_id`, `blocked_id` (uuid, FK → profiles.id)
 - PK compuesta.
+- RLS: `blocks_select_own` (`blocker_id = auth.uid()`). **Consecuencia que
+  condiciona el diseño:** cada usuario ve a quién ha bloqueado él, pero NO quién
+  le ha bloqueado a él. Cualquier consulta que deba excluir bloqueos en ambos
+  sentidos (buscador de usuarios, perfil público) tiene que pasar por una
+  función `security definer`; desde el cliente es imposible.
 
 ### listing_addresses (dirección exacta de una publicación, CU-06)
 - `listing_id` (uuid, PK y FK → listings.id, on delete cascade) — 1:1

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:room2gether/core/supabase/current_user_provider.dart';
 import 'package:room2gether/core/cities/cities_repository.dart';
+import 'package:room2gether/core/theme/theme_controller.dart';
 import 'package:room2gether/features/auth/data/auth_repository.dart';
 import 'package:room2gether/features/listing/data/listing_repository.dart';
 import 'package:room2gether/features/profile/data/profile_repository.dart';
@@ -13,9 +14,13 @@ import '../../../auth/fakes/fake_auth_repository.dart';
 import '../../../listing/fakes/fake_listing_repository.dart';
 import '../../fakes/fake_profile_repository.dart';
 
-Widget _wrap({FakeProfileRepository? profileRepository}) {
+Widget _wrap({
+  FakeProfileRepository? profileRepository,
+  List<Override> extraOverrides = const [],
+}) {
   return ProviderScope(
     overrides: [
+      ...extraOverrides,
       currentUserIdProvider.overrideWithValue('user-1'),
       profileRepositoryProvider.overrideWithValue(
         profileRepository ??
@@ -79,5 +84,30 @@ void main() {
         );
       },
     );
+
+    // Regresión: con `.value`, un fallo al leer la preferencia de tema se
+    // relanzaba en el build y se llevaba la pantalla entera. El tema es un
+    // detalle; el perfil tiene que seguir editándose.
+    testWidgets('si falla leer el tema guardado, el perfil se pinta igual', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap(
+          extraOverrides: [
+            themeControllerProvider.overrideWith(_FailingThemeController.new),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(find.widgetWithText(TextFormField, 'Nombre'), findsOneWidget);
+      expect(find.text('Ana'), findsOneWidget);
+    });
   });
+}
+
+class _FailingThemeController extends ThemeController {
+  @override
+  Future<ThemeMode> build() async => throw Exception('caída');
 }

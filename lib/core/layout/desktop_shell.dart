@@ -51,6 +51,16 @@ class DesktopShell extends StatelessWidget {
                   ),
                 ),
                 const Spacer(),
+                // CU-20: en escritorio el buscador de usuarios entra por aquí.
+                // No es una sección con estado propio (los filtros del feed ya
+                // son columna persistente), así que va en la cabecera y no en
+                // el rail.
+                IconButton(
+                  onPressed: () => context.push('/users/search'),
+                  icon: const Icon(Icons.search),
+                  tooltip: 'Buscar usuarios',
+                ),
+                const SizedBox(width: 12),
                 FilledButton.icon(
                   onPressed: () => context.push('/listings/new'),
                   icon: const Icon(Icons.add),

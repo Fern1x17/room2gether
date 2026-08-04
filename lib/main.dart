@@ -32,8 +32,11 @@ class Room2getherApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(appRouterProvider);
+    // `valueOrNull` y no `value`: este último RELANZA el error si no se pudo
+    // leer la preferencia guardada, y aquí eso dejaría la app entera sin
+    // pintar. El tema del sistema es un respaldo perfectamente válido.
     final themeMode =
-        ref.watch(themeControllerProvider).value ?? ThemeMode.system;
+        ref.watch(themeControllerProvider).valueOrNull ?? ThemeMode.system;
 
     return MaterialApp.router(
       title: 'Room2gether',

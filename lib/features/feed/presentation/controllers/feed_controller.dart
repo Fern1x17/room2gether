@@ -52,6 +52,23 @@ class FeedController extends AsyncNotifier<List<Listing>> {
     }
   }
 
+  /// Vuelve a pedir las publicaciones con el filtro que ya estuviera puesto.
+  ///
+  /// A diferencia de [search] **no pasa por `AsyncLoading`**: quien refresca
+  /// (tirar hacia abajo, o el botón atrás en el feed) ya enseña su propio
+  /// indicador, y vaciar la lista mientras tanto daría un parpadeo feo.
+  /// Tampoco toca las búsquedas recientes: refrescar no es buscar de nuevo.
+  Future<void> refresh() async {
+    try {
+      state = AsyncData(await _fetchVisible(_filter));
+    } catch (error, stackTrace) {
+      state = AsyncError(
+        'No se pudieron cargar las publicaciones. Inténtalo de nuevo.',
+        stackTrace,
+      );
+    }
+  }
+
   /// Aplica el filtro y excluye publicaciones de usuarios bloqueados
   /// (efecto del bloqueo de CU-11: "no ver sus publicaciones").
   Future<List<Listing>> _fetchVisible(ListingFilter filter) async {

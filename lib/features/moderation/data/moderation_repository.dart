@@ -23,6 +23,10 @@ abstract class ModerationRepository {
   /// gestión de bloqueados. Ordenados del más reciente al más antiguo.
   Future<List<BlockedUser>> fetchBlockedUsers();
 
+  /// Bloquea a [blockedId] sin reportarlo. Complementa a [reportAndBlock],
+  /// que sigue siendo la acción de CU-11: aquí solo se corta el contacto.
+  Future<void> blockUser(String blockedId);
+
   /// Desbloquea a [blockedId]: borra la fila de `blocks`. Solo afecta a los
   /// bloqueos del propio usuario (RLS `blocks_delete_own` + filtro explícito).
   Future<void> unblockUser(String blockedId);
@@ -85,6 +89,20 @@ class SupabaseModerationRepository implements ModerationRepository {
         )
         .order('created_at', ascending: false);
     return rows.map(BlockedUser.fromMap).toList();
+  }
+
+  @override
+  Future<void> blockUser(String blockedId) async {
+    final me = _client.auth.currentUser!.id;
+    // Mismo upsert que reportAndBlock: volver a bloquear a alguien que ya lo
+    // está no debe fallar por la PK compuesta.
+    await _client
+        .from('blocks')
+        .upsert(
+          {'blocker_id': me, 'blocked_id': blockedId},
+          onConflict: 'blocker_id,blocked_id',
+          ignoreDuplicates: true,
+        );
   }
 
   @override

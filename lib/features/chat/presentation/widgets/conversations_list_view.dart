@@ -26,10 +26,14 @@ class ConversationsListView extends ConsumerWidget {
     final conversationsAsync = ref.watch(conversationsProvider);
     // Postcondición CU-11: el reportado aparece como bloqueado para quien
     // hizo el reporte.
+    // `valueOrNull` y no `value` en los dos: este último RELANZA el error
+    // cuando la carga ha fallado, así que un fallo en cualquiera de los dos
+    // (que son adornos de la lista) reventaría la lista entera y estos `??` no
+    // llegarían a aplicarse nunca.
     final blockedIds =
-        ref.watch(blockedUserIdsProvider).value ?? const <String>{};
+        ref.watch(blockedUserIdsProvider).valueOrNull ?? const <String>{};
     final unreadCounts =
-        ref.watch(unreadCountsProvider).value ?? const <String, int>{};
+        ref.watch(unreadCountsProvider).valueOrNull ?? const <String, int>{};
 
     return conversationsAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),

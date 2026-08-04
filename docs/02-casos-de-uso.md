@@ -217,17 +217,8 @@
   5. Se puede escribir una pequeña descripción y posteriormente se publica.
 - **Postcondición:** Publicación creada, cualquiera puede verla y contactar.
 
-### CU-18: Buscar usuario
-- **Actor:** Usuario
-- **Precondición:** Tener la sesión abierta
-- **Flujo principal:**
-  1. Abrir la app y seleccionar la opción de buscar
-  2. Aplicar el filtro de usuario
-  3. Escribir el nombre de usuario
-  4. Aparecerá una lista de usuarios con ese nombre o similar y seleccionar uno de ellos
-- **Postcondición:** Quedará guardado en el historial de búsqueda
+### CU-18: Guardar en favoritos
 
-### CU-19: Guardar en favoritos
 - **Actor:** Ususario
 - **Precondición:** Tener la sesión abierta
 - **Flujo principal:**
@@ -235,6 +226,26 @@
   2. Seleccionar añadir a favoritos
   3. Confirmar
 - **Postcondición:** La publicación deberá quedar guardada en la pestaña de favoritos del usuario
+
+### CU-19: Ver perfil
+
+- **Actor:** Ususario
+- **Precondición:** Tener la sesión abierta
+- **Flujo principal:**
+  1. Abrir la app y seleccionar una publicación o buscar un perfil en el buscador
+  2. Presionar sobre un perfil de usuario
+  3. Aparecerán todos los datos publicos del perfil seleccionado
+- **Postcondición:** Los datos del perfil seleccionado deben aparecer por pantalla
+
+### CU-20: Buscar usuario
+
+- **Actor:** Usuario
+- **Precondición:** Tener la sesión abierta
+- **Flujo principal:**
+  1. El usuario entra en el buscador con el icono de una lupa arriba a la derecha
+  2. Escribe el nombre de usuario del perfil que desea buscar
+  3. A medida que se va escribiendo el nombre, iran apareciendo una lista de usuarios que tengan ese nombre o parecido y al lado su foto de perfil
+- **Postcondición:** N/A
 
 ### CU-xx: (Fase 3) Inmobiliaria publica anuncio
 

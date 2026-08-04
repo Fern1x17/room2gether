@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/layout/adaptive_shell.dart';
 import '../../../../core/layout/breakpoints.dart';
+import '../../../../core/layout/tab_history_controller.dart';
 import '../widgets/conversations_list_view.dart';
 
 class ConversationsScreen extends ConsumerWidget {
@@ -23,7 +24,24 @@ class ConversationsScreen extends ConsumerWidget {
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Chats')),
+      appBar: AppBar(
+        title: const Text('Chats'),
+        // Vuelve a la pestaña anterior, igual que el botón atrás del sistema.
+        // No es la flecha que pone Flutter sola: esta rama está en su raíz, no
+        // hay nada que desapilar, así que el salto es entre pestañas.
+        leading: IconButton(
+          onPressed: () {
+            final shell = StatefulNavigationShell.of(context);
+            goToPreviousTab(
+              ref,
+              currentIndex: shell.currentIndex,
+              goBranch: (index) => shell.goBranch(index),
+            );
+          },
+          icon: const Icon(Icons.arrow_back),
+          tooltip: 'Volver a la pestaña anterior',
+        ),
+      ),
       body: ConversationsListView(
         onConversationTap: (conversation) =>
             context.push('/chats/${conversation.id}'),

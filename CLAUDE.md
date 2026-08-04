@@ -166,6 +166,37 @@ Funcionalidad mínima imprescindible. Construir en este orden:
 - [x] Publicación (crear CU-06, eliminar CU-07, modificar CU-08)
 - [x] Chat (CU-10)
 - [x] Reporte/bloqueo (CU-11) + desbloqueo (lista de bloqueados en ajustes)
+- [x] Buscador de usuarios (CU-20) y ver perfil ajeno (CU-19)
+      - Los dos van por RPC `security definer` (`search_profiles`,
+        `get_public_profile`) y no por `select` desde el cliente. El motivo no
+        es comodidad: `blocks_select_own` solo deja ver los bloqueos propios,
+        así que **quién te ha bloqueado a ti es ilegible desde la app**, y sin
+        eso no se pueden excluir los bloqueos en ambos sentidos. Como
+        `profiles_select_authenticated` es `using (true)`, filtrar en el
+        cliente tampoco valdría: la fila viajaría igual.
+      - La lupa de arriba a la derecha **ya no abre los filtros**: es la
+        entrada al buscador de usuarios. Los filtros del feed pasan a un botón
+        hamburguesa abajo a la izquierda (solo en móvil; en escritorio ya son
+        columna persistente) con badge —un punto, sin número— de filtros
+        activos. El panel de filtros en sí no cambió.
+- [x] Botón atrás en móvil: recorre las pestañas visitadas en vez de cerrar la
+      app. Desde el feed, la primera pulsación recarga y avisa; la segunda
+      dentro de 2 s cierra. El feed también se refresca tirando hacia abajo.
+      Vive en `MobileShell` y **no** en `AdaptiveShell`: así queda acotado al
+      ancho de móvil sin `kIsWeb` ni `Platform`. Detalle en `docs/05`.
+- [x] Flechas de volver unificadas en `core/widgets/app_back_button.dart`.
+      Cruzar de una ruta raíz a una rama del shell **obliga a usar `go`**
+      (`push` aborta por claves de página duplicadas), y `go` reemplaza la
+      pila, así que el origen viaja aparte por el `extra` del router. Usa
+      `AppBackButton.maybe` en las pantallas que además son panel de detalle en
+      escritorio, o aparecerá una flecha donde no toca.
+- [x] Buscador: coincidencia por subcadena (siempre la hubo) más tolerancia a
+      erratas por trigramas. **Los trigramas no cubren cambios de vocal en
+      palabras cortas** ("joan" no encuentra "juan"); para eso haría falta
+      comparación fonética. Decisión pendiente.
+- [x] Bloqueo asimétrico a propósito: a quien yo bloqueé sale en el buscador
+      marcado y su perfil deja desbloquearlo; quien me bloqueó a mí sigue
+      invisible. Detalle en `docs/05`.
 - [x] Layout adaptativo: móvil (Android + web estrecha, barra inferior) y
       escritorio (solo web ancha, rail + master-detail en **Buscar** y
       **Chats**). Breakpoint único de 840 dp en

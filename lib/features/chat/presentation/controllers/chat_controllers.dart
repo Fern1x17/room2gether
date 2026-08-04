@@ -59,7 +59,10 @@ final unreadCountsProvider = StreamProvider<Map<String, int>>((ref) async* {
 /// Mientras el conteo carga o falla vale 0: un badge es información
 /// secundaria y no debe pintar nada hasta tener un número de verdad.
 final totalUnreadProvider = Provider<int>((ref) {
-  final counts = ref.watch(unreadCountsProvider).value;
+  // `valueOrNull` y no `value`: este último RELANZA el error del conteo, y
+  // entonces este provider fallaría también y se llevaría por delante la barra
+  // y el rail (que es donde vive el badge) en toda la app.
+  final counts = ref.watch(unreadCountsProvider).valueOrNull;
   if (counts == null) return 0;
   return counts.values.fold(0, (total, count) => total + count);
 });

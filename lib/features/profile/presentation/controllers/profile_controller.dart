@@ -40,7 +40,12 @@ class ProfileController extends AsyncNotifier<Profile> {
     String extension = 'jpg',
     String contentType = 'image/jpeg',
   }) async {
-    final current = state.value;
+    // `valueOrNull` y no `value`: este último RELANZA el error si la carga del
+    // perfil falló, y entonces la guarda de aquí abajo nunca llegaría a
+    // devolver null. Hoy la pantalla solo ofrece el botón de la foto dentro de
+    // la rama `data`, así que no se llega sin perfil; la guarda está para que
+    // siga siendo cierta si eso cambia.
+    final current = state.valueOrNull;
     if (current == null) {
       return null;
     }

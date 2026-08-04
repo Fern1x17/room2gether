@@ -82,6 +82,20 @@ void main() {
 
       expect(container.read(totalUnreadProvider), 0);
     });
+
+    // Regresión: con `.value` el error del conteo se relanzaba aquí, así que
+    // este provider fallaba también y reventaba a quien pinta el badge (la
+    // barra y el rail de toda la app).
+    test('vale 0 si el conteo falla', () async {
+      final container = _container(
+        FakeChatRepository(unreadCountsError: Exception('caída')),
+      );
+      container.listen(unreadCountsProvider, (_, _) {});
+
+      await _waitFor(() => container.read(unreadCountsProvider).hasError);
+
+      expect(container.read(totalUnreadProvider), 0);
+    });
   });
 
   group('formatUnreadCount', () {

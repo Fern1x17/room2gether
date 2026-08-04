@@ -8,6 +8,8 @@ class FakeModerationRepository implements ModerationRepository {
     this.blockedAt,
     this.blockedUsers = const [],
     this.unblockError,
+    this.blockError,
+    this.blocksError,
   }) : blockedIds = blockedIds ?? {};
 
   final Set<String> blockedIds;
@@ -17,6 +19,11 @@ class FakeModerationRepository implements ModerationRepository {
   final Map<String, DateTime>? blockedAt;
   final Object? reportError;
   final Object? unblockError;
+  final Object? blockError;
+
+  /// Fallo al consultar los bloqueos (lo usan feed y chat para aplicar los
+  /// efectos del bloqueo).
+  final Object? blocksError;
   List<BlockedUser> blockedUsers;
   final List<String> unblockedIds = [];
   final List<({String userId, String? listingId, List<String> reasons})>
@@ -38,10 +45,14 @@ class FakeModerationRepository implements ModerationRepository {
   }
 
   @override
-  Future<Set<String>> fetchMyBlockedIds() async => blockedIds;
+  Future<Set<String>> fetchMyBlockedIds() async {
+    if (blocksError != null) throw blocksError!;
+    return blockedIds;
+  }
 
   @override
   Future<Map<String, DateTime>> fetchMyBlocks() async {
+    if (blocksError != null) throw blocksError!;
     return {
       for (final id in blockedIds)
         id: blockedAt?[id] ?? DateTime.fromMillisecondsSinceEpoch(0),
@@ -50,6 +61,12 @@ class FakeModerationRepository implements ModerationRepository {
 
   @override
   Future<List<BlockedUser>> fetchBlockedUsers() async => blockedUsers;
+
+  @override
+  Future<void> blockUser(String blockedId) async {
+    if (blockError != null) throw blockError!;
+    blockedIds.add(blockedId);
+  }
 
   @override
   Future<void> unblockUser(String blockedId) async {

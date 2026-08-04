@@ -50,7 +50,11 @@ class FeedListPane extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final listingsAsync = ref.watch(feedControllerProvider);
     final selectedId = _selectedListingId;
-    final count = listingsAsync.value?.length;
+    // `valueOrNull` y no `value`: este último RELANZA el error cuando la carga
+    // ha fallado, y esta columna reventaría antes de llegar a ListingListView,
+    // que es quien pinta el error y el botón de reintentar. Sin número, no hay
+    // contador y ya está.
+    final count = listingsAsync.valueOrNull?.length;
     final cityName = ref
         .read(feedControllerProvider.notifier)
         .currentFilter

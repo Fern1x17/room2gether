@@ -15,6 +15,8 @@ import '../../features/listing/presentation/screens/create_listing_screen.dart';
 import '../../features/listing/presentation/screens/edit_listing_screen.dart';
 import '../../features/moderation/presentation/screens/blocked_users_screen.dart';
 import '../../features/profile/presentation/screens/edit_profile_screen.dart';
+import '../../features/profile/presentation/screens/user_profile_screen.dart';
+import '../../features/profile/presentation/screens/user_search_screen.dart';
 import '../layout/adaptive_shell.dart';
 import '../layout/breakpoints.dart';
 import '../supabase/supabase_client.dart';
@@ -128,6 +130,25 @@ GoRouter buildAppRouter({
         builder: (context, state) =>
             EditListingScreen(listingId: state.pathParameters['id']!),
       ),
+      // Buscador de usuarios (CU-20). Ruta raíz, fuera del shell: es una tarea
+      // puntual que se abre y se cierra con la flecha de volver, no una
+      // sección. Como toda ruta raíz, se encuadra para no estirarse en ancho.
+      GoRoute(
+        path: '/users/search',
+        builder: (context, state) => const CenteredPageFrame(
+          maxWidth: kContentPageMaxWidth,
+          child: UserSearchScreen(),
+        ),
+      ),
+      // Perfil de otro usuario (CU-19). Debe ir DESPUÉS de '/users/search'
+      // para que 'search' no se capture como si fuera un id.
+      GoRoute(
+        path: '/users/:id',
+        builder: (context, state) => CenteredPageFrame(
+          maxWidth: kContentPageMaxWidth,
+          child: UserProfileScreen(userId: state.pathParameters['id']!),
+        ),
+      ),
 
       // --- Shell adaptativo: barra inferior (móvil) o rail (escritorio). ---
       StatefulShellRoute.indexedStack(
@@ -147,8 +168,14 @@ GoRouter buildAppRouter({
               ),
               GoRoute(
                 path: '/listings/:id',
-                builder: (context, state) =>
-                    ListingDetailScreen(listingId: state.pathParameters['id']!),
+                builder: (context, state) => ListingDetailScreen(
+                  listingId: state.pathParameters['id']!,
+                  // Igual que el chat: quien abra el detalle desde fuera de
+                  // esta rama puede decir a dónde vuelve la flecha.
+                  backLocation: state.extra is String
+                      ? state.extra as String
+                      : null,
+                ),
               ),
             ],
           ),
@@ -158,11 +185,25 @@ GoRouter buildAppRouter({
               GoRoute(
                 path: '/chats',
                 builder: (context, state) => const ConversationsScreen(),
-              ),
-              GoRoute(
-                path: '/chats/:id',
-                builder: (context, state) =>
-                    ChatScreen(conversationId: state.pathParameters['id']!),
+                routes: [
+                  // Subruta y no hermana: así, al entrar en un chat con `go`
+                  // desde fuera de la rama (perfil, detalle de publicación),
+                  // la lista queda debajo en la pila y sale la flecha de
+                  // volver. Como hermana, `go` dejaba el chat como única
+                  // ruta y no había nada que desapilar.
+                  GoRoute(
+                    path: ':id',
+                    builder: (context, state) => ChatScreen(
+                      conversationId: state.pathParameters['id']!,
+                      // Quien abre el chat desde fuera de esta rama puede
+                      // decir a dónde vuelve la flecha. Viaja por `extra`,
+                      // no por la URL.
+                      backLocation: state.extra is String
+                          ? state.extra as String
+                          : null,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),

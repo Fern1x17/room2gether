@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/supabase/current_user_provider.dart';
+import '../../../../core/widgets/app_back_button.dart';
 import '../../../feed/presentation/controllers/feed_controller.dart';
 import '../../../moderation/presentation/controllers/report_controller.dart';
 import '../../../moderation/presentation/widgets/report_dialog.dart';
@@ -10,9 +11,21 @@ import '../../domain/models/message.dart';
 import '../controllers/chat_controllers.dart';
 
 class ChatScreen extends ConsumerStatefulWidget {
-  const ChatScreen({super.key, required this.conversationId});
+  const ChatScreen({
+    super.key,
+    required this.conversationId,
+    this.backLocation,
+  });
 
   final String conversationId;
+
+  /// A dónde volver al pulsar atrás, si se entró aquí desde fuera de la rama
+  /// Chats. Con `null` manda el comportamiento normal: la lista de chats.
+  ///
+  /// Llega por el `extra` del router y no por la URL, para no meter el id de
+  /// nadie en la barra de direcciones. El precio: en web se pierde al recargar
+  /// la página, y entonces atrás vuelve a la lista.
+  final String? backLocation;
 
   @override
   ConsumerState<ChatScreen> createState() => _ChatScreenState();
@@ -221,19 +234,28 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     // Con el chat abierto, lo que llegue se marca leído en el momento: si no,
     // el badge subiría mientras lo estás mirando.
     ref.listen(messagesStreamProvider(widget.conversationId), (previous, next) {
-      final before = previous?.value?.length ?? 0;
-      final now = next.value?.length ?? 0;
+      final before = previous?.valueOrNull?.length ?? 0;
+      final now = next.valueOrNull?.length ?? 0;
       if (now > before) _markRead();
     });
 
-    final otherUser = conversationAsync.value?.otherUser;
+    // `valueOrNull` y no `value` en los tres: este último RELANZA el error
+    // cuando la carga ha fallado, así que un fallo aquí rompería el build
+    // entero y las ramas `error:` de más abajo (y estos `??`) no llegarían a
+    // usarse nunca.
+    final otherUser = conversationAsync.valueOrNull?.otherUser;
     final blocks =
-        ref.watch(myBlocksProvider).value ?? const <String, DateTime>{};
+        ref.watch(myBlocksProvider).valueOrNull ?? const <String, DateTime>{};
     final blockedAt = otherUser == null ? null : blocks[otherUser.id];
     final isBlocked = blockedAt != null;
 
-    return Scaffold(
+    final backLocation = widget.backLocation;
+
+    final scaffold = Scaffold(
       appBar: AppBar(
+        // Se entró desde otra pantalla (el perfil del otro usuario): atrás
+        // devuelve allí y no a la lista de chats, que nunca se llegó a ver.
+        leading: AppBackButton.maybe(context, backLocation: backLocation),
         title: conversationAsync.when(
           loading: () => const Text('Chat'),
           error: (_, _) => const Text('Chat'),
@@ -381,5 +403,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         ),
       ),
     );
+
+    // Que el botón atrás del sistema acabe donde la flecha: si no, uno
+    // llevaría al perfil y el otro a la lista de chats.
+    return BackDestination(backLocation: backLocation, child: scaffold);
   }
 }

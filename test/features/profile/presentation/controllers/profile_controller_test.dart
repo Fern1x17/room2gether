@@ -161,6 +161,37 @@ void main() {
       },
     );
 
+    // Sin perfil cargado no hay a quién ponerle la foto: la guarda devuelve
+    // null. Con `state.value` no lo hacía, relanzaba el error de la carga.
+    // Desde la pantalla no se llega (el botón vive en la rama `data`), pero la
+    // guarda del controlador tiene que valer por sí sola.
+    test(
+      'uploadAvatar() devuelve null si el perfil no llegó a cargar',
+      () async {
+        final container = ProviderContainer(
+          overrides: [
+            currentUserIdProvider.overrideWithValue('user-1'),
+            profileRepositoryProvider.overrideWithValue(
+              FakeProfileRepository(fetchError: Exception('caída')),
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        await expectLater(
+          container.read(profileControllerProvider.future),
+          throwsA(isA<Exception>()),
+        );
+        expect(container.read(profileControllerProvider).hasError, isTrue);
+
+        final url = await container
+            .read(profileControllerProvider.notifier)
+            .uploadAvatar(bytes: Uint8List(0));
+
+        expect(url, isNull);
+      },
+    );
+
     test('uploadAvatar() devuelve null si falla la persistencia', () async {
       final fakeRepo = FakeProfileRepository(
         uploadAvatarUrl: 'https://example.com/foto.jpg',

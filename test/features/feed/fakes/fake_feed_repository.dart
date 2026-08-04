@@ -64,6 +64,17 @@ class FakeFeedRepository implements FeedRepository {
 
   @override
   Future<Listing> fetchListingById(String id) async {
+    if (fetchError != null) throw fetchError!;
     return listings.firstWhere((listing) => listing.id == id);
+  }
+
+  @override
+  Future<List<Listing>> fetchListingsByOwner(String ownerId) async {
+    if (fetchError != null) throw fetchError!;
+    return listings
+        .where(
+          (listing) => listing.ownerId == ownerId && listing.status == 'active',
+        )
+        .toList();
   }
 }

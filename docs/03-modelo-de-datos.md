@@ -119,6 +119,13 @@ erDiagram
   `is_active` se reinterpreta como "ciudad foco de marketing" y no limita el
   selector. El cliente sigue sin escribir directamente (RLS solo SELECT);
   `city_id` usa `on delete restrict`.
+- Buscador de usuarios (CU-20) y perfil público (CU-19) **no añaden tablas ni
+  columnas**: son dos RPC sobre `profiles` (`search_profiles`,
+  `get_public_profile`) más un índice GIN de trigramas para la búsqueda por
+  nombre. Ambas son `security definer` por una razón concreta del modelo: la
+  política de `blocks` solo deja ver los bloqueos propios, así que excluir a
+  quien te ha bloqueado a ti es imposible desde el cliente. Detalle en la skill
+  `supabase-schema`.
 - `listing_addresses` (CU-06): dirección exacta opcional de una publicación,
   1:1 con `listings` y en tabla propia porque RLS es por fila — así "mostrar
   solo el barrio" se garantiza en la BD. SELECT solo si `is_public` o si la

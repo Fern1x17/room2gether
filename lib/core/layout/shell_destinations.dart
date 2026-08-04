@@ -22,10 +22,12 @@ class ShellDestination {
 }
 
 const shellDestinations = <ShellDestination>[
+  // La lupa pasó a significar "buscar usuarios" (CU-20), así que el feed se
+  // queda con la casa: es la pantalla de inicio.
   ShellDestination(
-    icon: Icons.search,
-    selectedIcon: Icons.search,
-    label: 'Buscar',
+    icon: Icons.home_outlined,
+    selectedIcon: Icons.home,
+    label: 'Inicio',
   ),
   ShellDestination(
     icon: Icons.chat_bubble_outline,

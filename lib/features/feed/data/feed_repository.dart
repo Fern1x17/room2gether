@@ -9,6 +9,11 @@ abstract class FeedRepository {
   Future<List<Listing>> fetchListings(ListingFilter filter);
 
   Future<Listing> fetchListingById(String id);
+
+  /// Publicaciones activas de [ownerId], para enseñarlas en su perfil
+  /// (CU-19). A diferencia de `fetchMyListings`, aquí solo salen las activas:
+  /// las cerradas son cosa de su dueño.
+  Future<List<Listing>> fetchListingsByOwner(String ownerId);
 }
 
 class SupabaseFeedRepository implements FeedRepository {
@@ -51,6 +56,17 @@ class SupabaseFeedRepository implements FeedRepository {
     }
 
     final rows = await query.order('created_at', ascending: false);
+    return rows.map(Listing.fromMap).toList();
+  }
+
+  @override
+  Future<List<Listing>> fetchListingsByOwner(String ownerId) async {
+    final rows = await _client
+        .from('listings')
+        .select('*, city:cities(name), $_ownerJoin, $_addressJoin')
+        .eq('owner_id', ownerId)
+        .eq('status', 'active')
+        .order('created_at', ascending: false);
     return rows.map(Listing.fromMap).toList();
   }
 

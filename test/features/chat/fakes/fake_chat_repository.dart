@@ -39,6 +39,8 @@ class FakeChatRepository implements ChatRepository {
     this.openError,
     this.deleteError,
     this.updateError,
+    this.conversationError,
+    this.unreadCountsError,
   }) : conversations = conversations ?? [];
 
   final List<Conversation> conversations;
@@ -46,6 +48,8 @@ class FakeChatRepository implements ChatRepository {
   final Object? openError;
   final Object? deleteError;
   final Object? updateError;
+  final Object? conversationError;
+  final Object? unreadCountsError;
   final List<({String conversationId, String content})> sentMessages = [];
   final List<String> deletedMessageIds = [];
   final List<({String messageId, String newContent})> updatedMessages = [];
@@ -84,6 +88,7 @@ class FakeChatRepository implements ChatRepository {
 
   @override
   Future<Conversation> fetchConversation(String id) async {
+    if (conversationError != null) throw conversationError!;
     return conversations.firstWhere((c) => c.id == id);
   }
 
@@ -119,6 +124,7 @@ class FakeChatRepository implements ChatRepository {
   @override
   Future<Map<String, int>> fetchUnreadCounts() async {
     unreadFetches++;
+    if (unreadCountsError != null) throw unreadCountsError!;
     return unreadCounts;
   }
 

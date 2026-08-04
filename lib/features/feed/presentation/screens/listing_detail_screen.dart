@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/supabase/current_user_provider.dart';
+import '../../../../core/widgets/app_back_button.dart';
 import '../../../chat/presentation/controllers/chat_controllers.dart';
 import '../../../listing/presentation/controllers/my_listings_controller.dart';
 import '../../../moderation/presentation/controllers/report_controller.dart';
@@ -12,9 +13,17 @@ import '../controllers/feed_controller.dart';
 import '../controllers/listing_detail_controller.dart';
 
 class ListingDetailScreen extends ConsumerWidget {
-  const ListingDetailScreen({super.key, required this.listingId});
+  const ListingDetailScreen({
+    super.key,
+    required this.listingId,
+    this.backLocation,
+  });
 
   final String listingId;
+
+  /// A dónde vuelve la flecha si se llegó aquí desde fuera de la rama del
+  /// feed (el perfil de otro usuario). Ver [AppBackButton].
+  final String? backLocation;
 
   /// Cierra el detalle tras eliminar o reportar: vuelve atrás si hay
   /// historial (flujo normal en móvil y en el panel de escritorio) o al feed
@@ -123,197 +132,232 @@ class ListingDetailScreen extends ConsumerWidget {
         .watch(openConversationControllerProvider)
         .isLoading;
 
-    final loadedListing = listingAsync.value;
+    // `valueOrNull` y no `value`: este último RELANZA el error cuando la carga
+    // ha fallado, y aquí solo se mira si hay publicación para decidir si pintar
+    // el menú de opciones. El estado de error lo pinta el `when` de abajo.
+    final loadedListing = listingAsync.valueOrNull;
     final canReport =
         loadedListing != null &&
         currentUserId != null &&
         loadedListing.ownerId != currentUserId;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Publicación'),
-        actions: [
-          // CU-11, paso 1-2: botón de opciones en una publicación ajena.
-          if (canReport)
-            PopupMenuButton<String>(
-              tooltip: 'Opciones',
-              onSelected: (_) => _reportOwner(context, ref, loadedListing),
-              itemBuilder: (context) => const [
-                PopupMenuItem(value: 'report', child: Text('Reportar')),
-              ],
-            ),
-        ],
-      ),
-      body: listingAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stackTrace) => const Center(
-          child: Padding(
-            padding: EdgeInsets.all(24),
-            child: Text(
-              'No se pudo cargar la publicación.',
-              textAlign: TextAlign.center,
+    return BackDestination(
+      backLocation: backLocation,
+      child: Scaffold(
+        appBar: AppBar(
+          leading: AppBackButton.maybe(context, backLocation: backLocation),
+          title: const Text('Publicación'),
+          actions: [
+            // CU-11, paso 1-2: botón de opciones en una publicación ajena.
+            if (canReport)
+              PopupMenuButton<String>(
+                tooltip: 'Opciones',
+                onSelected: (_) => _reportOwner(context, ref, loadedListing),
+                itemBuilder: (context) => const [
+                  PopupMenuItem(value: 'report', child: Text('Reportar')),
+                ],
+              ),
+          ],
+        ),
+        body: listingAsync.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (error, stackTrace) => const Center(
+            child: Padding(
+              padding: EdgeInsets.all(24),
+              child: Text(
+                'No se pudo cargar la publicación.',
+                textAlign: TextAlign.center,
+              ),
             ),
           ),
-        ),
-        data: (listing) {
-          final theme = Theme.of(context);
-          final isOwner =
-              currentUserId != null && listing.ownerId == currentUserId;
-          // La dirección completa solo llega si es pública o si la
-          // publicación es del propio usuario (RLS); si no, barrio + ciudad.
-          final location =
-              listing.formattedAddress ??
-              [
-                listing.neighborhood,
-                listing.cityName,
-              ].where((part) => part != null && part.isNotEmpty).join(', ');
+          data: (listing) {
+            final theme = Theme.of(context);
+            final isOwner =
+                currentUserId != null && listing.ownerId == currentUserId;
+            // La dirección completa solo llega si es pública o si la
+            // publicación es del propio usuario (RLS); si no, barrio + ciudad.
+            final location =
+                listing.formattedAddress ??
+                [
+                  listing.neighborhood,
+                  listing.cityName,
+                ].where((part) => part != null && part.isNotEmpty).join(', ');
 
-          // AQUI EMPIEZA LA MAGIA DE LA ANIMACIÓN HERO
-          return Hero(
-            tag: 'listing_card_${listing.id}',
-            child: Material(
-              color: theme
-                  .scaffoldBackgroundColor, // Mantiene el fondo limpio en la transición
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (listing.photos.isNotEmpty) ...[
-                      SizedBox(
-                        height: 200,
-                        child: ListView.separated(
-                          scrollDirection: Axis.horizontal,
-                          itemCount: listing.photos.length,
-                          separatorBuilder: (_, _) => const SizedBox(width: 8),
-                          itemBuilder: (context, index) => ClipRRect(
-                            borderRadius: BorderRadius.circular(12),
-                            child: Image.network(
-                              listing.photos[index],
-                              height: 200,
-                              fit: BoxFit.cover,
+            // AQUI EMPIEZA LA MAGIA DE LA ANIMACIÓN HERO
+            return Hero(
+              tag: 'listing_card_${listing.id}',
+              child: Material(
+                color: theme
+                    .scaffoldBackgroundColor, // Mantiene el fondo limpio en la transición
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (listing.photos.isNotEmpty) ...[
+                        SizedBox(
+                          height: 200,
+                          child: ListView.separated(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: listing.photos.length,
+                            separatorBuilder: (_, _) =>
+                                const SizedBox(width: 8),
+                            itemBuilder: (context, index) => ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: Image.network(
+                                listing.photos[index],
+                                height: 200,
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+                      Chip(
+                        label: Text(listing.isOffering ? 'Ofrezco' : 'Busco'),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(listing.title, style: theme.textTheme.headlineSmall),
+                      const SizedBox(height: 8),
+                      // CU-19, paso 1: desde una publicación se llega al perfil
+                      // de quien la publicó.
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: InkWell(
+                          onTap: () =>
+                              context.push('/users/${listing.ownerId}'),
+                          borderRadius: BorderRadius.circular(8),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 8,
+                              horizontal: 4,
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.person_outline,
+                                  size: 18,
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  listing.ownerNameLabel,
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    color: theme.colorScheme.primary,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                const SizedBox(width: 2),
+                                Icon(
+                                  Icons.chevron_right,
+                                  size: 18,
+                                  color: theme.colorScheme.primary,
+                                ),
+                              ],
                             ),
                           ),
                         ),
                       ),
-                      const SizedBox(height: 16),
-                    ],
-                    Chip(label: Text(listing.isOffering ? 'Ofrezco' : 'Busco')),
-                    const SizedBox(height: 16),
-                    Text(listing.title, style: theme.textTheme.headlineSmall),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.person_outline,
-                          size: 18,
-                          color: theme.colorScheme.onSurfaceVariant,
+                      const SizedBox(height: 8),
+                      if (location.isNotEmpty)
+                        Text(location, style: theme.textTheme.bodyLarge),
+                      const SizedBox(height: 8),
+                      Text(
+                        listing.priceLabel,
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.primary,
                         ),
-                        const SizedBox(width: 4),
-                        Text(
-                          listing.ownerNameLabel,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                      if (listing.description != null &&
+                          listing.description!.isNotEmpty) ...[
+                        const SizedBox(height: 24),
+                        Text('Descripción', style: theme.textTheme.titleMedium),
+                        const SizedBox(height: 8),
+                        Text(listing.description!),
+                      ],
+                      if (!isOwner) ...[
+                        const SizedBox(height: 32),
+                        SizedBox(
+                          height: 48,
+                          child: FilledButton.icon(
+                            onPressed: isOpeningChat
+                                ? null
+                                : () async {
+                                    final conversation = await ref
+                                        .read(
+                                          openConversationControllerProvider
+                                              .notifier,
+                                        )
+                                        .open(
+                                          otherUserId: listing.ownerId,
+                                          listingId: listing.id,
+                                        );
+                                    if (conversation != null &&
+                                        context.mounted) {
+                                      // El chat vive en otra rama del shell (Chats):
+                                      // se usa go para cambiar de sección y abrirlo
+                                      // (en escritorio, como panel; en móvil, como
+                                      // pantalla de esa sección). push no cruza ramas.
+                                      context.go('/chats/${conversation.id}');
+                                    }
+                                  },
+                            icon: isOpeningChat
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : const Icon(Icons.chat_bubble_outline),
+                            label: const Text('Enviar mensaje'),
                           ),
                         ),
                       ],
-                    ),
-                    const SizedBox(height: 8),
-                    if (location.isNotEmpty)
-                      Text(location, style: theme.textTheme.bodyLarge),
-                    const SizedBox(height: 8),
-                    Text(
-                      listing.priceLabel,
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: theme.colorScheme.primary,
-                      ),
-                    ),
-                    if (listing.description != null &&
-                        listing.description!.isNotEmpty) ...[
-                      const SizedBox(height: 24),
-                      Text('Descripción', style: theme.textTheme.titleMedium),
-                      const SizedBox(height: 8),
-                      Text(listing.description!),
-                    ],
-                    if (!isOwner) ...[
-                      const SizedBox(height: 32),
-                      SizedBox(
-                        height: 48,
-                        child: FilledButton.icon(
-                          onPressed: isOpeningChat
-                              ? null
-                              : () async {
-                                  final conversation = await ref
-                                      .read(
-                                        openConversationControllerProvider
-                                            .notifier,
-                                      )
-                                      .open(
-                                        otherUserId: listing.ownerId,
-                                        listingId: listing.id,
-                                      );
-                                  if (conversation != null && context.mounted) {
-                                    // El chat vive en otra rama del shell (Chats):
-                                    // se usa go para cambiar de sección y abrirlo
-                                    // (en escritorio, como panel; en móvil, como
-                                    // pantalla de esa sección). push no cruza ramas.
-                                    context.go('/chats/${conversation.id}');
-                                  }
-                                },
-                          icon: isOpeningChat
-                              ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                              : const Icon(Icons.chat_bubble_outline),
-                          label: const Text('Enviar mensaje'),
-                        ),
-                      ),
-                    ],
-                    if (isOwner) ...[
-                      const SizedBox(height: 32),
-                      SizedBox(
-                        height: 48,
-                        child: FilledButton.icon(
-                          onPressed: () =>
-                              context.push('/listings/$listingId/edit'),
-                          icon: const Icon(Icons.edit_outlined),
-                          label: const Text('Modificar publicación'),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      SizedBox(
-                        height: 48,
-                        child: OutlinedButton.icon(
-                          onPressed: isDeleting
-                              ? null
-                              : () => _confirmDelete(context, ref),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: theme.colorScheme.error,
+                      if (isOwner) ...[
+                        const SizedBox(height: 32),
+                        SizedBox(
+                          height: 48,
+                          child: FilledButton.icon(
+                            onPressed: () =>
+                                context.push('/listings/$listingId/edit'),
+                            icon: const Icon(Icons.edit_outlined),
+                            label: const Text('Modificar publicación'),
                           ),
-                          icon: isDeleting
-                              ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                              : const Icon(Icons.delete_outline),
-                          label: const Text('Eliminar publicación'),
                         ),
-                      ),
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          height: 48,
+                          child: OutlinedButton.icon(
+                            onPressed: isDeleting
+                                ? null
+                                : () => _confirmDelete(context, ref),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: theme.colorScheme.error,
+                            ),
+                            icon: isDeleting
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : const Icon(Icons.delete_outline),
+                            label: const Text('Eliminar publicación'),
+                          ),
+                        ),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }

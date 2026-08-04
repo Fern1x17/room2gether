@@ -1026,3 +1026,377 @@ Detalles que importan:
 > esa visita y solo estrena la nueva en la siguiente. Si un cambio "no aparece"
 > en el móvil, recarga dos veces o prueba en una pestaña privada antes de
 > buscar el fallo en el código.
+
+---
+
+## Buscador de usuarios (CU-20, RF-19)
+
+**Migración:** `supabase/migrations/20260804000020_user_search.sql`.
+
+Búsqueda por `display_name`, parcial, insensible a mayúsculas y a tildes,
+conforme se teclea.
+
+**Por qué una RPC y no un `select` desde el cliente.** Dos razones, ninguna
+opcional:
+
+1. **El bloqueo en sentido inverso.** `blocks_select_own` solo deja ver los
+   bloqueos propios, así que el cliente puede saber a quién ha bloqueado él,
+   pero **no quién le ha bloqueado a él**. Excluir ambos sentidos exige
+   `security definer`.
+2. **El coste.** Traerse perfiles y descartarlos en Dart rompe el `limit` y
+   obliga a escanear la tabla entera.
+
+`search_profiles(p_query, p_limit, p_offset)` es `security definer` pero **no
+amplía lo visible**: `profiles_select_authenticated` ya permite leer cualquier
+perfil a quien tenga sesión, y la función devuelve menos filas (excluye
+bloqueados y al propio usuario) y menos columnas que un `select` directo. El
+`limit` va acotado dentro (`least(greatest(...), 50)`): un cliente manipulado
+no puede pedir la tabla entera.
+
+**Índice.** `ilike '%texto%'` no puede usar un B-tree (no hay prefijo por el
+que arrancar), así que va un GIN de trigramas (`pg_trgm`). Como la búsqueda es
+insensible a tildes hace falta `unaccent`, que se declara `STABLE` y por tanto
+**no es indexable**; de ahí el envoltorio `immutable_unaccent()`. El índice va
+sobre **esa misma expresión** que usa la consulta — si no coincidiera
+exactamente, el planificador no lo usaría.
+
+**Escapado.** `%` y `_` son comodines de `LIKE`: el texto del usuario se escapa
+antes de entrar en la consulta. Sin ello, escribir `%` devolvería a todos los
+usuarios de la plataforma. El mínimo de 2 caracteres se mide sobre el texto
+crudo, no sobre el escapado, que es más largo.
+
+- `domain/models/user_search_result.dart` — id, nombre, avatar y ciudad. Más
+  pequeño que `Profile` a propósito: es lo que se pinta en una fila.
+- `data/user_search_repository.dart` — la RPC.
+- `presentation/controllers/user_search_controller.dart` — estado plano
+  (`UserSearchState`) en vez de `AsyncValue`: al teclear interesa **seguir
+  viendo los resultados anteriores** mientras llega la respuesta nueva, no
+  vaciar la lista en cada pulsación. Debounce de 350 ms y un contador
+  `_searchId` que hace dos cosas a la vez: cancela el debounce al seguir
+  tecleando y descarta la respuesta de una petición en vuelo que ya no
+  corresponde a lo escrito (sin él, una consulta lenta aterriza después de otra
+  más reciente y pisa la lista). Mismo patrón que `CitySelector`.
+- `presentation/widgets/user_search_results.dart` — widget de contenido
+  compartido, con los cuatro estados: inicial, cargando, sin resultados y
+  error. Paginación de 20 al llegar al final de la lista.
+- `presentation/screens/user_search_screen.dart` — campo de búsqueda en la
+  `AppBar`, con autofoco y botón de limpiar.
+- Ruta `/users/search`, **raíz, fuera del shell**: es una tarea puntual que se
+  abre y se cierra con la flecha de volver, no una sección. Encuadrada con
+  `CenteredPageFrame` como toda ruta raíz.
+
+---
+
+## Ver perfil de otro usuario (CU-19, RF-20)
+
+**Migración:** `supabase/migrations/20260804000021_public_profile.sql`.
+
+`get_public_profile(p_user_id)` devuelve **los campos que su dueño puede
+cambiar en la pestaña Perfil**: nombre, foto, bio, ciudad, presupuesto y
+preferencias de convivencia. Quedan fuera `birthdate` (dato personal que nadie
+edita), `role` e `is_verified`, que gestiona el servidor.
+
+**Por qué la decisión se toma en la base de datos.** Igual que en el buscador,
+si te han bloqueado a ti el cliente no puede saberlo. Y como
+`profiles_select_authenticated` deja leer cualquier perfil, esconder los datos
+en la app sería teatro: la fila viajaría igual. Con bloqueo en **cualquiera de
+los dos sentidos** la RPC devuelve la fila con todos los campos a `null` y solo
+las banderas `is_visible` / `is_blocked_by_me` — la pantalla necesita saber que
+el usuario existe y si el bloqueo es suyo (para ofrecer desbloquear) sin
+recibir ni un dato del perfil.
+
+- `domain/models/public_profile.dart` — todos los campos opcionales, porque con
+  bloqueo vienen vacíos y eso es un estado legítimo de la pantalla, no un error.
+- `data/public_profile_repository.dart` — la RPC.
+- `data/feed_repository.dart` — `fetchListingsByOwner(ownerId)`, solo las
+  **activas**: las cerradas son asunto de su dueño. Solo se consulta si el
+  perfil es visible.
+- `data/moderation_repository.dart` — `blockUser(id)`, bloqueo suelto. Existe
+  porque hasta ahora solo había la acción combinada de CU-11. **Reportar sigue
+  bloqueando** (CU-11 paso 3), y por eso en el menú se llama "Reportar y
+  bloquear" y no "Reportar": la etiqueta dice lo que hace.
+- `presentation/screens/user_profile_screen.dart` — datos, publicaciones
+  activas, botón "Enviar mensaje" (abre chat sin `listingId`, `go` para cruzar
+  a la rama Chats) y menú de tres puntos: *Desbloquear* si el bloqueo es tuyo,
+  y *Bloquear* / *Reportar y bloquear* si no.
+- Ruta `/users/:id`, raíz, **declarada después de `/users/search`** para que
+  `search` no se capture como si fuera un id.
+
+**Entradas al perfil** (los dos pasos que enumera CU-19): desde un resultado
+del buscador, y desde el nombre del autor en el detalle de una publicación, que
+antes era texto inerte.
+
+**Ojo con `AsyncValue.value`:** relanza el error cuando el estado es
+`AsyncError`. Usar `valueOrNull` cuando solo se quiere "el valor si lo hay";
+con `value`, un fallo de carga hace que reviente el `build` y el estado de
+error que la pantalla tiene escrito no llega a pintarse nunca.
+
+---
+
+## Buscador y filtros: cambio de disparadores (CU-20, ampliación)
+
+**Sin migración.** Solo cambia quién abre qué; el panel de filtros
+(`FiltersPanel`, `FiltersSheet`) y su lógica no se tocan.
+
+- **La lupa de la `AppBar`** deja de abrir los filtros y pasa a ser la entrada
+  al buscador de usuarios. Su etiqueta cambia con ella: `'Buscar'` →
+  `'Buscar usuarios'`.
+- **Los filtros** pasan a un botón hamburguesa abajo a la izquierda, que abre
+  exactamente el mismo `FiltersSheet`.
+- **En escritorio** la lupa vive en la cabecera del `DesktopShell`, junto a
+  "Publicar": no es una sección con estado propio, así que no entra en el rail.
+  El botón hamburguesa **no existe** en escritorio, donde los filtros ya son
+  columna persistente. Sale gratis y sin comprobar plataforma: `FeedScreen` ya
+  devolvía el placeholder antes de construir su `Scaffold` cuando el ancho es
+  de escritorio.
+
+Detalles que importan:
+
+- **Dos FAB en la misma ruta necesitan `heroTag` explícito**, o Flutter lanza
+  conflicto de `Hero` con la etiqueta por defecto.
+- Los dos botones van en un `Row` **dentro del hueco del FAB** con
+  `centerFloat`, en vez de posicionarlos a mano, para que el `Scaffold` siga
+  encargándose de separarlos de la `NavigationBar` inferior y del área segura.
+- **El botón de filtros se aparta al bajar** por la lista y vuelve al subir
+  (`UserScrollNotification`). Mientras está oculto queda **sin acción**, para
+  que no se pueda pulsar a ciegas. El de publicar no se mueve.
+- **Badge de filtros activos**: un punto, sin número. Se apoya en
+  `ListingFilter.isEmpty`, que ya deja fuera `cityName` por ser presentación y
+  no criterio (por eso tampoco entra en su igualdad). El punto solo se percibe
+  visualmente, así que el botón lleva además un `Semantics` con el estado.
+
+
+---
+
+## Botón atrás en móvil: historial de pestañas
+
+**Sin migración.** Solo navegación.
+
+El botón atrás del sistema ya no cierra la app a la primera: recorre las
+pestañas visitadas.
+
+- `core/layout/tab_history_controller.dart` — `TabHistory`, pila de índices de
+  pestaña, y el helper `goToPreviousTab`. Vive fuera del shell porque lo
+  consultan dos sitios: el `MobileShell` (botón del sistema) y la flecha de la
+  lista de Chats. La pila tiene tope (20): sin él, alternar entre dos secciones
+  un rato haría falta un rosario de pulsaciones para llegar al feed.
+- `core/layout/mobile_shell.dart` — pasa a `ConsumerStatefulWidget` con un
+  `PopScope(canPop: false)`. **Que esto viva en `MobileShell` y no en el
+  `AdaptiveShell` es la clave de que quede acotado al ancho de móvil sin
+  preguntar por la plataforma**: ese widget solo se construye por debajo del
+  breakpoint. Cero `kIsWeb`, cero `Platform`.
+
+Orden de decisión al pulsar atrás:
+
+1. **¿Hay pestaña anterior?** Se vuelve a ella.
+2. **¿Estamos fuera del feed sin historial?** (la app arrancó ahí, p. ej. desde
+   una notificación) Se va al feed.
+3. **En el feed:** la primera pulsación **recarga** el feed y avisa con "Pulsa
+   otra vez para salir"; una segunda dentro de 2 s cierra la app
+   (`SystemNavigator.pop`). Pasados los 2 s, vuelve a recargar.
+
+Detalles que importan:
+
+- **Las pantallas apiladas dentro de una rama no llegan al `PopScope`**: las
+  cierra antes el navegador de su propia rama. Abrir el detalle de una
+  publicación y pulsar atrás vuelve a la lista, como siempre. Hay test.
+- `goToPreviousTab` recibe `currentIndex` y `goBranch` sueltos, no el shell,
+  porque sus dos llamantes lo tienen en formas sin interfaz común:
+  `MobileShell` maneja el widget `StatefulNavigationShell` y la lista de Chats,
+  que está por debajo, solo alcanza su `State` con `of(context)`.
+- El apunte en el historial va en un **post-frame**: tocar un provider durante
+  el build dispara "setState during build" en quien lo escuche.
+- Volver a una pestaña **no la re-apila**: `visit` ignora la que ya está
+  arriba, así que el paso atrás no se deshace solo.
+
+**Refresco del feed.** `FeedController.refresh()` repite la consulta con el
+filtro puesto y **no pasa por `AsyncLoading`**: quien refresca ya enseña su
+indicador y vaciar la lista daría un parpadeo. Tampoco toca las búsquedas
+recientes, que refrescar no es buscar. Lo usan el botón atrás y el
+`RefreshIndicator` de `ListingListView` (tirar hacia abajo), que envuelve
+también al estado vacío —con `AlwaysScrollableScrollPhysics`, que si no no hay
+nada que tirar— porque es justo cuando más apetece reintentar.
+
+**En web estrecha esto también aplica**, porque la forma móvil es la misma. Es
+decisión consciente: la alternativa era un tercer `kIsWeb`.
+
+
+---
+
+## Flecha de volver al entrar en un chat desde fuera de la rama
+
+**Sin migración.** Un cambio de una línea en el router, con un porqué que
+conviene no olvidar.
+
+`/chats/:id` estaba declarada como **hermana** de `/chats` dentro de la rama
+Chats. Entrar en un chat desde fuera de esa rama (perfil de un usuario, detalle
+de una publicación) se hace con `context.go`, y `go` reconstruye la pila de la
+rama a partir de la jerarquía de rutas: siendo hermanas, la pila quedaba con el
+chat como **única** ruta, no había nada que desapilar y por eso no aparecía la
+flecha de volver.
+
+Arreglado pasándola a **subruta** (`path: ':id'` dentro de `/chats`), igual que
+`/profile/blocked`. Ahora `go` deja la lista de conversaciones debajo y la
+flecha sale sola. La URL no cambia.
+
+Afectaba a las dos entradas, no solo al perfil.
+
+> **Al escribir tests de chat:** la pantalla no llega nunca a reposo (stream de
+> realtime), así que `pumpAndSettle` se cuelga. Hay que usar `pump()` seguido
+> de `pump(const Duration(seconds: 1))`.
+
+---
+
+## Sección del feed: "Inicio" con casa, en vez de "Buscar" con lupa
+
+La lupa pasó a significar "buscar usuarios" (CU-20), así que tenerla también
+como icono de la sección del feed era ambiguo, y la etiqueta "Buscar" lo era
+todavía más. El feed se queda con la casa (`Icons.home_outlined` /
+`Icons.home`) y la etiqueta **Inicio**, en
+`core/layout/shell_destinations.dart`, que es la única fuente de verdad para la
+barra inferior y el rail a la vez.
+
+---
+
+## Volver del chat al perfil desde el que se abrió
+
+Entrar en un chat desde el perfil de alguien y que la flecha lleve a la lista
+de conversaciones es aterrizar en una pantalla que no se ha visto en todo el
+recorrido. `ChatScreen` acepta un `backLocation` opcional:
+
+- Viaja por el **`extra` del router**, no por la URL: así no acaba el id de
+  nadie en la barra de direcciones. El precio, asumido: en web se pierde al
+  recargar la página, y entonces la flecha vuelve a llevar a la lista.
+- `UserProfileScreen` lo manda al contactar
+  (`context.go('/chats/<id>', extra: '/users/<userId>')`).
+- Con `backLocation` puesto, la pantalla envuelve su `Scaffold` en un
+  `PopScope` **además** de poner el `leading`: si no, la flecha llevaría al
+  perfil y el botón atrás del sistema a la lista de chats. Dos caminos, un
+  destino.
+- Desde el detalle de una publicación **no** se manda: allí la lista de chats
+  sigue siendo el destino de siempre.
+
+
+---
+
+## Buscador: coincidencias parecidas (CU-20, ampliación)
+
+**Migración:** `supabase/migrations/20260804000022_user_search_fuzzy.sql`.
+
+La coincidencia por subcadena ya existía desde el principio (`ilike
+'%texto%'`): buscar "juan" siempre encontró "angeljuan". Lo que se añade es
+tolerancia a **erratas**, como segunda rama en OR: `word_similarity` de
+`pg_trgm` con umbral 0.4.
+
+- Se usa `word_similarity` y no `similarity` porque compara lo escrito con el
+  **trozo** que mejor encaja del nombre, no con el nombre entero.
+- Se compara con la **función** y no con el operador `<%`, aunque el operador
+  sí usaría el índice: `<%` lee su umbral de
+  `pg_trgm.word_similarity_threshold`, y en Supabase el rol de las migraciones
+  **no tiene permiso** para fijar ese parámetro dentro de una función
+  (`permission denied to set parameter`). Con la función el umbral queda
+  escrito en el código, que además hace el resultado independiente de la
+  sesión que llame.
+- **Orden:** primero lo literal (empieza por / contiene) y después lo parecido,
+  de más a menos. Una aproximación nunca se cuela por delante de una
+  coincidencia exacta.
+
+**Coste, y es un compromiso consciente:** `word_similarity` no puede usar el
+índice GIN, así que la rama difusa recorre la tabla. Con el volumen de una sola
+ciudad da igual. Cuando `profiles` crezca de verdad habrá que revisarlo; lo
+natural sería no calcular la rama difusa salvo que la literal devuelva poco.
+
+**Límite conocido:** los trigramas son implacables con las palabras cortas. Un
+cambio de vocal en una palabra de cuatro letras ("joan" contra "juan") deja el
+parecido en ~0.25, por debajo de cualquier umbral usable — con 5 trigramas por
+lado y solo 2 en común. Para cubrir ese caso haría falta comparación
+**fonética** (`metaphone` de `fuzzystrmatch`, que descarta las vocales), no
+trigramas. Decisión pendiente.
+
+---
+
+## Flechas de volver: una sola pieza para todas las pantallas
+
+`UserProfileScreen` monta su `BackButton` **a mano** en vez de dejar la flecha
+automática, con un recambio a `/feed` cuando no hay nada que desapilar.
+
+El motivo: al volver del chat se llega al perfil con `go`, que reemplaza la
+pila. La flecha automática, que depende de que haya algo debajo, desaparecía.
+
+Y el chat se abre con `go` y no con `push` por una razón dura: `/users/:id` es
+ruta **raíz** y el chat vive dentro del shell. Un `push` apila la página del
+shell encima de una ruta raíz cuando esa misma página ya está debajo en la
+pila, y el `Navigator` aborta con *"Failed assertion: !keyReservation.contains
+(key)"* — claves de página duplicadas. No es una preferencia de estilo: `push`
+ahí no compila en tiempo de ejecución.
+
+**Efecto secundario asumido:** después de volver del chat, la flecha del perfil
+lleva al feed y no al buscador desde el que se entró. Recuperar ese eslabón
+exigiría encadenar el origen a través del chat.
+
+
+`core/widgets/app_back_button.dart` reúne las tres piezas, para no repetir la
+misma lógica en cada pantalla:
+
+- `goBackFrom(context, backLocation:)` — resuelve el atrás en este orden:
+  el origen que le dieron, desapilar, y el feed como último recurso.
+- `AppBackButton` — la flecha. **Siempre visible**; se usa donde la pantalla
+  ocupa todo (perfil de otro usuario).
+- `AppBackButton.maybe(context, backLocation:)` — devuelve `null` si no hay
+  origen ni nada que desapilar. Es la que va en las pantallas que **también se
+  pintan como panel de detalle en escritorio** (publicación, chat): allí la
+  lista está en la columna de al lado y una flecha que saltara al feed no
+  tendría sentido. Reproduce la flecha automática de siempre, más el caso de
+  `backLocation`.
+- `BackDestination` — envuelve el `Scaffold` con un `PopScope` cuando hay
+  `backLocation`, para que el botón atrás del sistema acabe donde la flecha.
+  Sin `backLocation` no envuelve nada: secuestrar el gesto para replicar lo que
+  el sistema ya hace sería peor.
+
+**Ojo con `context.canPop()`:** es de go_router y revienta si no hay router en
+el árbol, cosa que pasa en los tests que montan una pantalla suelta. Se
+pregunta al `Navigator` (`Navigator.maybeOf(context)?.canPop()`), que además es
+justo lo que mira el `AppBar` para su flecha automática.
+
+**Entrar en una publicación desde el perfil** usa `go` + `extra`, exactamente
+igual que el chat y por el mismo motivo (`push` de ruta raíz a rama del shell
+aborta por claves de página duplicadas).
+
+
+---
+
+## Bloqueados: visibles en el buscador, deshacibles desde su perfil
+
+**Migración:** `supabase/migrations/20260804000023_blocked_visible_in_search.sql`.
+
+Hasta aquí bastaba un bloqueo en **cualquiera de los dos sentidos** para
+desaparecer del buscador y del perfil. A partir de ahora los dos sentidos
+**dejan de ser simétricos**, y es la idea:
+
+- **A quien yo he bloqueado:** sale en el buscador, con la etiqueta
+  "Bloqueado" y sin su ciudad. Su perfil enseña **solo el nombre** y el botón
+  de desbloquear. Es mi decisión y tengo que poder deshacerla sin ir a buscar
+  la lista de bloqueados en ajustes.
+- **A quien me ha bloqueado a mí:** sigue invisible en el buscador, y su perfil
+  no enseña nada, ni el nombre. Eso no es decisión mía y no me toca revertirlo.
+
+Cambios concretos:
+
+- `search_profiles` devuelve una columna nueva `is_blocked` y solo excluye los
+  bloqueos en sentido contrario. **Hubo que soltar la función antes de
+  recrearla** (`drop function`): `create or replace` no puede cambiar el tipo de
+  retorno, y añadir una columna al `returns table` lo cambia. Va dentro de la
+  transacción de la migración, así que no queda hueco sin función.
+- `get_public_profile` devuelve `display_name` también con bloqueo propio.
+  El resto de campos siguen a null: sin el nombre, la pantalla de desbloqueo no
+  podría decir a quién estás desbloqueando.
+- El menú de tres puntos con bloqueo propio ofrece **Desbloquear** y
+  **Reportar** (a secas, no "Reportar y bloquear": el bloqueo ya existe y la
+  etiqueta no debe prometer un cambio que no ocurre). El aviso posterior dice
+  "Usuario reportado.", sin mencionar un bloqueo que no ha cambiado.
+
+> **Al escribir tests de widget del buscador:** el debounce es un
+> `Future.delayed` y con el reloj falso del tester solo avanza haciendo `pump`.
+> Hacer `await` de `updateQuery()` antes de pumpear cuelga el test para
+> siempre. Hay que lanzarlo sin esperar y avanzar el reloj con
+> `tester.pump(Duration(...))`.

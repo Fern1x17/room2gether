@@ -64,6 +64,31 @@ class ReportUserController extends AsyncNotifier<void> {
 final reportUserControllerProvider =
     AsyncNotifierProvider<ReportUserController, void>(ReportUserController.new);
 
+/// Bloquea a un usuario sin reportarlo (acción del menú del perfil, CU-19).
+class BlockUserController extends AsyncNotifier<void> {
+  @override
+  FutureOr<void> build() {}
+
+  /// Devuelve `true` si quedó bloqueado. Igual que el desbloqueo, los efectos
+  /// en feed y chat los refresca la pantalla que llama.
+  Future<bool> block(String blockedId) async {
+    state = const AsyncLoading();
+    try {
+      await ref.read(moderationRepositoryProvider).blockUser(blockedId);
+      ref.invalidate(myBlocksProvider);
+      ref.invalidate(blockedUsersProvider);
+      state = const AsyncData(null);
+      return true;
+    } catch (error, stackTrace) {
+      state = AsyncError('No se pudo bloquear. Inténtalo de nuevo.', stackTrace);
+      return false;
+    }
+  }
+}
+
+final blockUserControllerProvider =
+    AsyncNotifierProvider<BlockUserController, void>(BlockUserController.new);
+
 /// Desbloquea a un usuario (CU-11, desbloqueo). Al completarse revierte los
 /// efectos del bloqueo invalidando lo que dependía de él.
 class UnblockUserController extends AsyncNotifier<void> {

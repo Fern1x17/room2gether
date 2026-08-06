@@ -5,7 +5,10 @@ publish_to: 'none'
 version: 0.1.0+1
 
 environment:
-  sdk: ^3.10.7
+  sdk: ^3.12.2
+  # Versión mínima de Flutter. Sin esto, un SDK viejo no falla: resuelve
+  # `pubspec.lock` hacia atrás y la diferencia pasa por un cambio real.
+  flutter: ">=3.44.8"
 
 dependencies:
   flutter:
